@@ -4,7 +4,7 @@ import csv
 import copy
 from database import insertValues, updateValues
 
-def readAppFile (collection_filename, add_filename_col = True, filename_header = 'Collection File', remove_GPS = True):
+def readAppCollection (collection_filename, add_filename_col = True, filename_header = 'Collection File', remove_GPS = True):
 
 	with open(collection_filename) as collection_file:
 
@@ -24,8 +24,15 @@ def readAppFile (collection_filename, add_filename_col = True, filename_header =
 		# Check if GPS data should not be stored
 		if remove_GPS:
 
-			# Obtain the index of the GPS data
-			gps_index = header.index('GPS')
+			try:
+
+				# Obtain the index of the GPS data
+				gps_index = header.index('GPS')
+
+			except:
+
+				raise Exception('Unable to assign GPS index')
+
 
 			# Remove the GPS header entry
 			del header[gps_index]
@@ -64,18 +71,18 @@ def readAppFile (collection_filename, add_filename_col = True, filename_header =
 			# Return the header and row
 			yield header, row
 
-def addAppFileToDatabase (database, table, app_file):
+def addAppCollectionToDatabase (database, table, app_file):
 
 	# Loop the collection app file by line
-	for header, sample_data in readAppFile(app_file):
+	for header, sample_data in readAppCollection(app_file):
 
 		# Insert the sample into the database
 		insertValues(database, table, header, sample_data)
 
-def updateAppFileToDatabase (database, table, app_file, select_key):
+def updateAppCollectionToDatabase (database, table, select_key, app_file):
 
 	# Loop the collection app file by line
-	for header, sample_data in readAppFile(app_file):
+	for header, sample_data in readAppCollection(app_file):
 
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
@@ -85,7 +92,8 @@ def updateAppFileToDatabase (database, table, app_file, select_key):
 		app_set_dict = {}
 
 		# Create an empty selection dict
-		app_select_dict = {}
+		app_select_dict = {} 
+		app_select_dict['IN'] = {}
 
 		# Loop the header ans sample data
 		for header_column, sample_value in zip(header, sample_data):
@@ -94,7 +102,7 @@ def updateAppFileToDatabase (database, table, app_file, select_key):
 			if header_column == select_key:
 
 				# Populate the selection dict
-				app_select_dict[header_column] = [sample_value]
+				app_select_dict['IN'][header_column] = [sample_value]
 
 			else:
 
@@ -102,4 +110,4 @@ def updateAppFileToDatabase (database, table, app_file, select_key):
 				app_set_dict[header_column] = sample_value
 
 		# Update the values for the selected value
-		updateValues(database, table, app_select_dict, {}, app_set_dict)
+		updateValues(database, table, app_select_dict, app_set_dict)

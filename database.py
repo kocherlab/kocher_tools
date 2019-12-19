@@ -176,6 +176,55 @@ def innerJoinTables (table_list, join_key_list):
 	# Return the inner join string
 	return inner_join_str
 
+def reportSqlError (sql_error, column_list = None, value_list = None):
+
+	# Check if the unique constraint failed
+	if 'UNIQUE constraint failed' in str(sql_error):
+
+		# Get the column path that failed
+		sql_column_path = str(sql_error).split(': ')[1]
+
+		# Assign the table
+		sql_table = sql_column_path.split('.')[0]
+
+		# Assign the column
+		sql_column = sql_column_path.split('.')[1]
+
+		# Create an empty warning string to add to
+		sql_error_message = ''
+
+		# Check if column and values were given, and that the sql column can be found
+		if column_list and value_list and (sql_column_path in column_list or sql_column in column_list):
+
+			# Check if the column path is within the value list
+			if sql_column_path in column_list:
+
+				# Get the column index
+				sql_column_index = column_list.index(sql_column_path)
+
+			# Check if the column is within the value list
+			elif sql_column in column_list:
+
+				# Get the column index
+				sql_column_index = column_list.index(sql_column)
+
+			# Update the message
+			sql_error_message += '%s already exists' % value_list[sql_column_index]
+		
+		# Check if the error message has been populated
+		if sql_error_message:
+
+			# Add punctuation
+			sql_error_message += '. '
+
+		# Raise the updated exception
+		raise Exception('%s%s does not support duplicate entries' % (sql_error_message, sql_column_path)) from sql_error
+
+	# If not a known error, report the standard message
+	else:
+
+		raise sql_error
+
 def createTable (database, table, column_assignment_str):
 
 	try:
@@ -218,7 +267,7 @@ def insertValues (database, table, column_list, value_list):
 		value_list_w_dates = value_list + [insert_time, insert_time]
 
 		# Quote the values as needed
-		value_list_w_dates = quoteFields(value_list_w_dates)
+		value_list_w_dates = quoteFields(value_list_w_dates, split_by_dot = False)
 	
 		# Create the insert string
 		sqlite_insert_values = 'INSERT INTO %s (%s) VALUES (%s)' % (table, ', '.join(column_list_w_dates), valueMarksStr(column_list_w_dates))
@@ -238,8 +287,10 @@ def insertValues (database, table, column_list, value_list):
 		# Close the connection
 		cursor.close()
 
-	except sqlite3.Error as error:
-		raise Exception(error)
+	except sqlite3.Error as sql_error:
+
+		# Report the error
+		reportSqlError(sql_error, column_list = column_list, value_list = value_list)
 
 def updateValues (database, table, selection_dict, update_dict, update_table_key = None, tables_to_join = None, join_tables_keys = None):
 
@@ -283,7 +334,7 @@ def updateValues (database, table, selection_dict, update_dict, update_table_key
 		update_expression = returnSetExpression(update_dict_w_date)
 
 		# Create a quoated list of the values associated with the update expression string
-		update_value_list = quoteFields(list(update_dict_w_date.values()))
+		update_value_list = quoteFields(list(update_dict_w_date.values()), split_by_dot = False)
 
 		# Combine the value lists and save as a tuple
 		sqlite_value_list = tuple(update_value_list + select_value_list)
@@ -318,6 +369,9 @@ def retrieveValues (database, tables, selection_dict, column_list, join_tables_k
 
 		# Create a list of the values associated with the select expression string
 		select_value_list = returnSelectionValues(selection_dict)
+
+		# Create a quoated list of the values
+		select_value_list = quoteFields(select_value_list, split_by_dot = False)
 
 		# Quote the columns as needed
 		column_list = quoteFields(column_list)
