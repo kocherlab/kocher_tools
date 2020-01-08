@@ -14,6 +14,10 @@ def convertPlateWell (database, table, key, plate, well):
 	if len(key_data) > 1: 
 		raise Exception('Unable to assign %s' % key)
 
+	# Check if no IDs were found
+	if not key_data:
+		raise Exception('Unable to find %s-%s' % (plate, well))
+
 	return key_data[0][0]
 
 def addLocFileToDatabase (database, table, storage_file):

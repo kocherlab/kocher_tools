@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from collection import addAppCollectionToDatabase, updateAppCollectionToDatabase
 from location import addLocFileToDatabase, updateLocFileToDatabase, addAppLocationsToDatabase, updateAppLocationsToDatabase
-from sequence import addSeqFilesToDatabase, updateSeqFilesToDatabase
+from barcode import addSeqFilesToDatabase, updateSeqFilesToDatabase
 from assignment import assignSelectionDict, assignTables
 from database import updateValues
 from config_file import readConfig
@@ -35,31 +35,31 @@ def upload_sample_parser ():
 	def confirmFileList ():
 		'''Custom action to confirm file exists in list'''
 		class customAction(argparse.Action):
-			def __call__(self, parser, args, value, option_string=None):
+			def __call__(self, parser, args, values, option_string=None):
 				# Loop the list
-				for value_item in value:
+				for value in values:
 					# Check if the file exists
-					if not os.path.isfile(value_item):
-						raise IOError('%s not found' % value_item)
+					if not os.path.isfile(value):
+						raise IOError('%s not found' % value)
 				if not getattr(args, self.dest):
-					setattr(args, self.dest, value)
+					setattr(args, self.dest, values)
 				else:
-					getattr(args, self.dest).extend(value)
+					getattr(args, self.dest).extend(values)
 		return customAction
 
-	def confirmPairedFiles ():
+	def confirmLinkedFiles ():
 		'''Custom action to confirm file exists in list'''
 		class customAction(argparse.Action):
-			def __call__(self, parser, args, value, option_string=None):
+			def __call__(self, parser, args, values, option_string=None):
 				# Loop the list
-				for value_item in value:
+				for value in values:
 					# Check if the file exists
-					if not os.path.isfile(value_item):
-						raise IOError('%s not found' % value_item)
+					if not os.path.isfile(value):
+						raise IOError('%s not found' % value)
 				if not getattr(args, self.dest):
-					setattr(args, self.dest, [value])
+					setattr(args, self.dest, [values])
 				else:
-					getattr(args, self.dest).append(value)
+					getattr(args, self.dest).append(values)
 		return customAction
 
 	def updateDict ():
@@ -122,15 +122,11 @@ def upload_sample_parser ():
 	upload_parser.add_argument('--app-file', dest = 'app_files', help = "Defines the collection app filename", type = str, nargs = '+', action = confirmFileList())
 	upload_methods = ('Collection', 'Location', 'Both')
 	upload_parser.add_argument('--app-upload-method', metavar = metavar_list(upload_methods), help = 'Upload method for collection app files', choices = upload_methods, default = upload_methods[0])
-	upload_parser.add_argument('--sequence-files', dest = 'seq_files', metavar = ('blast_file', 'fasta_file'), help = "Defines the BLAST and fasta output filename", type = str, nargs = 2, action = confirmPairedFiles())
+	upload_parser.add_argument('--barcode-file-pair', dest = 'barcode_files', metavar = ('blast_file', 'fasta_file'), help = "Defines the BLAST and fasta output filename", type = str, nargs = 2, action = confirmLinkedFiles())
+	upload_parser.add_argument('--barcode-all-files', dest = 'barcode_files', metavar = ('blast_file', 'fasta_file', 'failed_file'), help = "Defines the BLAST, fasta, and failed output filename", type = str, nargs = 3, action = confirmLinkedFiles())
 	upload_parser.add_argument('--location-file', dest = 'loc_files', help = 'Defines the filename of a location file', type = str, nargs = '+', action = confirmFileList())
 	upload_parser.add_argument('--storage-file', dest = 'storage_files', help = 'Defines the filename of a storage file ', type = str, nargs = '+', action = confirmFileList())
-	#upload_parser.add_argument('--file', help = 'Defines a table filename', type = str, action = parser_confirm_file())
-	#table_formats = ('tsv', 'csv')
-	#upload_parser.add_argument('--file-format', metavar = metavar_list(table_formats), help = 'Defines the format of the table file', type = str, choices = table_formats)
-
-
-
+	
 	# Selection arguments
 	upload_parser.add_argument('--include-ID', help = 'ID to include in database updates', type = str, nargs = '+', action = selectionList())
 	upload_parser.add_argument('--exclude-ID', help = 'ID to exclude in database updates', type = str, nargs = '+', action = selectionList())
@@ -210,22 +206,37 @@ if upload_args.app_files:
 				# Add file to the database
 				addAppLocationsToDatabase(upload_args.sqlite_db, 'Location', app_file)
 
-# Check if sequencing files have been specified
-if upload_args.seq_files:
+# Check if barcode files have been specified
+if upload_args.barcode_files:
 
 	# Loop the collection app files
-	for blast_file, fasta_file in upload_args.seq_files:
+	for barcode_files in upload_args.barcode_files:
+
+		# Check if only a pair of files was passed
+		if len(barcode_files) == 2: 
+
+			# Assign the blast and fasta file
+			blast_file, fasta_file = barcode_files
+
+			# Set the failed file to None
+			failed_file = None
+
+		# Check if all files was passed
+		elif len(barcode_files) == 3: 
+
+			# Assign the blast and fasta file
+			blast_file, fasta_file, failed_file = barcode_files
 
 		# Check if a selection key has been specified
 		if upload_args.update_with_file:
 
 			# Update the database with the file
-			updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, 'Storage', 'Unique ID')
+			updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Unique ID')
 
 		else:
 
 			# Add file to the database
-			addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, 'Storage', 'Unique ID')
+			addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Unique ID')
 
 # Check if a location file has been specified
 if upload_args.loc_files:
