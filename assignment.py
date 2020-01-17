@@ -1,6 +1,10 @@
 from collections import defaultdict
 
-def assignTables (config_data, include = None, exclude = None, include_ID = None, exclude_ID = None, include_species = None, exclude_species = None, include_genus = None, exclude_genus = None, **kwargs):
+def assignTables (config_data, include = None, exclude = None, 
+	                           include_ID = None, exclude_ID = None, 
+	                           include_species = None, exclude_species = None, 
+	                           include_genus = None, exclude_genus = None, 
+	                           include_nests = None, exclude_nests = None, **kwargs):
 
 	# Create a list to hold the columns
 	columns = []
@@ -53,10 +57,26 @@ def assignTables (config_data, include = None, exclude = None, include_ID = None
 		# Update the column list
 		columns.append('Species')
 
+	# Check if nests include is defined
+	if include_nests:
+
+		# Update the column list
+		columns.append('From Nest?')
+
+	# Check if genus exclude is defined
+	if exclude_nests:
+
+		# Update the column list
+		columns.append('From Nest?')
+
 	# Return the tables
 	return config_data.returnTables(columns)
 	
-def assignSelectionDict (config_data, include = None, exclude = None, include_ID = None, exclude_ID = None, include_species = None, exclude_species = None, include_genus = None, exclude_genus = None, **kwargs):
+def assignSelectionDict (config_data, include = None, exclude = None, 
+									  include_ID = None, exclude_ID = None, 
+									  include_species = None, exclude_species = None, 
+									  include_genus = None, exclude_genus = None,
+									  include_nests = None, exclude_nests = None,  **kwargs):
 
 	# Create a defaultdict to hold all the selection information
 	selection_dict = defaultdict(lambda: defaultdict(list))
@@ -108,5 +128,17 @@ def assignSelectionDict (config_data, include = None, exclude = None, include_ID
 
 		# Update the selection dict
 		selection_dict['NOT LIKE'][config_data.returnColumnPath('Species')] = exclude_genus
+
+	# Check if genus include is defined
+	if include_nests:
+
+		# Update the selection dict
+		selection_dict['IN'][config_data.returnColumnPath('From Nest?')] = 'Yes'
+
+	# Check if genus exclude is defined
+	if exclude_nests:
+
+		# Update the selection dict
+		selection_dict['NOT IN'][config_data.returnColumnPath('From Nest?')] = 'Yes'
 
 	return selection_dict

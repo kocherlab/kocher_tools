@@ -8,7 +8,7 @@ from assignment import assignSelectionDict, assignTables
 from database import retrieveValues
 from config_file import readConfig 
 
-def retrieve_sample_parser ():
+def retrieveSampleParser ():
 	'''
 	Database Argument Parser 
 
@@ -18,7 +18,7 @@ def retrieve_sample_parser ():
 		If the input, or other specified files do not exist
 	'''
 
-	def parser_confirm_file ():
+	def confirmFile ():
 		'''Custom action to confirm file exists'''
 		class customAction(argparse.Action):
 			def __call__(self, parser, args, value, option_string=None):
@@ -27,7 +27,7 @@ def retrieve_sample_parser ():
 				setattr(args, self.dest, value)
 		return customAction
 
-	def parser_add_to_list ():
+	def selectionList ():
 		'''Custom action to add items to a list'''
 		class customAction(argparse.Action):
 			def __call__(self, parser, args, value_list, option_string=None):
@@ -41,7 +41,7 @@ def retrieve_sample_parser ():
 					getattr(args, self.dest).extend(value_list)
 		return customAction
 
-	def parser_to_dict_list ():
+	def selectionDict ():
 		'''Custom action to add items to a list'''
 		class customAction(argparse.Action):
 			def __call__(self, parser, args, value_list, option_string=None):
@@ -59,37 +59,43 @@ def retrieve_sample_parser ():
 					getattr(args, self.dest)[value_list[0]].append(value_list[1])
 		return customAction
 
-	def metavar_list (var_list):
+	def metavarList (var_list):
 		'''Create a formmated metavar list for the help output'''
 		return '{' + ', '.join(var_list) + '}'
 
 	retrieve_parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
 	# Selection arguments
-	retrieve_parser.add_argument('--table', help = 'Table to return', type = str, nargs = '+', action = parser_add_to_list(), required = True)
-	retrieve_parser.add_argument('--include-species', help = 'Species to include in database updates', type = str, nargs = '+', action = parser_add_to_list())
-	retrieve_parser.add_argument('--exclude-species', help = 'Species to exclude in database updates', type = str, nargs = '+', action = parser_add_to_list())
-	retrieve_parser.add_argument('--include-ID', help = 'ID to include in database updates', type = str, nargs = '+', action = parser_add_to_list())
-	retrieve_parser.add_argument('--exclude-ID', help = 'ID to exclude in database updates', type = str, nargs = '+', action = parser_add_to_list())
-	retrieve_parser.add_argument('--include', metavar = ('column', 'value'), help = 'Column/value pair to include in database updates', type = str, nargs = 2, action = parser_to_dict_list())
-	retrieve_parser.add_argument('--exclude', metavar = ('column', 'value'), help = 'Column/value pair to exclude in database updates', type = str, nargs = 2, action = parser_to_dict_list())
+	retrieve_select = retrieve_parser.add_mutually_exclusive_group(required = True)
+	retrieve_select.add_argument('--table', help = 'Table(s) to return', type = str, nargs = '+', action = selectionList())
+	retrieve_select.add_argument('--column', help = 'Column(s) to return', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--include-ID', help = 'ID to include in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--exclude-ID', help = 'ID to exclude in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--include-species', help = 'Species to include in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--exclude-species', help = 'Species to exclude in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--include-genus', help = 'Genus to include in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--exclude-genus', help = 'Genus to exclude in database retrievals', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--include-nests', help = 'Include samples from nests in database retrievals', action = 'store_true')
+	retrieve_parser.add_argument('--exclude-nests', help = 'Exclude samples from nests in database retrievals', action = 'store_true')
+	retrieve_parser.add_argument('--include', metavar = ('column', 'value'), help = 'Column/value pair to include in database retrievals', type = str, nargs = 2, action = selectionDict())
+	retrieve_parser.add_argument('--exclude', metavar = ('column', 'value'), help = 'Column/value pair to exclude in database retrievals', type = str, nargs = 2, action = selectionDict())
 
 	# Output arguments
 	out_formats = ['tsv', 'csv']
 	out_default = 'tsv'
-	retrieve_parser.add_argument('--out-format', metavar = metavar_list(out_formats), help = 'Desired output format', type = str, choices = out_formats, default = out_default)
+	retrieve_parser.add_argument('--out-format', metavar = metavarList(out_formats), help = 'Desired output format', type = str, choices = out_formats, default = out_default)
 	retrieve_parser.add_argument('--out-prefix', help = 'The output prefix (i.e. filename without file extension)', type = str,  default = 'out')
-	retrieve_parser.add_argument('--out-columns', help = 'Columns to return in the output', type = str, nargs = '+', action = parser_add_to_list())
+	retrieve_parser.add_argument('--out-columns', help = 'Columns to return in the output', type = str, nargs = '+', action = selectionList())
 	retrieve_parser.add_argument('--stdout', help = 'Direct output to stdout', action = 'store_true')
 
 	# Database arguments
-	retrieve_parser.add_argument('--sqlite-db', help = 'Defines the sqlite database filename', type = str, default = 'kocherDB.sqlite', action = parser_confirm_file())
-	retrieve_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, default = 'kocherDB.yml', action = parser_confirm_file())
+	retrieve_parser.add_argument('--sqlite-db', help = 'Defines the sqlite database filename', type = str, default = 'kocherDB.sqlite', action = confirmFile())
+	retrieve_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, default = 'kocherDB.yml', action = confirmFile())
 
 	return retrieve_parser.parse_args()
 
 # Assign arguments
-retrieve_args = retrieve_sample_parser()
+retrieve_args = retrieveSampleParser()
 
 # Read in the database config file
 db_config_data = readConfig(retrieve_args.yaml)
@@ -97,26 +103,82 @@ db_config_data = readConfig(retrieve_args.yaml)
 # List to hold columns to be printed
 columns_assignment_list = []
 
-# Loop the list of specified tables
-for table_str in retrieve_args.table:
+# List to hold table to be printed, required for printing single columns
+table_assignment_list = []
 
-	# Check if the database has the specified table
-	if table_str not in db_config_data:
+# Check if the user specified a table
+if retrieve_args.table:
 
-		# Print an error message
-		raise Exception('Table (%s) not found. Please select from: %s' % (table_str, ', '.join(db_config_data.tables)))
+	# Re-assign the tables
+	table_assignment_list = retrieve_args.table
 
-	# Get the columns from the table and add to the column assignment list
-	columns_assignment_list.extend(db_config_data[table_str].retieveColumnPaths())
+	# Loop the list of specified tables
+	for table_str in table_assignment_list:
+
+		# Check if the database has the specified table
+		if table_str not in db_config_data:
+
+			# Print an error message
+			raise Exception('Table (%s) not found. Please select from: %s' % (table_str, ', '.join(db_config_data.tables)))
+
+		# Get the columns from the table and add to the column assignment list
+		columns_assignment_list.extend(db_config_data[table_str].retieveColumnPaths(keep_db_specific_columns = True))
+
+# Check if the user specified a column
+elif retrieve_args.column:
+
+	# Loop the list of specified column
+	for column_str in retrieve_args.column:
+
+		# Check if the column exists within the database
+		if not db_config_data.hasColumn(column_str):
+
+			# Print an error message
+			raise Exception('Column (%s) not found' % column_str)
+
+		# Loop the tables within the database
+		for db_table in db_config_data:
+
+			# Check if the current table has the column
+			if column_str in db_table:
+
+				# Assign the column path
+				columns_assignment_list.append(db_table[column_str].path)
+
+				# Assign the table
+				table_assignment_list.append(str(db_table))
+
+				break
 
 # Assign a defaultdict with all the selection information
 selection_dict = assignSelectionDict(db_config_data, **vars(retrieve_args))
 
-# Assign the tables and keys that need to be joined
-tables, join_by_keys = db_config_data.returnJoinLists(retrieve_args.table)
+# Assign the tables that need to be updated
+selection_tables = assignTables(db_config_data, **vars(retrieve_args))
 
-# Retrieve the selected entries from the database 
-retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_tables_keys = join_by_keys)
+# Assign the tables for retrieval
+tables = table_assignment_list + selection_tables
+
+# Check if only a single table is required
+if len(tables) == 1:
+
+	# Retrieve the selected entries from the database 
+	retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list)
+
+# Otherwise, run the process for multiple tables
+else:
+
+	# Assign the tables and keys that need to be joined
+	tables, join_by_columns = db_config_data.returnJoinLists(tables)
+
+	# Retrieve the selected entries from the database 
+	retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
+
+# Check if anything was returned
+if len(retrieved_entries) == 0:
+
+	# Print error message
+	raise Exception('No output produced. Please check your input')
 
 # Set the deafult delimiter
 delimiter = '\t'

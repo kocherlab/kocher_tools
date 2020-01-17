@@ -137,8 +137,26 @@ def returnSelectionDict (selection_dict):
 			# Check if the selection operator is either LIKE or NOT LIKE
 			elif 'LIKE' in selection_operator:
 
-				print()
-				sys.exit()
+				# Create a selection substring
+				selection_sub_str = ''
+
+				# Loop the selecion data
+				for value_item in value_list:
+
+					# Check that the selection string isn't empty
+					if selection_sub_str:
+
+						# Add the AND operator between each statement
+						selection_sub_str += ' OR '
+
+					# Add the quoted column and the selection operator
+					selection_sub_str += '%s %s ?' % (quoteField(column), selection_operator)
+
+				# Enclose the LIKE statements
+				selection_sub_str = '(%s)' % selection_sub_str
+
+				# Add the substring to the string
+				selection_str += selection_sub_str
 
 	return selection_str
 
@@ -150,8 +168,20 @@ def returnSelectionValues (selection_dict):
 	# Loop the dict by operator
 	for selection_operator, selection_data in selection_dict.items():
 
-		# Add the include expression values to the list
-		expression_statement_values.extend(itertools.chain.from_iterable(list(selection_data.values())))
+		# Check if the selection operator is either IN or NOT IN
+		if 'IN' in selection_operator:
+
+			# Add the include expression values to the list
+			expression_statement_values.extend(itertools.chain.from_iterable(list(selection_data.values())))
+
+		# Check if the selection operator is either LIKE or NOT LIKE
+		elif 'LIKE' in selection_operator:
+
+			# Loop each value in the selection dict
+			for selection_value in itertools.chain.from_iterable(list(selection_data.values())):
+
+				# Add the include expression value with wildcards to the list
+				expression_statement_values.append('%' + selection_value + '%')
 
 	# Quote the values
 	expression_statement_values = quoteFields(expression_statement_values)
@@ -159,19 +189,39 @@ def returnSelectionValues (selection_dict):
 	# Return the list
 	return expression_statement_values
 
-def innerJoinTables (table_list, join_key_list):
-
-	# Create a string for the inner join command
-	inner_join_str = ''
+def innerJoinTables (table_list, join_column_list):
 
 	# Add the first table to the string
-	inner_join_str += table_list[0]
+	inner_join_str = table_list[0]
 
 	# Loop the tables, skipping the first entry
-	for table_name, table_join_key in zip(table_list[1:], join_key_list):
+	for table_name, table_join_column in zip(table_list[1:], join_column_list):
 
-		# Add the inner join string
-		inner_join_str += ' INNER JOIN {0} ON {1}.{2} = {0}.{2}'.format(table_name, table_list[0], quoteField(table_join_key))
+		# Confirm the data is a linking table
+		if isinstance(table_name, dict):
+
+			# Assign the linking table and join column
+			for link_table_name, link_table_join_column in zip(table_name.keys(), table_join_column.keys()):
+
+				# Assign the sub table data
+				sub_table_list = table_name[link_table_name]
+				sub_join_column_list = table_join_column[link_table_join_column]
+
+				# Add the first table to the string
+				sub_inner_join_str = sub_table_list[0]
+
+				# Loop the tables, skipping the first entry
+				for sub_table_name, sub_table_join_column in zip(sub_table_list[1:], sub_join_column_list):
+
+					# Add the sub inner join string
+					sub_inner_join_str += ' INNER JOIN {0} ON {1}.{2} = {0}.{2}'.format(sub_table_name, sub_table_list[0], quoteField(sub_table_join_column))
+
+				# Add the inner join string
+				inner_join_str +=  ' INNER JOIN ({0}) {1} ON {2}.{3} = {1}.{3}'.format(sub_inner_join_str, link_table_name, table_list[0], quoteField(link_table_join_column))
+		else:
+
+			# Add the inner join string
+			inner_join_str += ' INNER JOIN {0} ON {1}.{2} = {0}.{2}'.format(table_name, table_list[0], quoteField(table_join_column))
 
 	# Return the inner join string
 	return inner_join_str
@@ -292,7 +342,7 @@ def insertValues (database, table, column_list, value_list):
 		# Report the error
 		reportSqlError(sql_error, column_list = column_list, value_list = value_list)
 
-def updateValues (database, table, selection_dict, update_dict, update_table_key = None, tables_to_join = None, join_tables_keys = None):
+def updateValues (database, table, selection_dict, update_dict, update_table_column = None, tables_to_join = None, join_table_columns = None):
 
 	try:
 
@@ -309,18 +359,18 @@ def updateValues (database, table, selection_dict, update_dict, update_table_key
 		from_expression = ''
 
 		# Check for multiple tables to select from
-		if update_table_key and tables_to_join and join_tables_keys:
+		if update_table_column and tables_to_join and join_table_columns:
 
 			# Create an inner join statement
-			table_str = innerJoinTables(tables_to_join, join_tables_keys)
+			table_str = innerJoinTables(tables_to_join, join_table_columns)
 
 			# Update the selection expression with a select clause
-			select_expression = '{1} IN (SELECT {0}.{1} FROM {2} WHERE {3})'.format(table, quoteField(update_table_key), table_str, select_expression)
+			select_expression = '{1} IN (SELECT {0}.{1} FROM {2} WHERE {3})'.format(table, quoteField(update_table_column), table_str, select_expression)
 
 		# Check if the multiple tables were incorrectly assigned
-		elif update_table_key or tables_to_join or join_tables_keys:
+		elif update_table_column or tables_to_join or join_table_columns:
 
-			print(update_table_key, tables_to_join, join_tables_keys)
+			print(update_table_column, tables_to_join, join_table_columns)
 
 			raise Exception('Error updating database, unable to create FROM statement')
 
@@ -360,7 +410,7 @@ def updateValues (database, table, selection_dict, update_dict, update_table_key
 	except sqlite3.Error as error:
 		raise Exception(error)
 
-def retrieveValues (database, tables, selection_dict, column_list, join_tables_keys = None):
+def retrieveValues (database, tables, selection_dict, column_list, join_table_columns = None):
 
 	try:
 
@@ -383,15 +433,21 @@ def retrieveValues (database, tables, selection_dict, column_list, join_tables_k
 		if len(tables) > 1:
 
 			# Create an inner join statement
-			table_str = innerJoinTables(tables, join_tables_keys)
+			table_str = innerJoinTables(tables, join_table_columns)
 
 		else:
 
 			# Define the table string
 			table_str = tables[0]
 	
-		# Create the select string
-		sqlite_select_values = 'SELECT %s FROM %s WHERE %s' % (column_str, table_str, select_expression)
+		# Create the basic select string
+		sqlite_select_values = 'SELECT %s FROM %s' % (column_str, table_str)
+
+		# Check if a selection expression was given
+		if select_expression:
+
+			# Update the sqlite string if an expression was given
+			sqlite_select_values += ' WHERE %s' % select_expression
 
 		# Connect to the sqlite database
 		sqlite_connection = sqlite3.connect(database)
@@ -402,8 +458,16 @@ def retrieveValues (database, tables, selection_dict, column_list, join_tables_k
 		# Create the cursor
 		cursor = sqlite_connection.cursor()
 
-		# Execute the select values command
-		cursor.execute(sqlite_select_values, select_value_list)
+		# Check if selection expression values were created
+		if select_value_list:
+
+			# Execute the select values command
+			cursor.execute(sqlite_select_values, select_value_list)
+
+		else:
+
+			# Execute the select values command
+			cursor.execute(sqlite_select_values)
 
 		# Save the selected results
 		selection_results = cursor.fetchall()

@@ -134,6 +134,8 @@ def upload_sample_parser ():
 	upload_parser.add_argument('--exclude-species', help = 'Species to exclude in database updates', type = str, nargs = '+', action = selectionList())
 	upload_parser.add_argument('--include-genus', help = 'Species to include in database updates', type = str, nargs = '+', action = selectionList())
 	upload_parser.add_argument('--exclude-genus', help = 'Species to exclude in database updates', type = str, nargs = '+', action = selectionList())
+	upload_parser.add_argument('--include-nests', help = 'Include samples from nests in database retrievals', action = 'store_true')
+	upload_parser.add_argument('--exclude-nests', help = 'Exclude samples from nests in database retrievals', action = 'store_true')
 	upload_parser.add_argument('--include', metavar = ('column', 'value'), help = 'Column/value pair to include in database updates', type = str, nargs = 2, action = selectionDict())
 	upload_parser.add_argument('--exclude', metavar = ('column', 'value'), help = 'Column/value pair to exclude in database updates', type = str, nargs = 2, action = selectionDict())
 
@@ -286,7 +288,7 @@ if upload_args.update:
 		else:
 
 			# Assign the key for the table to update
-			join_by_key = db_config_data[table_to_update].join_by_key
+			join_by_column = db_config_data[table_to_update].join_by_key
 
 			# Create a copy of the selection tables
 			tables_to_join = copy.copy(selection_tables)
@@ -298,6 +300,6 @@ if upload_args.update:
 			tables_to_join = list(set(tables_to_join))
 
 			# Assign the tables and keys that need to be joined
-			join_by_names, join_by_keys = db_config_data.returnJoinLists(tables_to_join)
+			join_by_names, join_by_columns = db_config_data.returnJoinLists(tables_to_join)
 
-			updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict, update_table_key = join_by_key, tables_to_join = join_by_names, join_tables_keys = join_by_keys)
+			updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict, update_table_column = join_by_column, tables_to_join = join_by_names, join_table_columns = join_by_columns)

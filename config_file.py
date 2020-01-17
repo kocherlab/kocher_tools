@@ -1,10 +1,14 @@
 import yaml
+import networkx as nx
+
 from collections import OrderedDict, defaultdict
+from itertools import combinations
 
 class ConfigFile (list):
 	def __init__ (self, *arg, **kw):
 		super(ConfigFile, self).__init__(*arg, **kw)
 		self.sql_database = ''
+		self.table_graph = None
 
 	def __contains__ (self, table_str):
 		if table_str in self.tables:
@@ -20,7 +24,14 @@ class ConfigFile (list):
 	@property
 	def tables (self):
 
-		return [str(table) for table in self]
+		return [str(table) for table in self]	 
+
+	def hasColumn (self, column_str):
+		for table in self:
+			if column_str in table:
+				return True
+
+		return False
 
 	def assignFromYaml (self, config_yaml):
         
@@ -45,62 +56,222 @@ class ConfigFile (list):
 			# Save the table
 			self.append(db_table)
 
+		# Create a graph to store table edges
+		self.table_graph = nx.Graph()
+
+		# Loop all unique table combinations
+		for db_table_source, db_table_dest in combinations(self, 2):
+
+			# Check that the tables are compatible
+			if db_table_source.join_by_key in db_table_dest or db_table_dest.join_by_key in db_table_source:
+
+				# Add an edge between the two tables
+				self.table_graph.add_edge(str(db_table_source), str(db_table_dest))
+
 	def returnJoinLists (self, tables_to_join):
 
-		# Create a set of database tables that join the passed tables
-		tables_joined_by = set()
+		# Create list to store table paths
+		table_paths = []
 
-		# Loop the tables that need to be joined
-		for table_to_join in tables_to_join:
+		# Loop all unique table combinations
+		for db_table_source, db_table_dest in combinations(tables_to_join, 2):
 
-			# Create a list of database tables compatible with the current table
-			table_compatible_with = []
+			# Save the simple paths
+			simple_paths = nx.all_simple_paths(self.table_graph, db_table_source, db_table_dest)
 
-			# Loop the tables in the database
-			for table_in_db in self:
+			# Loop the paths
+			for simple_path in simple_paths:
 
-				# Check if the database table is compatible with the current table
-				if self[table_to_join].join_by_key in table_in_db:
+				# Check if the path was already found
+				if simple_path not in table_paths and simple_path[::-1] not in table_paths:
 
-					# Add the database table
-					table_compatible_with.append(str(table_in_db))
+					# Get the simple paths for the tables
+					table_paths.append(simple_path)
 
-			# Check if the set is empty
-			if not tables_joined_by:
+		# Create a list to store the path used to join the tables
+		join_path = []
 
-				# Populate the empty set
-				tables_joined_by = set(table_compatible_with)
+		# Loop each table path
+		for first_table_pos in range(0, len(table_paths)):
 
+			# Create bool to check if this path has all tables needed
+			has_all_tables = True
+
+			# Loop the other table paths
+			for second_table_pos in range(first_table_pos + 1, len(table_paths)):
+
+				#print(table_paths[first_table_pos], table_paths[second_table_pos])
+
+				# Check if the table has fewer columns
+				if len(table_paths[first_table_pos]) < len(table_paths[second_table_pos]):
+
+					# Update the bool
+					has_all_tables = False
+
+					break
+
+				# Check if the two tables have the sample columns
+				has_all_tables = all(col in table_paths[first_table_pos] for col in table_paths[second_table_pos])
+
+				
+			# Check if the path has all tables needed
+			if has_all_tables:
+
+				# Check if a join path has been assigned
+				if join_path:
+
+					if len(table_paths[first_table_pos]) > len(join_path):
+
+						# Update the join path
+						join_path = table_paths[first_table_pos] 
+
+				else:
+
+					# Update the join path
+					join_path = table_paths[first_table_pos]
+
+		# Check if no join path was assigned
+		if not join_path:
+
+			# Return the error message
+			raise Exception('Unable to join tables')
+
+		# Create a dict to store the possible merges
+		join_dict = defaultdict(list)
+
+		# Loop each join path
+		for first_path_pos in range(len(join_path)):
+
+			# Create a list to store the tables that can be joined with the current table
+			join_list = []
+
+			# Loop the other join paths
+			for second_path_pos in range(len(join_path)):
+
+				# Make sure these arent the same tables, and check if they be can be joined
+				if first_path_pos != second_path_pos and self[join_path[second_path_pos]].join_by_key in self[join_path[first_path_pos]]:
+
+					# Add the table to the join list
+					join_list.append(join_path[second_path_pos])
+
+			# Check that the table joined other tables
+			if join_list:
+
+				# Assign the join data from the current table to the join dict
+				join_dict[join_path[first_path_pos]] = join_list
+
+		# Save list of the joinable table
+		joinable_tables = list(join_dict.keys())
+
+		# Create a dict to store the filtered merges
+		filtered_join_dict = defaultdict(list)
+
+		# loop the join dict by the table joining them
+		for joinable_table in joinable_tables:
+
+			# Create bool to decided if the current data should be removed
+			keep_joinable_table = True
+
+			# Loop the joined tables in the join dict
+			for joined_tables in join_dict.values():
+
+				# Create a list of the tables that may be joined to the joinable table
+				joinable_tables = join_dict[joinable_table]
+
+				# Skip if they joined tables with the same data
+				if joinable_tables == joined_tables:
+
+					continue
+
+				# Check if another table has the same values
+				if all(col in joined_tables for col in joinable_tables) and len(joined_tables) > len(joinable_tables):
+
+					# Update the bool
+					keep_joinable_table = False
+
+			# Check if the current joined data should be removed
+			if keep_joinable_table:
+
+				# Add the table to the filtered dict
+				filtered_join_dict[joinable_table] = join_dict[joinable_table]
+
+		# Assign the a string for the primary table to join using
+		join_using = ''
+
+		# Save list of the joinable table
+		possible_primary_join_tables = list(filtered_join_dict.keys())
+
+		# Save string to store the primary table
+		primary_join_table = ''
+
+		# Loop the primary tables
+		for possible_primary_join_table in possible_primary_join_tables:
+
+			# Create int to store the number of other tables linked to the primary table
+			primary_join_count = 0
 			
-			else:
+			# Loop the tables joined to the primary tables
+			for joined_to_primary in filtered_join_dict.values():
 
-				# Find the intersection if the set is already populated
-				tables_joined_by = tables_joined_by & set(table_compatible_with)
+				# Check if the primary table is linkable
+				if possible_primary_join_table in joined_to_primary:
 
-		# Check if the passed tables join themselves
-		if tables_joined_by & set(tables_to_join):
+					# Add to the count
+					primary_join_count += 1
 
-			# Find the intersection with the passed tables
-			tables_joined_by = tables_joined_by & set(tables_to_join)
+			# Check if the current primary table can link the other tables
+			if primary_join_count == (len(possible_primary_join_tables) - 1):
 
-		# Assign the primary table to join using
-		join_using = list(tables_joined_by)[0]
+				# Assign the primary table
+				primary_join_table = possible_primary_join_table
+
+				break
 
 		# Create the lists to store the join data
-		join_table_names = [join_using]
-		join_table_keys = []
+		join_table_list = [primary_join_table]
+		join_by_columns = []
 
-		# Loop the tables that join the passed tables
-		for table_to_join in tables_to_join:
+		# Loop the tables of the primary join_table
+		for primary_table in filtered_join_dict[primary_join_table]:
 
-			# Don't repeat the primary table
-			if table_to_join != join_using:
+			# Confirm the table isn't a secondary join table
+			if primary_table not in filtered_join_dict:
 
 				# Populate the lists
-				join_table_names.append(table_to_join) 
-				join_table_keys.append(self[table_to_join].join_by_key)
+				join_table_list.append(primary_table) 
+				join_by_columns.append(self[primary_table].join_by_key)
 
-		return join_table_names, join_table_keys
+			# Assign the secondary join table
+			else:
+
+				# Create the secondary lists to store the join data
+				secondary_join_table_list = [primary_table]
+				secondary_join_by_columns = []
+
+				# Loop the secondary tables
+				for secondary_table in filtered_join_dict[primary_table]:
+
+					# Confirm the table isnt the primary join table
+					if secondary_table != primary_join_table:
+
+						# Populate the secondary lists
+						secondary_join_table_list.append(secondary_table) 
+						secondary_join_by_columns.append(self[secondary_table].join_by_key)
+
+				# Confirm the secondary tables are required
+				if secondary_join_by_columns:
+
+					# Populate the primary lists
+					join_table_list.append({primary_table:secondary_join_table_list}) 
+					join_by_columns.append({self[primary_table].join_by_key:secondary_join_by_columns})
+
+				else:
+
+					# Populate the primary lists
+					join_table_list.append(primary_table) 
+					join_by_columns.append(self[primary_table].join_by_key)
+
+		return join_table_list, join_by_columns
 
 	def returnColumnPath (self, column):
 
@@ -110,8 +281,8 @@ class ConfigFile (list):
 			# Check if the table has an ID column assigned
 			if column in db_table:
 
-				# Return the species key
-				return '%s.%s' % (str(db_table), column)
+				# Return the path
+				return db_table[column].path
 
 	def returnColumnPathDict (self, column_dict):
 
@@ -120,6 +291,12 @@ class ConfigFile (list):
 
 		# Loop the keys of the dict
 		for column_key, column_data in column_dict.items():
+
+			# Check if the cuurent column is within the database
+			if not self.hasColumn(column_key):
+
+				# Print the error message
+				raise Exception('Column (%s) not found' % column_key)
 
 			# Assign the updated dict with the updated key
 			updated_dict[self.returnColumnPath(column_key)] = column_data
@@ -150,11 +327,17 @@ class ConfigFile (list):
 		# Create a list to hold the tables
 		tables = []
 
-		# Loop the tables in the config data
-		for db_table in self:
+		# Loop the passed columns
+		for column in columns:
 
-			# Loop the passed columns
-			for column in columns:
+			# Check if the cuurent column is within the database
+			if not self.hasColumn(column):
+
+				# Print the error message
+				raise Exception('Column (%s) not found' % column_key)
+
+			# Loop the tables in the config data
+			for db_table in self:
 
 				# Check if the table has the column
 				if column in db_table:
@@ -163,6 +346,9 @@ class ConfigFile (list):
 					tables.append(str(db_table))
 
 					break
+
+		# Remove duplicates
+		tables = list(set(tables))
 
 		return tables
 
@@ -231,6 +417,9 @@ class DBTable (list):
 			# Assign the name of the column
 			db_column.name = column
 
+			# Assign the path of the column
+			db_column.path = '%s.%s' % (self.name, column)
+
 			# Assign the column from the yaml
 			db_column.assignFromYaml(column_yaml)
 
@@ -275,7 +464,7 @@ class DBTable (list):
 			if keep_db_specific_columns or not column.db_specific:
 				
 				# Add the columns to the list
-				column_list.append('%s.%s' % (self.name, column))
+				column_list.append(column.path)
 
 		# Return the column list
 		return column_list
@@ -283,6 +472,7 @@ class DBTable (list):
 class DBColumn ():
 	def __init__ (self):
 		self.name = ''
+		self.path = ''
 		self.type = None
 		self.not_null = None
 		self.primary_key = None
@@ -346,7 +536,6 @@ class DBColumn ():
 
 				# Assing the db_specific value
 				self.join_by = True
-
 
 def orderedLoad (stream, Loader = yaml.Loader, object_pairs_hook = OrderedDict):
 	class OrderedLoader (Loader):
