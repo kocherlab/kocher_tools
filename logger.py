@@ -30,8 +30,7 @@ def startLogger (log_filename = 'out.log'):
 	# Update the exception hook
 	sys.excepthook = expHandler
 
-
-def logArgs(args, print_undefined = False):
+def logArgs (args, print_undefined = False):
 
 	# Loop the arguments
 	for arg in vars(args):

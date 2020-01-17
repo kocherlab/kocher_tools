@@ -1,12 +1,15 @@
 import os
 import sys
 import argparse
+import logging
+
 from collections import defaultdict
 
 from output import entriesToScreen, entriesToFile
 from assignment import assignSelectionDict, assignTables
 from database import retrieveValues
-from config_file import readConfig 
+from config_file import readConfig
+from logger import startLogger, logArgs
 
 def retrieveSampleParser ():
 	'''
@@ -86,7 +89,9 @@ def retrieveSampleParser ():
 	retrieve_parser.add_argument('--out-format', metavar = metavarList(out_formats), help = 'Desired output format', type = str, choices = out_formats, default = out_default)
 	retrieve_parser.add_argument('--out-prefix', help = 'The output prefix (i.e. filename without file extension)', type = str,  default = 'out')
 	retrieve_parser.add_argument('--out-columns', help = 'Columns to return in the output', type = str, nargs = '+', action = selectionList())
+	retrieve_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'retrieve_samples.log')
 	retrieve_parser.add_argument('--stdout', help = 'Direct output to stdout', action = 'store_true')
+	retrieve_parser.add_argument('--overwrite', help = 'Overwrite previous output', action = 'store_true')
 
 	# Database arguments
 	retrieve_parser.add_argument('--sqlite-db', help = 'Defines the sqlite database filename', type = str, default = 'kocherDB.sqlite', action = confirmFile())
@@ -97,8 +102,36 @@ def retrieveSampleParser ():
 # Assign arguments
 retrieve_args = retrieveSampleParser()
 
+# Check that the output mode isn't stdout
+if not retrieve_args.stdout:
+
+	# Assign the expected out filename
+	expected_out_filename = retrieve_args.out_prefix  + '.' + retrieve_args.out_format
+
+	# Check if previous output should be overwritten
+	if retrieve_args.overwrite:
+
+		# Remove the previous output, if it exists
+		if os.path.exists(expected_out_filename):
+			os.remove(expected_out_filename)
+
+	# Check if previous output shouldn't be overwritten
+	else:
+
+		# Check if previous output exists
+		if os.path.exists(expected_out_filename):
+
+			# Raise an exception
+			raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
+
 # Read in the database config file
 db_config_data = readConfig(retrieve_args.yaml)
+
+# Start a log file for this run
+startLogger(log_filename = retrieve_args.out_log)
+
+# Log the arguments used
+logArgs(retrieve_args)
 
 # List to hold columns to be printed
 columns_assignment_list = []
@@ -123,6 +156,9 @@ if retrieve_args.table:
 
 		# Get the columns from the table and add to the column assignment list
 		columns_assignment_list.extend(db_config_data[table_str].retieveColumnPaths(keep_db_specific_columns = True))
+
+		# Update log
+		logging.info('Successfully assigned table(s) from command-line')
 
 # Check if the user specified a column
 elif retrieve_args.column:
@@ -149,6 +185,8 @@ elif retrieve_args.column:
 				table_assignment_list.append(str(db_table))
 
 				break
+	# Update log
+	logging.info('Successfully assigned column(s) from command-line')
 
 # Assign a defaultdict with all the selection information
 selection_dict = assignSelectionDict(db_config_data, **vars(retrieve_args))
@@ -173,12 +211,6 @@ else:
 
 	# Retrieve the selected entries from the database 
 	retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
-
-# Check if anything was returned
-if len(retrieved_entries) == 0:
-
-	# Print error message
-	raise Exception('No output produced. Please check your input')
 
 # Set the deafult delimiter
 delimiter = '\t'

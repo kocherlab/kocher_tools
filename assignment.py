@@ -1,3 +1,5 @@
+import logging
+
 from collections import defaultdict
 
 def assignTables (config_data, include = None, exclude = None, 
@@ -69,8 +71,15 @@ def assignTables (config_data, include = None, exclude = None,
 		# Update the column list
 		columns.append('From Nest?')
 
+
+	# Assign the tables
+	assigned_tables = config_data.returnTables(columns)
+
+	# Update log
+	logging.info('Successfully assigned selection statement table(s)')
+
 	# Return the tables
-	return config_data.returnTables(columns)
+	return assigned_tables
 	
 def assignSelectionDict (config_data, include = None, exclude = None, 
 									  include_ID = None, exclude_ID = None, 
@@ -140,5 +149,8 @@ def assignSelectionDict (config_data, include = None, exclude = None,
 
 		# Update the selection dict
 		selection_dict['NOT IN'][config_data.returnColumnPath('From Nest?')] = 'Yes'
+
+	# Update log
+	logging.info('Successfully assigned selection statement dict(s)')
 
 	return selection_dict

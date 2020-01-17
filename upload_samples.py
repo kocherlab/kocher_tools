@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import copy
+import logging
 
 from collections import defaultdict
 
@@ -143,6 +144,9 @@ def upload_sample_parser ():
 	upload_parser.add_argument('--update-with-file', help = 'Update database using with the entries within a table', action='store_true')
 	upload_parser.add_argument('--update', metavar = ('column', 'value'), help = 'Column/value pair to update', type = str, nargs = 2, action = updateDict())
 
+	# Output arguments
+	upload_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'retrieve_samples.log')
+
 	# Database arguments
 	upload_parser.add_argument('--sqlite-db', help = 'SQLite database filename', type = str, default = 'kocherDB.sqlite', action = confirmFile())
 	upload_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, default = 'kocherDB.yml', action = confirmFile())
@@ -171,7 +175,11 @@ upload_args = upload_sample_parser()
 # Read in the database config file
 db_config_data = readConfig(upload_args.yaml)
 
-startLogger()
+# Start a log file for this run
+startLogger(log_filename = upload_args.out_log)
+
+# Log the arguments used
+logArgs(upload_args)
 
 # Check if a collection app file has been specified
 if upload_args.app_files:
@@ -233,12 +241,12 @@ if upload_args.barcode_files:
 		if upload_args.update_with_file:
 
 			# Update the database with the file
-			updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Unique ID')
+			updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
 
 		else:
 
 			# Add file to the database
-			addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Unique ID')
+			addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
 
 # Check if a location file has been specified
 if upload_args.loc_files:

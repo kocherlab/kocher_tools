@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import logging
 
 from common import readCommonFile
 from database import insertValues, updateValues, retrieveValues
@@ -10,10 +11,16 @@ def convertLoc (database, table, loc_column, loc_value, cvt_column):
 	# Retrieve the desired information from the database
 	location_data = retrieveValues(database, [table], {loc_column:[loc_value]}, {}, [cvt_column])
 
+	# Update log
+	logging.info('Location conversion successful')
+
 	# Return the data
 	return location_data[0].keys()[0], location_data[0][0]
 
 def addLocFileToDatabase (database, table, loc_file):
+
+	# Update log
+	logging.info('Uploading location file (%s) to database' % loc_file)
 
 	# Loop the loc file by line
 	for header, loc_data in readCommonFile(loc_file):
@@ -21,7 +28,13 @@ def addLocFileToDatabase (database, table, loc_file):
 		# Insert the loc into the database
 		insertValues(database, table, header, loc_data)
 
+	# Update log
+	logging.info('Upload successful')
+
 def updateLocFileToDatabase (database, table, select_key, loc_file):
+
+	# Update log
+	logging.info('Uploading location file (%s) to database' % loc_file)
 
 	# Loop the loc file by line
 	for header, sample_data in readCommonFile(loc_file):
@@ -53,6 +66,9 @@ def updateLocFileToDatabase (database, table, select_key, loc_file):
 
 		# Update the values for the selected value
 		updateValues(database, table, loc_select_dict, loc_set_dict)
+
+	# Update log
+	logging.info('Upload successful')
 
 def readAppLocations (collection_filename):
 
@@ -122,13 +138,22 @@ def readAppLocations (collection_filename):
 
 def addAppLocationsToDatabase (database, table, loc_file):
 
+	# Update log
+	logging.info('Uploading locations from app file (%s) to database' % app_file)
+
 	# Loop the loc file by line
 	for header, loc_data in readAppLocations(loc_file):
 
 		# Insert the loc into the database
 		insertValues(database, table, header, loc_data)
 
+	# Update log
+	logging.info('Upload successful')
+
 def updateAppLocationsToDatabase (database, table, select_key, loc_file):
+
+	# Update log
+	logging.info('Uploading locations from app file (%s) to database' % app_file)
 
 	# Loop the loc file by line
 	for header, loc_data in readAppLocations(loc_file):
@@ -160,5 +185,8 @@ def updateAppLocationsToDatabase (database, table, select_key, loc_file):
 
 		# Update the values for the selected value
 		updateValues(database, table, loc_select_dict, loc_set_dict)
+
+	# Update log
+	logging.info('Upload successful')
 
 #convertLoc ('kocherDB.sqlite', 'Locations', 'Location', 'Venus', 'Site Code')

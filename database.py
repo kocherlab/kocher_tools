@@ -5,6 +5,7 @@ import datetime
 import pytz
 import copy
 import itertools
+import logging
 
 def currentTime(timezone = 'US/Eastern'):
 
@@ -158,6 +159,9 @@ def returnSelectionDict (selection_dict):
 				# Add the substring to the string
 				selection_str += selection_sub_str
 
+	# Update log
+	logging.info('Created selection statement for database call')
+
 	return selection_str
 
 def returnSelectionValues (selection_dict):
@@ -185,6 +189,9 @@ def returnSelectionValues (selection_dict):
 
 	# Quote the values
 	expression_statement_values = quoteFields(expression_statement_values)
+
+	# Update log
+	logging.info('Successfully created value list for selection statement')
 
 	# Return the list
 	return expression_statement_values
@@ -222,6 +229,9 @@ def innerJoinTables (table_list, join_column_list):
 
 			# Add the inner join string
 			inner_join_str += ' INNER JOIN {0} ON {1}.{2} = {0}.{2}'.format(table_name, table_list[0], quoteField(table_join_column))
+
+	# Update log
+	logging.info('Created join tables statement for database call')
 
 	# Return the inner join string
 	return inner_join_str
@@ -297,6 +307,9 @@ def createTable (database, table, column_assignment_str):
 		# Close the connection
 		cursor.close()
 
+		# Update log
+		logging.info('Successfully created table (%s) in database' % table)
+
 	except sqlite3.Error as error:
 		raise Exception(error)
 
@@ -336,6 +349,9 @@ def insertValues (database, table, column_list, value_list):
 
 		# Close the connection
 		cursor.close()
+
+		# Update log
+		logging.info('Successfully inserted data into the database')
 
 	except sqlite3.Error as sql_error:
 
@@ -407,6 +423,9 @@ def updateValues (database, table, selection_dict, update_dict, update_table_col
 		# Close the connection
 		cursor.close()
 
+		# Update log
+		logging.info('Successfully updated the database')
+
 	except sqlite3.Error as error:
 		raise Exception(error)
 
@@ -477,6 +496,15 @@ def retrieveValues (database, tables, selection_dict, column_list, join_table_co
 
 		# Close the connection
 		cursor.close()
+
+		# Check if anything was returned
+		if len(selection_results) == 0:
+
+			# Print error message
+			raise Exception('No output produced. Please check your input')
+
+		# Update log
+		logging.info('Successfully retrieved results from database')
 
 		# Return the retrieved data as a dict
 		return selection_results

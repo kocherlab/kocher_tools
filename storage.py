@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import logging
 
 from common import readCommonFile
 from database import insertValues, updateValues, retrieveValues
@@ -18,9 +19,15 @@ def convertPlateWell (database, table, key, plate, well):
 	if not key_data:
 		raise Exception('Unable to find %s-%s' % (plate, well))
 
+	# Update log
+	logging.info('Plate/Well conversion successful')
+
 	return key_data[0][0]
 
 def addLocFileToDatabase (database, table, storage_file):
+
+	# Update log
+	logging.info('Uploading storage file (%s) to database' % storage_file)
 
 	# Loop the storage file by line
 	for header, storage_data in readCommonFile(storage_file):
@@ -28,7 +35,13 @@ def addLocFileToDatabase (database, table, storage_file):
 		# Insert the loc into the database
 		insertValues(database, table, header, storage_data)
 
+	# Update log
+	logging.info('Upload successful')
+
 def updateLocFileToDatabase (database, table, select_key, storage_file):
+
+	# Update log
+	logging.info('Uploading storage file (%s) to database' % storage_file)
 
 	# Loop the storage file by line
 	for header, storage_data in readCommonFile(storage_file):
@@ -60,3 +73,6 @@ def updateLocFileToDatabase (database, table, select_key, storage_file):
 
 		# Update the values for the selected value
 		updateValues(database, table, storage_select_dict, storage_set_dict)
+
+	# Update log
+	logging.info('Upload successful')

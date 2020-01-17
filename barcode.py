@@ -3,6 +3,7 @@ import sys
 import csv
 import json
 import sqlite3
+import logging
 
 from Bio import SeqIO
 
@@ -67,6 +68,9 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 
 				# Assign the unique ID using the well and plate
 				id_assignments[failed_sample_seqID] = convertPlateWell(database, table, id_key, failed_sample_plate, failed_sample_well)
+
+	# Update log
+	logging.info('ID assignment using Plate/Well successful')
 
 	return id_assignments
 
@@ -201,6 +205,18 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 
 def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
 
+	# Create string for file output
+	file_str = '%s, %s' % (blast_filename, sequence_filename)
+
+	# Check if a failed file was specified
+	if failed_filename:
+
+		# Update the string
+		file_str += ', %s' % failed_filename
+
+	# Update log
+	logging.info('Uploading barcode files (%s) to database' % file_str)
+
 	# Assign the Unique IDs for each sample using the storage table
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
 
@@ -210,7 +226,22 @@ def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, f
 		# Insert the sequence and speices into the database
 		insertValues(database, table, header, seq_data)
 
+	# Update log
+	logging.info('Upload successful')
+
 def updateSeqFilesToDatabase (database, table, select_key, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
+
+	# Create string for file output
+	file_str = '%s, %s' % (blast_filename, sequence_filename)
+
+	# Check if a failed file was specified
+	if failed_filename:
+
+		# Update the string
+		file_str += ', %s' % failed_filename
+
+	# Update log
+	logging.info('Uploading barcode files (%s) to database' % file_str)
 
 	# Assign the Unique IDs for each sample using the storage table
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
@@ -245,3 +276,6 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 
 		# Update the values for the selected value
 		updateValues(database, table, seq_select_dict, seq_set_dict)
+
+	# Update log
+	logging.info('Upload successful')

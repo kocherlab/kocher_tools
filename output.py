@@ -1,6 +1,7 @@
 import os
 import sys
 import csv
+import logging
 
 from collections import OrderedDict 
 
@@ -43,6 +44,9 @@ def entriesToScreen (db_entries, sep):
 		# Print the values to stdout, seperated by sep
 		print(sep.join(db_entry_dict.values()))
 
+	# Update log
+	logging.info('Retrieved results sent to stdout')
+
 def entriesToFile (db_entries, output_prefix, output_format, sep):
 
 	# Unquote the DB entries
@@ -50,6 +54,9 @@ def entriesToFile (db_entries, output_prefix, output_format, sep):
 
 	# Get the header from the first entry
 	header = unquoted_db_entries[0].keys()
+
+	# Assign the output filename
+	out_filename = output_prefix + '.' + output_format
 
 	# Open the file
 	with open(output_prefix + '.' + output_format, 'w') as entries_file:
@@ -65,3 +72,6 @@ def entriesToFile (db_entries, output_prefix, output_format, sep):
 
 			# Write the database entry to the file
 			entries_writer.writerow(db_entry_dict)
+
+	# Update log
+	logging.info('Retrieved results written to file (%s)' % out_filename)

@@ -1,4 +1,6 @@
 import yaml
+import logging
+
 import networkx as nx
 
 from collections import OrderedDict, defaultdict
@@ -67,6 +69,17 @@ class ConfigFile (list):
 
 				# Add an edge between the two tables
 				self.table_graph.add_edge(str(db_table_source), str(db_table_dest))
+
+	def returnColumnPath (self, column):
+
+		# Loop the tables in the config data
+		for db_table in self:
+
+			# Check if the table has an ID column assigned
+			if column in db_table:
+
+				# Return the path
+				return db_table[column].path
 
 	def returnJoinLists (self, tables_to_join):
 
@@ -271,18 +284,10 @@ class ConfigFile (list):
 					join_table_list.append(primary_table) 
 					join_by_columns.append(self[primary_table].join_by_key)
 
+		# Update log
+		logging.info('Created table list and join-by column list from config file')
+
 		return join_table_list, join_by_columns
-
-	def returnColumnPath (self, column):
-
-		# Loop the tables in the config data
-		for db_table in self:
-
-			# Check if the table has an ID column assigned
-			if column in db_table:
-
-				# Return the path
-				return db_table[column].path
 
 	def returnColumnPathDict (self, column_dict):
 
@@ -300,6 +305,9 @@ class ConfigFile (list):
 
 			# Assign the updated dict with the updated key
 			updated_dict[self.returnColumnPath(column_key)] = column_data
+
+		# Update log
+		logging.info('Created column-path assignment dict')
 
 		return updated_dict
 
@@ -319,6 +327,9 @@ class ConfigFile (list):
 
 				# Assign the updated dict with the updated key
 				updated_dict[column_key] = column_data
+
+		# Update log
+		logging.info('Created column assignment dict')
 
 		return updated_dict
 
@@ -349,6 +360,9 @@ class ConfigFile (list):
 
 		# Remove duplicates
 		tables = list(set(tables))
+
+		# Update log
+		logging.info('Created table list using column list')
 
 		return tables
 
@@ -562,3 +576,6 @@ def readConfig (filename):
 
 		# Load the YAML config file in order
 		return config_file
+
+	# Update log
+	logging.info('Config file (%s) loaded' % filename)

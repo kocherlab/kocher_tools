@@ -2,6 +2,8 @@ import os
 import sys
 import csv
 import copy
+import logging
+
 from database import insertValues, updateValues
 
 def readAppCollection (collection_filename, add_filename_col = True, filename_header = 'Collection File', remove_GPS = True):
@@ -73,13 +75,22 @@ def readAppCollection (collection_filename, add_filename_col = True, filename_he
 
 def addAppCollectionToDatabase (database, table, app_file):
 
+	# Update log
+	logging.info('Uploading collections from app file (%s) to database' % app_file)
+
 	# Loop the collection app file by line
 	for header, sample_data in readAppCollection(app_file):
 
 		# Insert the sample into the database
 		insertValues(database, table, header, sample_data)
 
+	# Update log
+	logging.info('Upload successful')
+
 def updateAppCollectionToDatabase (database, table, select_key, app_file):
+
+	# Update log
+	logging.info('Uploading collections from app file (%s) to database' % app_file)
 
 	# Loop the collection app file by line
 	for header, sample_data in readAppCollection(app_file):
@@ -111,3 +122,6 @@ def updateAppCollectionToDatabase (database, table, select_key, app_file):
 
 		# Update the values for the selected value
 		updateValues(database, table, app_select_dict, app_set_dict)
+
+	# Update log
+	logging.info('Upload successful')
