@@ -47,7 +47,7 @@ def entriesToScreen (db_entries, sep):
 	# Update log
 	logging.info('Retrieved results sent to stdout')
 
-def entriesToFile (db_entries, output_prefix, output_format, sep):
+def entriesToFile (db_entries, out_filename, sep):
 
 	# Unquote the DB entries
 	unquoted_db_entries = unquoteFields(db_entries)
@@ -55,11 +55,8 @@ def entriesToFile (db_entries, output_prefix, output_format, sep):
 	# Get the header from the first entry
 	header = unquoted_db_entries[0].keys()
 
-	# Assign the output filename
-	out_filename = output_prefix + '.' + output_format
-
 	# Open the file
-	with open(output_prefix + '.' + output_format, 'w') as entries_file:
+	with open(out_filename, 'w') as entries_file:
 
 		# Setup the csv writer
 		entries_writer = csv.DictWriter(entries_file, fieldnames = header, delimiter = sep)

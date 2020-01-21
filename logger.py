@@ -1,10 +1,17 @@
 import logging
 import sys
 
-def startLogger (log_filename = 'out.log'):
+def startLogger (log_filename = None):
 
-	# Config the log file
-	logging.basicConfig(filename = log_filename, filemode = 'w', level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
+	if log_filename:
+
+		# Config the log file
+		logging.basicConfig(filename = log_filename, filemode = 'w', level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
+
+	else:
+
+		# Config the log file
+		logging.basicConfig(level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s', stream = sys.stdout)
 
 	# Start logging to stdout
 	stdout_log = logging.StreamHandler()

@@ -88,9 +88,12 @@ def retrieveSampleParser ():
 	out_default = 'tsv'
 	retrieve_parser.add_argument('--out-format', metavar = metavarList(out_formats), help = 'Desired output format', type = str, choices = out_formats, default = out_default)
 	retrieve_parser.add_argument('--out-prefix', help = 'The output prefix (i.e. filename without file extension)', type = str,  default = 'out')
+	retrieve_parser.add_argument('--out', help = 'Desired output name. Overrides --out-prefix', type = str)
 	retrieve_parser.add_argument('--out-columns', help = 'Columns to return in the output', type = str, nargs = '+', action = selectionList())
 	retrieve_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'retrieve_samples.log')
-	retrieve_parser.add_argument('--stdout', help = 'Direct output to stdout', action = 'store_true')
+	retrieve_stdout = retrieve_parser.add_mutually_exclusive_group()
+	retrieve_stdout.add_argument('--stdout', help = 'Direct output to stdout', action = 'store_true')
+	retrieve_stdout.add_argument('--log-stdout', help = 'Direct logging to stdout', action = 'store_true')
 	retrieve_parser.add_argument('--overwrite', help = 'Overwrite previous output', action = 'store_true')
 
 	# Database arguments
@@ -102,24 +105,36 @@ def retrieveSampleParser ():
 # Assign arguments
 retrieve_args = retrieveSampleParser()
 
+# Create string to hold the output filename
+out_filename = ''
+
+# Check if an output filename was specified
+if retrieve_args.out:
+
+	# Assign the out filename
+	out_filename = retrieve_args.out
+
+# Assign the filename with --out-prefix otherwise
+else:
+
+	# Assign the out filename
+	out_filename = retrieve_args.out_prefix  + '.' + retrieve_args.out_format
+
 # Check that the output mode isn't stdout
 if not retrieve_args.stdout:
-
-	# Assign the expected out filename
-	expected_out_filename = retrieve_args.out_prefix  + '.' + retrieve_args.out_format
 
 	# Check if previous output should be overwritten
 	if retrieve_args.overwrite:
 
 		# Remove the previous output, if it exists
-		if os.path.exists(expected_out_filename):
-			os.remove(expected_out_filename)
+		if os.path.exists(out_filename):
+			os.remove(out_filename)
 
 	# Check if previous output shouldn't be overwritten
 	else:
 
 		# Check if previous output exists
-		if os.path.exists(expected_out_filename):
+		if os.path.exists(out_filename):
 
 			# Raise an exception
 			raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
@@ -127,8 +142,16 @@ if not retrieve_args.stdout:
 # Read in the database config file
 db_config_data = readConfig(retrieve_args.yaml)
 
-# Start a log file for this run
-startLogger(log_filename = retrieve_args.out_log)
+# Check if log should be sent to stdout
+if retrieve_args.log_stdout:
+
+	# Start logging to stdout for this run
+	startLogger()
+
+else:
+
+	# Start a log file for this run
+	startLogger(log_filename = retrieve_args.out_log)
 
 # Log the arguments used
 logArgs(retrieve_args)
@@ -230,4 +253,4 @@ if retrieve_args.stdout:
 else:
 
 	# Write retrieved entries to a file
-	entriesToFile(retrieved_entries, retrieve_args.out_prefix, retrieve_args.out_format, delimiter)
+	entriesToFile(retrieved_entries, out_filename, delimiter)
