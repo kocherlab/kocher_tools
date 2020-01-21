@@ -6,13 +6,13 @@ import logging
 
 from collections import defaultdict
 
-from collection import addAppCollectionToDatabase, updateAppCollectionToDatabase
-from location import addLocFileToDatabase, updateLocFileToDatabase, addAppLocationsToDatabase, updateAppLocationsToDatabase
-from barcode import addSeqFilesToDatabase, updateSeqFilesToDatabase
-from assignment import assignSelectionDict, assignTables
-from database import updateValues
-from config_file import readConfig
-from logger import startLogger
+from kocher_tools.collection import addAppCollectionToDatabase, updateAppCollectionToDatabase
+from kocher_tools.location import addLocFileToDatabase, updateLocFileToDatabase, addAppLocationsToDatabase, updateAppLocationsToDatabase
+from kocher_tools.barcode import addSeqFilesToDatabase, updateSeqFilesToDatabase
+from kocher_tools.assignment import assignSelectionDict, assignTables
+from kocher_tools.database import updateValues
+from kocher_tools.config_file import readConfig
+from kocher_tools.logger import startLogger
 
 def upload_sample_parser ():
 	'''

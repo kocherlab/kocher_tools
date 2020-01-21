@@ -3,9 +3,9 @@ import sys
 import argparse
 import logging
 
-from logger import startLogger, logArgs
-from config_file import readConfig
-from database import createTable
+from kocher_tools.logger import startLogger, logArgs
+from kocher_tools.config_file import readConfig
+from kocher_tools.database import createTable
 
 # Define args
 db_parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)

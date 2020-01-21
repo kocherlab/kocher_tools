@@ -5,11 +5,11 @@ import logging
 
 from collections import defaultdict
 
-from output import entriesToScreen, entriesToFile
-from assignment import assignSelectionDict, assignTables
-from database import retrieveValues
-from config_file import readConfig
-from logger import startLogger, logArgs
+from kocher_tools.output import entriesToScreen, entriesToFile
+from kocher_tools.assignment import assignSelectionDict, assignTables
+from kocher_tools.database import retrieveValues
+from kocher_tools.config_file import readConfig
+from kocher_tools.logger import startLogger, logArgs
 
 def retrieveSampleParser ():
 	'''

@@ -3,7 +3,7 @@ import sys
 import subprocess
 import logging
 
-from misc import confirmExecutable
+from kocher_tools.misc import confirmExecutable
 
 def checkBlastForErrors (blast_stderr):
 

@@ -4,7 +4,7 @@ import logging
 import subprocess
 import signal
 
-from misc import confirmExecutable
+from kocher_tools.misc import confirmExecutable
 
 def assignOutput (out_path, discard_empty_output, barcode_type):
 

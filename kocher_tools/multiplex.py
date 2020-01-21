@@ -7,10 +7,9 @@ import gzip
 from collections import OrderedDict
 from Bio import SeqIO
 
-from fastq_multx import i5BarcodeJob, i7BarcodeJob
-from vsearch import *
-
-from compress import gzip_compress
+from kocher_tools.fastq_multx import i5BarcodeJob, i7BarcodeJob
+from kocher_tools.vsearch import *
+from kocher_tools.compress import gzip_compress
 
 class Multiplex (list):
 	def __init__ (self, *arg, **kw):

@@ -7,8 +7,8 @@ import logging
 
 from Bio import SeqIO
 
-from database import retrieveValues, insertValues, updateValues
-from storage import convertPlateWell
+from kocher_tools.database import retrieveValues, insertValues, updateValues
+from kocher_tools.storage import convertPlateWell
 
 def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 

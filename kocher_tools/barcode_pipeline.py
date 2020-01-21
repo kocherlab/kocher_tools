@@ -5,9 +5,9 @@ import shutil
 import logging
 import multiprocessing
 
-from multiplex import Multiplex
-from blast import blastTopHit
-from logger import startLogger
+from kocher_tools.multiplex import Multiplex
+from kocher_tools.blast import blastTopHit
+from kocher_tools.logger import startLogger
 
 def barcodePipelineParser ():
 	'''

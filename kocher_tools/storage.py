@@ -3,8 +3,8 @@ import sys
 import csv
 import logging
 
-from common import readCommonFile
-from database import insertValues, updateValues, retrieveValues
+from kocher_tools.common import readCommonFile
+from kocher_tools.database import insertValues, updateValues, retrieveValues
 
 def convertPlateWell (database, table, key, plate, well):
 

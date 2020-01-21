@@ -4,7 +4,7 @@ import csv
 import copy
 import logging
 
-from database import insertValues, updateValues
+from kocher_tools.database import insertValues, updateValues
 
 def readAppCollection (collection_filename, add_filename_col = True, filename_header = 'Collection File', remove_GPS = True):
 

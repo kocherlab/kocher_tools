@@ -3,7 +3,7 @@ import sys
 import logging
 import subprocess
 
-from misc import confirmExecutable
+from kocher_tools.misc import confirmExecutable
 
 def checkVsearchForErrors (vsearch_stderr):
 

@@ -8,7 +8,7 @@ import json
 import pandas as pd
 from collections import defaultdict
 
-from logger import startLogger
+from kocher_tools.logger import startLogger
 
 def barcodeFilterParser ():
 	'''
