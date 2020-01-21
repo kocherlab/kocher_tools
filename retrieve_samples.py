@@ -165,8 +165,8 @@ table_assignment_list = []
 # Check if the user specified a table
 if retrieve_args.table:
 
-	# Re-assign the tables
-	table_assignment_list = retrieve_args.table
+	# Assign the tables
+	table_assignment_list.extend(retrieve_args.table)
 
 	# Loop the list of specified tables
 	for table_str in table_assignment_list:
@@ -185,29 +185,16 @@ if retrieve_args.table:
 
 # Check if the user specified a column
 elif retrieve_args.column:
+	
+	# Assign the tables
+	table_assignment_list.extend(db_config_data.returnTables(retrieve_args.column))
 
 	# Loop the list of specified column
 	for column_str in retrieve_args.column:
 
-		# Check if the column exists within the database
-		if not db_config_data.hasColumn(column_str):
+		# Assign the column path
+		columns_assignment_list.append(db_config_data.returnColumnPath(column_str))
 
-			# Print an error message
-			raise Exception('Column (%s) not found' % column_str)
-
-		# Loop the tables within the database
-		for db_table in db_config_data:
-
-			# Check if the current table has the column
-			if column_str in db_table:
-
-				# Assign the column path
-				columns_assignment_list.append(db_table[column_str].path)
-
-				# Assign the table
-				table_assignment_list.append(str(db_table))
-
-				break
 	# Update log
 	logging.info('Successfully assigned column(s) from command-line')
 

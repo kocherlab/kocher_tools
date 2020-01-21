@@ -131,7 +131,7 @@ def returnSelectionDict (selection_dict):
 
 			# Check if the selection operator is either IN or NOT IN
 			if 'IN' in selection_operator:
-		
+					
 				# Add the quoted column, the selection operator, and the question marks to the string
 				selection_str += '%s %s (%s)' % (quoteField(column), selection_operator, valueMarksStr(value_list))
 

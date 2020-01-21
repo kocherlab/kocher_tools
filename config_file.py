@@ -90,7 +90,7 @@ class ConfigFile (list):
 			# Return the column path
 			return tables_w_column[0][column].path
 
-		else:
+		elif len(tables_w_column) > 1:
 
 			# Loop the tables
 			for table_w_column in tables_w_column:
@@ -100,6 +100,10 @@ class ConfigFile (list):
 
 					# Return the column path
 					return table_w_column[column].path
+		else:
+
+			# Print the error message
+			raise Exception('Column (%s) not found' % column)
 
 	def returnJoinLists (self, tables_to_join):
 
@@ -365,7 +369,7 @@ class ConfigFile (list):
 			if not self.hasColumn(column):
 
 				# Print the error message
-				raise Exception('Column (%s) not found' % column_key)
+				raise Exception('Column (%s) not found' % column)
 
 			# Create list to store the table with the column
 			tables_w_column = []
