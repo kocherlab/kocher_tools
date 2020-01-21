@@ -72,14 +72,34 @@ class ConfigFile (list):
 
 	def returnColumnPath (self, column):
 
+		# Create list to store the table with the column
+		tables_w_column = []
+
 		# Loop the tables in the config data
 		for db_table in self:
 
 			# Check if the table has an ID column assigned
 			if column in db_table:
 
-				# Return the path
-				return db_table[column].path
+				# Append the table
+				tables_w_column.append(db_table)
+
+		# Check if the column is within more than one table
+		if len(tables_w_column) == 1:
+
+			# Return the column path
+			return tables_w_column[0][column].path
+
+		else:
+
+			# Loop the tables
+			for table_w_column in tables_w_column:
+
+				# Check if the current table should be used to assign the column
+				if table_w_column[column].assign_key == True:
+
+					# Return the column path
+					return table_w_column[column].path
 
 	def returnJoinLists (self, tables_to_join):
 
@@ -347,6 +367,9 @@ class ConfigFile (list):
 				# Print the error message
 				raise Exception('Column (%s) not found' % column_key)
 
+			# Create list to store the table with the column
+			tables_w_column = []
+
 			# Loop the tables in the config data
 			for db_table in self:
 
@@ -354,9 +377,25 @@ class ConfigFile (list):
 				if column in db_table:
 
 					# Append the table
-					tables.append(str(db_table))
+					tables_w_column.append(db_table)
 
-					break
+			# Check if the column is within more than one table
+			if len(tables_w_column) == 1:
+
+				# Append the table
+				tables.append(str(tables_w_column[0]))
+
+			else:
+
+				# Loop the tables
+				for table_w_column in tables_w_column:
+
+					# Check if the current table should be used to assign the column
+					if table_w_column[column].assign_key == True:
+
+						tables.append(str(table_w_column))
+
+						break
 
 		# Remove duplicates
 		tables = list(set(tables))
@@ -492,6 +531,7 @@ class DBColumn ():
 		self.primary_key = None
 		self.db_specific = False
 		self.join_by = False
+		self.assign_key = None
 
 	def __str__ (self):
 		return self.name
@@ -542,13 +582,19 @@ class DBColumn ():
 			# Check if the column is db specific
 			if column_arg == 'db_specific':
 
-				# Assing the db_specific value
+				# Assign the db_specific value
 				self.db_specific = True
+
+			# Check if the column is used to assign a key in multiple tables
+			if column_arg == 'assign_key':
+
+				# Assign the id key value
+				self.assign_key = True
 
 			# Check if the column is db specific
 			if column_arg == 'join_by':
 
-				# Assing the db_specific value
+				# Assign the db_specific value
 				self.join_by = True
 
 def orderedLoad (stream, Loader = yaml.Loader, object_pairs_hook = OrderedDict):

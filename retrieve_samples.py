@@ -220,6 +220,9 @@ selection_tables = assignTables(db_config_data, **vars(retrieve_args))
 # Assign the tables for retrieval
 tables = table_assignment_list + selection_tables
 
+# Remove potential duplicates
+tables = list(set(tables))
+
 # Check if only a single table is required
 if len(tables) == 1:
 
