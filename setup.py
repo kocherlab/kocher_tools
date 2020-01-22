@@ -5,11 +5,13 @@ from setuptools import setup
 with io.open("README.md", "rt", encoding="utf8") as f:
     readme = f.read()
 
+# List of required non-standard python libraries
 requirements = ['pyyaml',
                 'pandas',
                 'Biopython',
                 'networkx']
 
+# Executable scripts in the package
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
                 'kocher_tools/barcode_filter.py',
                 'kocher_tools/create_database.py',

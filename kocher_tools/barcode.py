@@ -74,7 +74,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 
 	return id_assignments
 
-def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignment_dict):
+def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignment_dict, id_key):
 
 	# Index the sequence file
 	sequence_index = SeqIO.index(sequence_filename, 'fasta')
@@ -124,8 +124,8 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 			# Convert the string into a blob
 			query_seq_blob = sqlite3.Binary(query_seq.encode())
 
-			# Assign the unique ID using the well and plate
-			unique_id = id_assignment_dict[query_seqID]
+			# Assign the ID key value using the well and plate
+			id_key_value = id_assignment_dict[query_seqID]
 
 			# Assign the subject information that needs formatting
 			subject = blast_line[subject_id_index]
@@ -133,10 +133,10 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 			subject_species = subject.split('|')[1].replace('_', ' ')
 
 			# Assign the header
-			header = ['Unique ID', 'Sequence ID', 'Species', 'Reads', 'BOLD Identifier', 'Percent Identity', 'Alignment Length', 'Sequence Length', 'Sequence', 'Status']
+			header = [id_key, 'Sequence ID', 'Species', 'Reads', 'BOLD Identifier', 'Percent Identity', 'Alignment Length', 'Sequence Length', 'Sequence', 'Status']
 
 			# Assign the row values
-			row = [unique_id, query_seqID, subject_species, query_abundance, subject_ident, blast_line[pct_ident_index], blast_line[aln_len_index], blast_line[query_len_index], query_seq_blob, 'Species Identified']
+			row = [id_key_value, query_seqID, subject_species, query_abundance, subject_ident, blast_line[pct_ident_index], blast_line[aln_len_index], blast_line[query_len_index], query_seq_blob, 'Species Identified']
 
 			# Return the header and row
 			yield header, row
@@ -167,14 +167,14 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 				# Convert the string into a blob
 				failed_sample_seq_blob = sqlite3.Binary(failed_sample_seq.encode())
 
-				# Assign the unique ID using the well and plate
-				unique_id = id_assignment_dict[failed_sample_seqID]
+				# Assign the ID key value using the well and plate
+				id_key_value = id_assignment_dict[failed_sample_seqID]
 
 				# Assign the header
-				header = ['Unique ID', 'Sequence ID', 'Reads', 'Sequence', 'Status']
+				header = [id_key, 'Sequence ID', 'Reads', 'Sequence', 'Status']
 
 				# Assign the row values
-				row = [unique_id, failed_sample_seqID, failed_sample_abundance, failed_sample_seq_blob, failed_sample_dict['Status']]
+				row = [id_key_value, failed_sample_seqID, failed_sample_abundance, failed_sample_seq_blob, failed_sample_dict['Status']]
 
 				# Check if the failed status is Ambiguous Hits
 				if failed_sample_dict['Status'] == 'Ambiguous Hits':
@@ -221,7 +221,7 @@ def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, f
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
 
 	# Loop the loc file by line
-	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict):
+	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict, storage_key):
 
 		# Insert the sequence and speices into the database
 		insertValues(database, table, header, seq_data)
@@ -247,7 +247,7 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
 
 	# Loop the seq file by line
-	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict):
+	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict, storage_key):
 
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
