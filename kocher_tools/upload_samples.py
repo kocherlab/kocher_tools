@@ -12,7 +12,7 @@ from kocher_tools.barcode import addSeqFilesToDatabase, updateSeqFilesToDatabase
 from kocher_tools.assignment import assignSelectionDict, assignTables
 from kocher_tools.database import updateValues
 from kocher_tools.config_file import readConfig
-from kocher_tools.logger import startLogger
+from kocher_tools.logger import startLogger, logArgs
 
 def upload_sample_parser ():
 	'''
@@ -148,8 +148,8 @@ def upload_sample_parser ():
 	upload_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'retrieve_samples.log')
 
 	# Database arguments
-	upload_parser.add_argument('--sqlite-db', help = 'SQLite database filename', type = str, default = 'kocherDB.sqlite', action = confirmFile())
-	upload_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, default = 'kocherDB.yml', action = confirmFile())
+	upload_parser.add_argument('--sqlite-db', help = 'SQLite database filename', type = str, required = True, action = confirmFile())
+	upload_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, required = True, action = confirmFile())
 
 
 	return upload_parser.parse_args()

@@ -97,8 +97,8 @@ def retrieveSampleParser ():
 	retrieve_parser.add_argument('--overwrite', help = 'Overwrite previous output', action = 'store_true')
 
 	# Database arguments
-	retrieve_parser.add_argument('--sqlite-db', help = 'Defines the sqlite database filename', type = str, default = 'kocherDB.sqlite', action = confirmFile())
-	retrieve_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, default = 'kocherDB.yml', action = confirmFile())
+	retrieve_parser.add_argument('--sqlite-db', help = 'Defines the sqlite database filename', type = str, required = True, action = confirmFile())
+	retrieve_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, required = True, action = confirmFile())
 
 	return retrieve_parser.parse_args()
 

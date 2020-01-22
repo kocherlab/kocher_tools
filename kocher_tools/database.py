@@ -286,7 +286,7 @@ def reportSqlError (sql_error, column_list = None, value_list = None):
 		raise sql_error
 
 def createTable (database, table, column_assignment_str):
-
+	
 	try:
 		
 		# Createt the table assignment string
@@ -314,6 +314,12 @@ def createTable (database, table, column_assignment_str):
 		raise Exception(error)
 
 def insertValues (database, table, column_list, value_list):
+
+	# Confirm the database exists
+	if not os.path.exists(database):
+
+		# Report the error
+		raise IOError('Database (%s) not found' % database)
 
 	try:
 
@@ -359,6 +365,12 @@ def insertValues (database, table, column_list, value_list):
 		reportSqlError(sql_error, column_list = column_list, value_list = value_list)
 
 def updateValues (database, table, selection_dict, update_dict, update_table_column = None, tables_to_join = None, join_table_columns = None):
+
+	# Confirm the database exists
+	if not os.path.exists(database):
+
+		# Report the error
+		raise IOError('Database (%s) not found' % database)
 
 	try:
 
@@ -430,6 +442,12 @@ def updateValues (database, table, selection_dict, update_dict, update_table_col
 		raise Exception(error)
 
 def retrieveValues (database, tables, selection_dict, column_list, join_table_columns = None):
+
+	# Confirm the database exists
+	if not os.path.exists(database):
+
+		# Report the error
+		raise IOError('Database (%s) not found' % database)
 
 	try:
 
