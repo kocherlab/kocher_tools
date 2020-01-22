@@ -34,5 +34,3 @@ setup(name=kocher_tools.__title__,
       install_requires=requirements,
       scripts=tool_scripts,
       python_requires=">=3.7")
-
-#packages=setuptools.find_packages() to automate package finding?
