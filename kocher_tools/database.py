@@ -29,25 +29,6 @@ def valueMarksStr (values):
 	# Return the question mark string
 	return ', '.join(['?'] * value_count)
 
-def returnSetExpression (set_dict):
-
-	# Create an empty string to hold the set expression
-	set_expression_str = ''
-
-	# Loop the set dict
-	for column in set_dict.keys():
-
-		# Check if the set expression is not empty
-		if set_expression_str:
-
-			# Add a comma
-			set_expression_str += ', '
-
-		set_expression_str += '%s = ?' % quoteField(column)
-
-	# Return the set expression
-	return set_expression_str
-
 def quoteStr (str_to_quote):
 
 	# Create list of characters that require quotes
@@ -79,7 +60,7 @@ def quoteField (field_str, split_by_dot = True):
 		joined_str = ''
 
 		# Split the string by a dot '.' symbol
-		for field_sub_str in field_str.split('.'):
+		for field_sub_str in field_str.split('.', 1):
 
 			# Check if the join string is empty
 			if joined_str:
@@ -111,6 +92,25 @@ def quoteFields (field_list, split_by_dot = True):
 
 	# Return the quoted list
 	return field_list
+
+def returnSetExpression (set_dict):
+
+	# Create an empty string to hold the set expression
+	set_expression_str = ''
+
+	# Loop the set dict
+	for column in set_dict.keys():
+
+		# Check if the set expression is not empty
+		if set_expression_str:
+
+			# Add a comma
+			set_expression_str += ', '
+
+		set_expression_str += '%s = ?' % quoteField(column)
+
+	# Return the set expression
+	return set_expression_str
 
 def returnSelectionDict (selection_dict):
 
@@ -153,8 +153,11 @@ def returnSelectionDict (selection_dict):
 					# Add the quoted column and the selection operator
 					selection_sub_str += '%s %s ?' % (quoteField(column), selection_operator)
 
-				# Enclose the LIKE statements
-				selection_sub_str = '(%s)' % selection_sub_str
+				# Check if the sub string should be within parentheses
+				if len(value_list) > 1:
+
+					# Enclose the LIKE statements
+					selection_sub_str = '(%s)' % selection_sub_str
 
 				# Add the substring to the string
 				selection_str += selection_sub_str
@@ -286,7 +289,7 @@ def reportSqlError (sql_error, column_list = None, value_list = None):
 		raise sql_error
 
 def createTable (database, table, column_assignment_str):
-	
+
 	try:
 		
 		# Createt the table assignment string
@@ -397,8 +400,6 @@ def updateValues (database, table, selection_dict, update_dict, update_table_col
 
 		# Check if the multiple tables were incorrectly assigned
 		elif update_table_column or tables_to_join or join_table_columns:
-
-			print(update_table_column, tables_to_join, join_table_columns)
 
 			raise Exception('Error updating database, unable to create FROM statement')
 
