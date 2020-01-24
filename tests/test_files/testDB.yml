@@ -1,0 +1,51 @@
+sql:
+  #host: localhost
+  #user: root
+  #passwd: 
+  file: testDB.sqlite
+
+database:
+  
+  tables:
+
+    Table1:
+
+      '"SubTest-1"':
+        type: text
+        assign_key: True
+        join_by: True
+
+      '"Last Modified (Table1)"':
+        type: text
+
+      '"Entry Created (Table1)"':
+        type: text
+
+    
+    Table2:
+
+      '"SubTest-1"':
+        type: text
+        join_by: True
+   
+      '"SubTest 2"':
+        type: text
+        assign_key: True
+
+      '"Last Modified (Table2)"':
+        type: text
+
+      '"Entry Created (Table2)"':
+        type: text
+
+    Table3:
+   
+      '"SubTest 2"':
+        type: text
+        join_by: True
+
+      '"Last Modified (Table3)"':
+        type: text
+
+      '"Entry Created (Table3)"':
+        type: text
