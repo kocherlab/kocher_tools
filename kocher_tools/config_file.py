@@ -346,6 +346,12 @@ class ConfigFile (list):
 		# Loop the keys of the dict
 		for column_key, column_data in column_dict.items():
 
+			# Check if the cuurent column is within the database
+			if not self.hasColumn(column_key):
+
+				# Print the error message
+				raise Exception('Column (%s) not found' % column_key)
+
 			# Check if the table has the current column
 			if column_key in db_table:
 
