@@ -665,7 +665,7 @@ class configTests (unittest.TestCase):
 				# Check that the current column isnt within the table
 				self.assertFalse(unexpected_col in table)
 
-	def test_14_config_testAssignmentStr (self):
+	def test_14_config_testTableAssignmentStr (self):
 
 		# Check if the config data wasn't assigned
 		if self.config_data == None:
@@ -718,6 +718,27 @@ class configTests (unittest.TestCase):
 			# Check the strings are the same
 			self.assertEqual(expected_paths[table_pos], test_paths)
 
+	def test_16_config_testColumnAssignmentStr (self):
+
+		# Check if the config data wasn't assigned
+		if self.config_data == None:
+
+			# Skip the test if so
+			self.skipTest('Requires test_01 to pass')
+
+		# Assign the expected paths
+		expected_strs =     [['"SubTest-1" text', '"Last Modified (Table1)" text', '"Entry Created (Table1)" text']]
+		expected_strs.append(['"SubTest-1" text', '"SubTest 2" text', '"Last Modified (Table2)" text', '"Entry Created (Table2)" text'])
+		expected_strs.append(['"SubTest 2" text', '"Last Modified (Table3)" text', '"Entry Created (Table3)" text'])
+
+		# Loop the tables
+		for table_pos, table in enumerate(self.config_data):
+
+			# Loop the column
+			for column_pos, column in enumerate(table):
+
+				# Check the strings are the same
+				self.assertEqual(expected_strs[table_pos][column_pos], column)
 			
 
 
