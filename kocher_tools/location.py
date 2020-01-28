@@ -9,7 +9,7 @@ from kocher_tools.database import insertValues, updateValues, retrieveValues
 def convertLoc (database, table, loc_column, loc_value, cvt_column):
 	
 	# Retrieve the desired information from the database
-	location_data = retrieveValues(database, [table], {loc_column:[loc_value]}, {}, [cvt_column])
+	location_data = retrieveValues(database, [table], {'IN':{loc_column:[loc_value]}}, [table + '.' +cvt_column])
 
 	# Update log
 	logging.info('Location conversion successful')
@@ -37,7 +37,7 @@ def updateLocFileToDatabase (database, table, select_key, loc_file):
 	logging.info('Uploading location file (%s) to database' % loc_file)
 
 	# Loop the loc file by line
-	for header, sample_data in readCommonFile(loc_file):
+	for header, loc_data in readCommonFile(loc_file):
 
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
@@ -136,27 +136,27 @@ def readAppLocations (collection_filename):
 			# Yield the location data
 			yield [header[site_code_index], header[gps_index]], unique_location
 
-def addAppLocationsToDatabase (database, table, loc_file):
+def addAppLocationsToDatabase (database, table, app_file):
 
 	# Update log
 	logging.info('Uploading locations from app file (%s) to database' % app_file)
 
 	# Loop the loc file by line
-	for header, loc_data in readAppLocations(loc_file):
+	for header, app_data in readAppLocations(app_file):
 
 		# Insert the loc into the database
-		insertValues(database, table, header, loc_data)
+		insertValues(database, table, header, app_data)
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateAppLocationsToDatabase (database, table, select_key, loc_file):
+def updateAppLocationsToDatabase (database, table, select_key, app_file):
 
 	# Update log
 	logging.info('Uploading locations from app file (%s) to database' % app_file)
 
 	# Loop the loc file by line
-	for header, loc_data in readAppLocations(loc_file):
+	for header, app_data in readAppLocations(app_file):
 
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
@@ -170,7 +170,7 @@ def updateAppLocationsToDatabase (database, table, select_key, loc_file):
 		loc_select_dict['IN'] = {}
 
 		# Loop the header ans sample data
-		for header_column, loc_value in zip(header, loc_data):
+		for header_column, loc_value in zip(header, app_data):
 
 			# Check if the current column is the selection key
 			if header_column == select_key:
@@ -188,5 +188,3 @@ def updateAppLocationsToDatabase (database, table, select_key, loc_file):
 
 	# Update log
 	logging.info('Upload successful')
-
-#convertLoc ('kocherDB.sqlite', 'Locations', 'Location', 'Venus', 'Site Code')

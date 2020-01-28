@@ -176,7 +176,7 @@ database:
         join_by: True
       'Location':
         type: text
-        not_null: True
+        not_null: False
       'GPS':
         type: text
         not_null: False

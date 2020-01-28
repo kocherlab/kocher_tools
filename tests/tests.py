@@ -19,6 +19,7 @@ from kocher_tools.common import readCommonFile
 from kocher_tools.collection import readAppCollection, addAppCollectionToDatabase, updateAppCollectionToDatabase
 from kocher_tools.storage import convertPlateWell, addStorageFileToDatabase, updateStorageFileToDatabase
 from kocher_tools.barcode import assignStorageIDs, readSeqFiles, addSeqFilesToDatabase, updateSeqFilesToDatabase
+from kocher_tools.location import addLocFileToDatabase, updateLocFileToDatabase, convertLoc, readAppLocations, addAppLocationsToDatabase, updateAppLocationsToDatabase
 
 def checkTable (database, table):
 	
@@ -918,7 +919,7 @@ class testset_04_db_input (unittest.TestCase):
 	def test_31_readCommonFile (self):
 
 		# Assign the common filename
-		common_filename = os.path.join(self.expected_dir, 'test_31_input.tsv')
+		common_filename = os.path.join(self.expected_dir, 'test_31_42_input.tsv')
 
 		# Assign the expected header names
 		expected_header = ['Site Code', 'Location', 'GPS']
@@ -927,7 +928,7 @@ class testset_04_db_input (unittest.TestCase):
 		checked_header = False
 
 		# Assign the expected rows
-		expected_rows = 	[['RIM', 'Rim World', '40.345576285427555, -74.65398915528671']]
+		expected_rows = 	[['RIM', 'Outer Rim', '40.345576285427555, -74.65398915528671']]
 		expected_rows.append(['WIM', 'Wimbledon', '40.345576285427555, -74.65398915528671'])
 		expected_rows.append(['VEN', 'Venus', '40.34555268323508, -74.65406448370945'])
 		expected_rows.append(['TOM', 'Tomorrowland', '40.345575692332645, -74.65398227932042'])
@@ -1226,6 +1227,138 @@ class testset_04_db_input (unittest.TestCase):
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Species', '"Ceratina strenua"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Status', '"No Hits"'))
+
+	# Check addLocFileToDatabase from location.py 
+	def test_42_addLocFileToDatabase (self):
+
+		# Check if the config data wasn't assigned
+		if self.database_filename == None:
+
+			# Skip the test if so
+			self.skipTest('Requires database to operate. Check database tests for errors')
+
+		# Assign the location filename
+		loc_filename = os.path.join(self.expected_dir, 'test_31_42_input.tsv')
+
+		# Add the data to the database
+		addLocFileToDatabase (self.database_filename, 'Locations', loc_filename)
+
+		# Check that the values were correctly inserted
+		self.assertTrue(checkValue(self.database_filename, 'Locations', '"Site Code"', 'TOM'))
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'Location', '"Outer Rim"'))
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"40.34555268323508, -74.65406448370945"'))
+
+	# Check updateLocFileToDatabase from location.py 
+	def test_43_updateLocFileToDatabase (self):
+
+		# Check if the config data wasn't assigned
+		if self.database_filename == None:
+
+			# Skip the test if so
+			self.skipTest('Requires database to operate. Check database tests for errors')
+
+		# Assign the location filename
+		loc_filename = os.path.join(self.expected_dir, 'test_43_input.tsv')
+
+		# Add the data to the database
+		updateLocFileToDatabase (self.database_filename, 'Locations', 'Site Code', loc_filename)
+
+		# Check that the values were correctly inserted
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'Location', '"Inner Rim"'))
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50.123, -74.50.123"'))
+
+	# Check convertLoc from location.py 
+	def test_44_convertLoc (self):
+
+		# Check if the config data wasn't assigned
+		if self.database_filename == None:
+
+			# Skip the test if so
+			self.skipTest('Requires database to operate. Check database tests for errors')
+
+		# Assign the expected location tuple
+		expected_loc = ('Location', '"Inner Rim"')
+
+		# Assign the test loc from the loc file
+		test_loc = convertLoc(self.database_filename, 'Locations', '"Site Code"', 'RIM', 'Location')
+
+		# Check if we get the expected value from the test results
+		self.assertEqual(test_loc, expected_loc)
+
+	# Check readAppLocations from location.py 
+	def test_45_readAppLocations (self):
+
+		# Assign the collection filename
+		collection_filename = os.path.join(self.expected_dir, 'test_45-46_input.csv')
+
+		# Assign the expected header names
+		expected_header = ['Site Code', 'GPS']
+
+		# Create a bool to indicate the header has been checked
+		checked_header = False
+
+		# Assign the expected rows
+		expected_rows = 	[['RIM2', '40.345576285427555, -74.65398915528671']]
+		expected_rows.append(['WIM2', '40.345576285427555, -74.65398915528671'])
+		expected_rows.append(['VEN2', '40.34555268323508, -74.65406448370945'])
+		expected_rows.append(['TOM2', '40.00, -74.00'])
+
+		# Parse the common file
+		for line_pos, (header, loc_data) in enumerate(readAppLocations(collection_filename)):
+
+			# Check that the header file has not been checked
+			if not checked_header:
+
+				# Check that the header is what we expect
+				self.assertEqual(header, expected_header)
+
+				# Update the bool
+				checked_header = True
+
+			# Check that the current row is what we expect
+			self.assertEqual(loc_data, expected_rows[line_pos])
+
+	# Check addAppLocationsToDatabase from location.py 
+	def test_46_addAppLocationsToDatabase (self):
+
+		# Check if the config data wasn't assigned
+		if self.database_filename == None:
+
+			# Skip the test if so
+			self.skipTest('Requires database to operate. Check database tests for errors')
+
+		# Assign the collection filename
+		collection_filename = os.path.join(self.expected_dir, 'test_45-46_input.csv')
+
+		# Add the locations to the database
+		addAppLocationsToDatabase(self.database_filename, 'Locations', collection_filename)
+
+		# Check that the values were correctly inserted
+		self.assertTrue(checkValue(self.database_filename, 'Locations', '"Site Code"', 'RIM2'))
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"40.00, -74.00"'))
+
+	# Check updateAppLocationsToDatabase from location.py 
+	def test_47_updateAppLocationsToDatabase (self):
+
+		# Check if the config data wasn't assigned
+		if self.database_filename == None:
+
+			# Skip the test if so
+			self.skipTest('Requires database to operate. Check database tests for errors')
+
+		# Assign the collection filename
+		collection_filename = os.path.join(self.expected_dir, 'test_47_input.csv')
+
+		# Add the locations to the database
+		updateAppLocationsToDatabase(self.database_filename, 'Locations', 'Site Code',collection_filename)
+
+		# Check that the values were correctly inserted
+		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50, -75"'))
+
+
+		
+
+
 
 
 if __name__ == "__main__":
