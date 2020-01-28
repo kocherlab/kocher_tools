@@ -24,7 +24,7 @@ def convertPlateWell (database, table, key, plate, well):
 
 	return key_data[0][0]
 
-def addLocFileToDatabase (database, table, storage_file):
+def addStorageFileToDatabase (database, table, storage_file):
 
 	# Update log
 	logging.info('Uploading storage file (%s) to database' % storage_file)
@@ -38,7 +38,7 @@ def addLocFileToDatabase (database, table, storage_file):
 	# Update log
 	logging.info('Upload successful')
 
-def updateLocFileToDatabase (database, table, select_key, storage_file):
+def updateStorageFileToDatabase (database, table, select_key, storage_file):
 
 	# Update log
 	logging.info('Uploading storage file (%s) to database' % storage_file)

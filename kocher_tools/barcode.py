@@ -41,7 +41,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 			query = row[query_id_index]
 			query_seqID = query.split(';')[0]
 			query_plate = query.split('-')[0]
-			query_well = query.split('-')[1].split('_')[0]
+			query_well = query.split('-')[1].split(';')[0]
 
 			# Assign the unique ID using the well and plate
 			id_assignments[query_seqID] = convertPlateWell(database, table, id_key, query_plate, query_well)
@@ -64,7 +64,8 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 				# Assign information that needs formatting
 				failed_sample_seqID = failed_sample.split(';')[0]
 				failed_sample_plate = failed_sample.split('-')[0]
-				failed_sample_well = failed_sample.split('-')[1].split('_')[0]
+				failed_sample_well = failed_sample.split('-')[1].split(';')[0]
+
 
 				# Assign the unique ID using the well and plate
 				id_assignments[failed_sample_seqID] = convertPlateWell(database, table, id_key, failed_sample_plate, failed_sample_well)
@@ -74,10 +75,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 
 	return id_assignments
 
-def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignment_dict, id_key):
-
-	# Index the sequence file
-	sequence_index = SeqIO.index(sequence_filename, 'fasta')
+def readSeqFiles (blast_filename, sequence_index, failed_filename, id_assignment_dict, id_key):
 
 	# Open the blast file
 	with open(blast_filename) as blast_file:
@@ -141,7 +139,6 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 			# Return the header and row
 			yield header, row
 
-
 	# Check if the failed filename was defined
 	if failed_filename:
 
@@ -191,14 +188,14 @@ def readSeqFiles (blast_filename, sequence_filename, failed_filename, id_assignm
 					# Extend the row data
 					row.extend([species_str, bins_str])
 
-				# Check if the failed status is No Hits
-				elif failed_sample_dict['Status'] == 'No Hits':
+				# Check if the failed status has no hits
+				else:
 
-					# Append the header 
-					header.append('Note')
+					# Extend the header 
+					header.extend(['Ambiguous Hits', 'BOLD Bins'])
 
-					# Append the row data
-					row.append(failed_sample_dict['Note'])
+					# Extend the row data
+					row.extend([None, None])
 
 				# Return the header and row
 				yield header, row
@@ -220,11 +217,16 @@ def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, f
 	# Assign the Unique IDs for each sample using the storage table
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
 
+	# Index the sequence file
+	sequence_index = SeqIO.index(sequence_filename, 'fasta')
+
 	# Loop the loc file by line
-	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict, storage_key):
+	for header, seq_data in readSeqFiles(blast_filename, sequence_index, failed_filename, id_assignment_dict, storage_key):
 
 		# Insert the sequence and speices into the database
 		insertValues(database, table, header, seq_data)
+
+	sequence_index.close()
 
 	# Update log
 	logging.info('Upload successful')
@@ -246,8 +248,11 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 	# Assign the Unique IDs for each sample using the storage table
 	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
 
+	# Index the sequence file
+	sequence_index = SeqIO.index(sequence_filename, 'fasta')
+
 	# Loop the seq file by line
-	for header, seq_data in readSeqFiles(blast_filename, sequence_filename, failed_filename, id_assignment_dict, storage_key):
+	for header, seq_data in readSeqFiles(blast_filename, sequence_index, failed_filename, id_assignment_dict, storage_key):
 
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
@@ -276,6 +281,8 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 
 		# Update the values for the selected value
 		updateValues(database, table, seq_select_dict, seq_set_dict)
+
+	sequence_index.close()
 
 	# Update log
 	logging.info('Upload successful')

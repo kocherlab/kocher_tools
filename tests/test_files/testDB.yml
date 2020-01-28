@@ -10,7 +10,7 @@ database:
 
     Table1:
 
-      '"SubTest-1"':
+      '"Unique ID"':
         type: text
         assign_key: True
         join_by: True
@@ -24,11 +24,11 @@ database:
     
     Table2:
 
-      '"SubTest-1"':
+      '"Unique ID"':
         type: text
         join_by: True
    
-      '"SubTest 2"':
+      'Species':
         type: text
         assign_key: True
 
@@ -40,12 +40,17 @@ database:
 
     Table3:
    
-      '"SubTest 2"':
+      'Species':
         type: text
         join_by: True
+
+      '"From Nest?"':
+        type: text
+        assign_key: True
 
       '"Last Modified (Table3)"':
         type: text
 
       '"Entry Created (Table3)"':
         type: text
+      

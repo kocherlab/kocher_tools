@@ -1,0 +1,2 @@
+Query ID	Query Length	Subject ID	Subject Length	Percent Identity	Alignment Length	Mismatches	Gaps	Query Alignment Start	Query Alignment End	Subject Alignment Start	Subject Alignment End	E-Value	Bitscore
+DBtest-A1;size=550	313	LASIO003-06|Ceratina_strenua|BOLD:AAD9268|COI-5P	658	100.000	313	0	0	1	313	346	658	1.92e-164	579

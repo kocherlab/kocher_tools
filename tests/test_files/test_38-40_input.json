@@ -1,0 +1,13 @@
+[
+    {
+        "Query ID": "DBtest-A2;size=500",
+        "Status": "Ambiguous Hits",
+        "Species": [
+            "Ceratina mikmaqi",
+            "Ceratina strenua"
+        ],
+        "Bins": [
+            "BOLD:AAA2368"
+        ]
+    }
+]
