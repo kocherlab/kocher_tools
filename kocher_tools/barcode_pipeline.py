@@ -8,7 +8,7 @@ import pkg_resources
 
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.blast import blastTopHit
-from kocher_tools.logger import startLogger
+from kocher_tools.logger import startLogger, logArgs
 
 def barcodePipelineParser ():
 	'''
@@ -85,6 +85,9 @@ if __name__== "__main__":
 
 	# Create the log file
 	startLogger(barcode_args.out_log)
+	
+	# Log the arguments used
+	logArgs(barcode_args)
 
 	# Check for previous output
 	if os.path.exists(barcode_args.out_dir):
