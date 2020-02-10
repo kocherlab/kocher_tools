@@ -4,6 +4,7 @@ import argparse
 import shutil
 import logging
 import multiprocessing
+import pkg_resources
 
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.blast import blastTopHit
@@ -39,7 +40,7 @@ def barcodePipelineParser ():
 
 	# Map files
 	pipeline_parser.add_argument('--i5-map', help = 'Defines the filename of the i5 map', type = str, action = parser_confirm_file(), required = True)
-	pipeline_parser.add_argument('--i7-map', help = 'Defines the filename of the i7 map (if not the default map)', type = str, action = parser_confirm_file(), default = 'Default_Files/i7_map.txt')
+	pipeline_parser.add_argument('--i7-map', help = 'Defines the filename of the i7 map (if not the default map)', type = str, action = parser_confirm_file())
 
 	# Read Files
 	pipeline_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file(), required = True)
@@ -66,6 +67,21 @@ if __name__== "__main__":
 
 	# Assign the barcode args
 	barcode_args = barcodePipelineParser()
+	
+	# Check if no i7 map was assigned
+	if not barcode_args.i7_map:
+		
+		# Assign the i7 map path from the package
+		i7_map_path = pkg_resources.resource_filename('kocher_tools', 'data/i7_map.txt')
+		
+		# Check if i7 map does not exists
+		if not os.path.exists(i7_map_path):
+			
+			# Return an error
+			raise IOError('Cannot assign i7 map from package')
+		
+		# Assign the i7 map
+		barcode_args.i7_map = i7_map_path
 
 	# Create the log file
 	startLogger(barcode_args.out_log)
