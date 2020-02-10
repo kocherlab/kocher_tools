@@ -20,6 +20,7 @@ from kocher_tools.collection import readAppCollection, addAppCollectionToDatabas
 from kocher_tools.storage import convertPlateWell, addStorageFileToDatabase, updateStorageFileToDatabase
 from kocher_tools.barcode import assignStorageIDs, readSeqFiles, addSeqFilesToDatabase, updateSeqFilesToDatabase
 from kocher_tools.location import addLocFileToDatabase, updateLocFileToDatabase, convertLoc, readAppLocations, addAppLocationsToDatabase, updateAppLocationsToDatabase
+from kocher_tools.misc import confirmExecutable
 
 def checkTable (database, table):
 	
@@ -1355,7 +1356,45 @@ class testset_04_db_input (unittest.TestCase):
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50, -75"'))
 
+# Run tests for miscellaneous functions
+class testset_05_misc (unittest.TestCase):
 
+	@classmethod
+	def setUpClass(cls):
+
+		# Create a temporary directory
+		cls.test_dir = tempfile.mkdtemp()
+
+		# Assign the expected output directory
+		cls.expected_dir = 'test_files'
+
+	@classmethod
+	def tearDownClass(cls):
+
+		# Remove the test directory after the tests
+		shutil.rmtree(cls.test_dir)
+
+	# Check confirmExecutable from misc.py 
+	def test_48_confirmExecutable  (self):
+
+		# Check that the package functions are executable
+		self.assertIsNotNone(confirmExecutable('retrieve_samples.py'))
+		self.assertIsNotNone(confirmExecutable('upload_samples.py'))
+		self.assertIsNotNone(confirmExecutable('barcode_pipeline.py'))
+		self.assertIsNotNone(confirmExecutable('barcode_filter.py'))
+
+		# Create list of executables
+		executable_list = ['vsearch', 'fastq-multx', 'blastn']
+
+		# Loop the executables
+		for executable_str in executable_list:
+
+			# Check that the non-standard executables were installed
+			self.assertIsNotNone(confirmExecutable(executable_str), '%s not found. Please install' % executable_str)
+
+
+		# Check that the function fails with a fake executable
+		self.assertIsNone(confirmExecutable('retrieve_samples.py' + randomGenerator()))
 		
 
 
