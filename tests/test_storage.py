@@ -12,10 +12,10 @@ import random
 from kocher_tools.database import createTable
 from kocher_tools.config_file import readConfig
 from kocher_tools.storage import convertPlateWell, addStorageFileToDatabase, updateStorageFileToDatabase
-from testing_functions import checkValue
+from tests.functions import checkValue
 
 # Run tests for database input from storage files
-class tests_07_storage (unittest.TestCase):
+class test_storage (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

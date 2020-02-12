@@ -13,7 +13,7 @@ from kocher_tools.config_file import readConfig
 from kocher_tools.assignment import assignTables, assignSelectionDict
 
 # Run tests for assignment.py
-class tests_04_assignment (unittest.TestCase):
+class test_assignment (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

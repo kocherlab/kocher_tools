@@ -15,10 +15,10 @@ from kocher_tools.database import createTable
 from kocher_tools.config_file import readConfig
 from kocher_tools.storage import convertPlateWell, addStorageFileToDatabase
 from kocher_tools.barcode import assignStorageIDs, readSeqFiles, addSeqFilesToDatabase, updateSeqFilesToDatabase
-from testing_functions import checkValue
+from tests.functions import checkValue
 
 # Run tests for database input from barcode files
-class tests_08_barcode (unittest.TestCase):
+class test_barcode (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

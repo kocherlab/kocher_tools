@@ -12,7 +12,7 @@ import random
 from kocher_tools.common import readCommonFile
 
 # Run tests for database input from common files
-class tests_05_common (unittest.TestCase):
+class test_common (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

@@ -12,10 +12,10 @@ import random
 from kocher_tools.database import createTable
 from kocher_tools.config_file import readConfig
 from kocher_tools.location import addLocFileToDatabase, updateLocFileToDatabase, convertLoc, readAppLocations, addAppLocationsToDatabase, updateAppLocationsToDatabase
-from testing_functions import checkValue
+from tests.functions import checkValue
 
 # Run tests for database input from location files
-class tests_09_location (unittest.TestCase):
+class test_location (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

@@ -10,10 +10,10 @@ import string
 import random
 
 from kocher_tools.config_file import readConfig
-from testing_functions import randomGenerator
+from tests.functions import randomGenerator
 
 # Run tests for config_file.py
-class tests_03_config_file (unittest.TestCase):
+class test_config_file (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

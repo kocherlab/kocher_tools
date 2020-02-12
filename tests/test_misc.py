@@ -10,10 +10,10 @@ import string
 import random
 
 from kocher_tools.misc import confirmExecutable
-from testing_functions import randomGenerator
+from tests.functions import randomGenerator
 
 # Run tests for miscellaneous functions
-class tests_10_misc (unittest.TestCase):
+class test_misc (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

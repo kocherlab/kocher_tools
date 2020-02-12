@@ -10,10 +10,10 @@ import string
 import random
 
 from kocher_tools.database import *
-from testing_functions import checkTable, checkColumn, checkValue
+from tests.functions import checkTable, checkColumn, checkValue
 
 # Run tests for database.py
-class tests_01_database (unittest.TestCase):
+class test_database (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

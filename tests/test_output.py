@@ -11,10 +11,10 @@ import random
 
 from kocher_tools.database import *
 from kocher_tools.output import *
-from testing_functions import fileComp
+from tests.functions import fileComp
 
 # Run tests for output.py
-class tests_02_output (unittest.TestCase):
+class test_output (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):

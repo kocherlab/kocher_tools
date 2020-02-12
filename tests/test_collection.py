@@ -12,10 +12,10 @@ import random
 from kocher_tools.database import createTable
 from kocher_tools.config_file import readConfig
 from kocher_tools.collection import readAppCollection, addAppCollectionToDatabase, updateAppCollectionToDatabase
-from testing_functions import checkValue
+from tests.functions import checkValue
 
 # Run tests for database input from collection files
-class tests_06_collection (unittest.TestCase):
+class test_collection (unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
