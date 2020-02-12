@@ -1,36 +1,11 @@
 import os
 import sys
 import subprocess
+import gzip
 
-def confirmExecutable (executable):
+from kocher_tools.misc import confirmExecutable
 
-	'''
-	    Confirm if an executable exists.
-
-	    Parameters
-	    ----------
-	    executable : str
-	        Executable to confirm
-	'''
-
-	# Loop potental locations of executables
-	for path in os.environ['PATH'].split(os.pathsep):
-
-		# Join current path and executable
-		executable_file = os.path.join(path, executable)
-
-		# Check if the executable path exists, and if so, is an executable
-		if os.path.isfile(executable_file) and os.access(executable_file, os.X_OK):
-
-			#logging.info('Calling executable: %s' % executable_file)
-
-			# Return the path if the executable was found
-			return executable_file
-
-	# Return None if the executable was not found
-	return None
-
-def gzip_compress (filename, return_filename = False, overwrite = True):
+def gzipCompress (gzip_filename, return_filename = False, overwrite = True):
 
 	# Find the gzip executable
 	gzip_executable = confirmExecutable('gzip')
@@ -49,7 +24,7 @@ def gzip_compress (filename, return_filename = False, overwrite = True):
 		overwrite_arg.append('-f')
 
 	# vsearch subprocess call
-	gzip_call = subprocess.Popen([gzip_executable, filename] + overwrite_arg, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+	gzip_call = subprocess.Popen([gzip_executable, gzip_filename] + overwrite_arg, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
 
 	# Get stdout and stderr from subprocess
 	gzip_stdout, gzip_stderr = gzip_call.communicate()
@@ -67,4 +42,21 @@ def gzip_compress (filename, return_filename = False, overwrite = True):
 
 	# Check if the filename is to be returned
 	if return_filename:
-		return filename + '.gz'
+		return gzip_filename + '.gz'
+
+def gzipIsEmpty (gzip_filename):
+
+	# Open the gzip file
+	with gzip.open(gzip_filename, 'rb') as gzip_file:
+
+		# Read the file
+		gzip_data = gzip_file.read(1)
+
+	# Check if the file is empty
+	if len(gzip_data) == 0:
+
+		# Return true, if empty
+		return True
+
+	# Otherwise, return false
+	return False

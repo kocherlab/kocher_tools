@@ -9,7 +9,7 @@ from Bio import SeqIO
 
 from kocher_tools.fastq_multx import i5BarcodeJob, i7BarcodeJob
 from kocher_tools.vsearch import *
-from kocher_tools.compress import gzip_compress
+from kocher_tools.compress import gzipCompress, gzipIsEmpty
 
 class Multiplex (list):
 	def __init__ (self, *arg, **kw):
@@ -276,33 +276,10 @@ class Plate (list):
 			# Move the files
 			well.moveFiles()
 
-	def deMultiplex (self, i7_map_filename):
+	def deMultiplexPlate (self, i7_map_filename):
 
 		# Use the i7 map to demultiplex
 		i7BarcodeJob(i7_map_filename, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file, self.well_path, self.discard_empty_output)
-
-	def abundantReads (self):
-
-		# Loop each well
-		for well in self:
-
-			# Merge the R1/R2 files for the current well
-			well.mergeWell()
-
-			# Truncate the merged file for the current well
-			well.truncateWell()
-
-			# Filter the truncated file for the current well
-			well.filterWell()
-
-			# Dereplicate the filtered file for the current well
-			well.dereplicateWell()
-
-			# Cluster the dereplicated file for the current well
-			well.clusterWell()
-
-			# Identify the most abundant reads
-			well.mostAbundantWell()
 
 	def yieldMostAbundant (self):
 
@@ -315,7 +292,7 @@ class Plate (list):
 				# Yield the the records from the well
 				yield fasta_record
 
-	def removeUnmatched (self):
+	def removeUnmatchedPlate (self):
 
 		# Create the output path
 		plate_out_path = os.path.join(self.out_path, self.name, self.locus, '')
@@ -422,97 +399,134 @@ class Well ():
 
 	def mergeWell (self):
 
-		# Add a trailing directory symbol to the output path
-		merged_path = os.path.join(self.out_path, self.merged_dir, '')
+		# Check if the R1 or R2 files are empty
+		if gzipIsEmpty(self.well_R1_file) or gzipIsEmpty(self.well_R2_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(merged_path):
-			os.makedirs(merged_path)
+			self.merged_file = ''
+			self.unmerged_R1_file = ''
+			self.unmerged_R2_file = ''
 
-		# Define the merged and unmerged files 
-		self.merged_file = '%s%s_merged.fastq' % (merged_path, self.ID)
-		self.unmerged_R1_file = '%s%s_notmerged_R1.fastq' % (merged_path, self.ID)
-		self.unmerged_R2_file = '%s%s_notmerged_R2.fastq' % (merged_path, self.ID)
+		else:
 
-		# Merge the well R1 and R2 files
-		mergePairs(self.ID, self.well_R1_file, self.well_R2_file, self.merged_file, self.unmerged_R1_file, self.unmerged_R2_file)
+			# Add a trailing directory symbol to the output path
+			merged_path = os.path.join(self.out_path, self.merged_dir, '')
 
-		# Gzip the files, return the updated filenames
-		self.merged_file = gzip_compress(self.merged_file, return_filename = True)
-		self.unmerged_R1_file = gzip_compress(self.unmerged_R1_file, return_filename = True)
-		self.unmerged_R2_file = gzip_compress(self.unmerged_R2_file, return_filename = True)
+			# Create the directory, if needed
+			if not os.path.exists(merged_path):
+				os.makedirs(merged_path)
+
+			# Define the merged and unmerged files 
+			self.merged_file = '%s%s_merged.fastq' % (merged_path, self.ID)
+			self.unmerged_R1_file = '%s%s_notmerged_R1.fastq' % (merged_path, self.ID)
+			self.unmerged_R2_file = '%s%s_notmerged_R2.fastq' % (merged_path, self.ID)
+
+			# Merge the well R1 and R2 files
+			mergePairs(self.ID, self.well_R1_file, self.well_R2_file, self.merged_file, self.unmerged_R1_file, self.unmerged_R2_file)
+
+			# Gzip the files, return the updated filenames
+			self.merged_file = gzipCompress(self.merged_file, return_filename = True)
+			self.unmerged_R1_file = gzipCompress(self.unmerged_R1_file, return_filename = True)
+			self.unmerged_R2_file = gzipCompress(self.unmerged_R2_file, return_filename = True)
 
 	def truncateWell (self):
 
-		# Define the truncated path
-		truncated_path = os.path.join(self.out_path, self.truncated_dir)
+		# Check if the merged file is empty
+		if self.merged_file == '' or gzipIsEmpty(self.merged_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(truncated_path):
-			os.makedirs(truncated_path)
+			self.truncated_file = ''
 
-		# Define the truncated file
-		self.truncated_file = os.path.join(truncated_path, '%s_stripped.fastq' % self.ID)
+		else:
 
-		# Truncate the merged file
-		truncateFastq(self.merged_file, self.truncated_file)
+			# Define the truncated path
+			truncated_path = os.path.join(self.out_path, self.truncated_dir)
 
-		# Gzip the file, return the updated filename
-		self.truncated_file = gzip_compress(self.truncated_file, return_filename = True)
+			# Create the directory, if needed
+			if not os.path.exists(truncated_path):
+				os.makedirs(truncated_path)
+
+			# Define the truncated file
+			self.truncated_file = os.path.join(truncated_path, '%s_stripped.fastq' % self.ID)
+
+			# Truncate the merged file
+			truncateFastq(self.merged_file, self.truncated_file)
+
+			# Gzip the file, return the updated filename
+			self.truncated_file = gzipCompress(self.truncated_file, return_filename = True)
 
 	def filterWell (self):
 
-		# Define the filtered path
-		filtered_path = os.path.join(self.out_path, self.filtered_dir)
+		# Check if the truncated file is empty
+		if self.truncated_file == '' or gzipIsEmpty(self.truncated_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(filtered_path):
-			os.makedirs(filtered_path)
+			self.filtered_file = ''
 
-		# Define the filtered file
-		self.filtered_file = os.path.join(filtered_path, '%s_filtered.fasta' % self.ID)
+		else:
 
-		# Filter the truncated file
-		filterFastq(self.truncated_file, self.filtered_file)
+			# Define the filtered path
+			filtered_path = os.path.join(self.out_path, self.filtered_dir)
 
-		# Gzip the file, return the updated filename
-		self.filtered_file = gzip_compress(self.filtered_file, return_filename = True)
+			# Create the directory, if needed
+			if not os.path.exists(filtered_path):
+				os.makedirs(filtered_path)
+
+			# Define the filtered file
+			self.filtered_file = os.path.join(filtered_path, '%s_filtered.fasta' % self.ID)
+
+			# Filter the truncated file
+			filterFastq(self.truncated_file, self.filtered_file)
+
+			# Gzip the file, return the updated filename
+			self.filtered_file = gzipCompress(self.filtered_file, return_filename = True)
 
 	def dereplicateWell (self):
 
-		# Define the dereplicated path
-		dereplicated_path = os.path.join(self.out_path, self.dereplicated_dir)
+		# Check if the filtered file is empty
+		if self.filtered_file == '' or gzipIsEmpty(self.filtered_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(dereplicated_path):
-			os.makedirs(dereplicated_path)
+			self.dereplicated_file = ''
 
-		# Define the dereplicated file
-		self.dereplicated_file = os.path.join(dereplicated_path, '%s_dereplicated.fasta' % self.ID)
+		else:
 
-		# Dereplicate the file
-		dereplicateFasta(self.on_plate, self.ID, self.filtered_file, self.dereplicated_file)
+			# Define the dereplicated path
+			dereplicated_path = os.path.join(self.out_path, self.dereplicated_dir)
 
-		# Gzip the file, return the updated filename
-		self.dereplicated_file = gzip_compress(self.dereplicated_file, return_filename = True)
+			# Create the directory, if needed
+			if not os.path.exists(dereplicated_path):
+				os.makedirs(dereplicated_path)
+
+			# Define the dereplicated file
+			self.dereplicated_file = os.path.join(dereplicated_path, '%s_dereplicated.fasta' % self.ID)
+
+			# Dereplicate the file
+			dereplicateFasta(self.on_plate, self.ID, self.filtered_file, self.dereplicated_file)
+
+			# Gzip the file, return the updated filename
+			self.dereplicated_file = gzipCompress(self.dereplicated_file, return_filename = True)
 
 	def clusterWell (self):
 
-		# Define the clustered path
-		clustered_path = os.path.join(self.out_path, self.clustered_dir)
+		# Check if the dereplicated file is empty
+		if self.dereplicated_file == '' or gzipIsEmpty(self.dereplicated_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(clustered_path):
-			os.makedirs(clustered_path)
+			self.clustered_file = ''
 
-		# Define the clustered file
-		self.clustered_file = os.path.join(clustered_path, '%s_clustered.fasta' % self.ID) 
+		else:
 
-		# Cluster the file
-		clusterFasta(self.on_plate, self.ID, self.dereplicated_file, self.clustered_file)
+			# Define the clustered path
+			clustered_path = os.path.join(self.out_path, self.clustered_dir)
 
-		# Gzip the file, return the updated filename
-		self.clustered_file = gzip_compress(self.clustered_file, return_filename = True)
+			# Create the directory, if needed
+			if not os.path.exists(clustered_path):
+				os.makedirs(clustered_path)
+
+			# Define the clustered file
+			self.clustered_file = os.path.join(clustered_path, '%s_clustered.fasta' % self.ID) 
+
+			# Cluster the file
+			clusterFasta(self.on_plate, self.ID, self.dereplicated_file, self.clustered_file)
+
+			# Gzip the file, return the updated filename
+			self.clustered_file = gzipCompress(self.clustered_file, return_filename = True)
 
 	def sortWell (self):
 
@@ -526,7 +540,7 @@ class Well ():
 		sortFasta(self.on_plate, self.ID, self.clustered_file, sort_file)
 
 		# Gzip the file, return the updated filename
-		sort_file = gzip_compress(sort_file, return_filename = True)
+		sort_file = gzipCompress(sort_file, return_filename = True)
 
 		logging.info('%s-%s: Sorted clustered file' % (self.on_plate, self.ID))
 
@@ -535,83 +549,93 @@ class Well ():
 
 	def mostAbundantWell (self):
 
-		# Define the common path
-		common_path = os.path.join(self.out_path, self.common_dir)
+		# Check if the clustered file is empty
+		if self.clustered_file == '' or gzipIsEmpty(self.clustered_file):
 
-		# Create the directory, if needed
-		if not os.path.exists(common_path):
-			os.makedirs(common_path)
+			self.common_file = ''
 
-		# Define the common file
-		self.common_file = os.path.join(common_path, '%s_common.fasta.gz' % self.ID) 
+		else:
 
-		# Open file to store most common reads 
-		common_file = gzip.open(self.common_file, 'wt')
+			# Define the common path
+			common_path = os.path.join(self.out_path, self.common_dir)
 
-		# Define an int to store the abundance of the read
-		most_abundant_count = 0
+			# Create the directory, if needed
+			if not os.path.exists(common_path):
+				os.makedirs(common_path)
 
-		# Define an int to store the rank of the most abundance read
-		most_abundant_rank = 0
+			# Define the common file
+			self.common_file = os.path.join(common_path, '%s_common.fasta.gz' % self.ID) 
 
-		# Decompress the gzip file
-		with gzip.open(self.clustered_file, "rt") as clustered_handle:
+			# Open file to store most common reads 
+			common_file = gzip.open(self.common_file, 'wt')
 
-			# Loop the clustered file, line by line
-			for clustered_line in clustered_handle:
+			# Define an int to store the abundance of the read
+			most_abundant_count = 0
 
-				# Check if the line is a header
-				if clustered_line.startswith('>'):
+			# Define an int to store the rank of the most abundance read
+			most_abundant_rank = 0
 
-					# Get the abundance
-					read_abundance = int(clustered_line.strip().split('=')[1])
+			# Decompress the gzip file
+			with gzip.open(self.clustered_file, "rt") as clustered_handle:
+
+				# Loop the clustered file, line by line
+				for clustered_line in clustered_handle:
+
+					# Check if the line is a header
+					if clustered_line.startswith('>'):
+
+						# Get the abundance
+						read_abundance = int(clustered_line.strip().split('=')[1])
+
+						# Check if the abundance is higher than the stored value
+						if read_abundance > most_abundant_count:
+
+							# Update the count, and record is more abundant
+							most_abundant_count = read_abundance
+
+							# Get the rank
+							read_rank = int(clustered_line.strip().split(';')[0].rsplit('_', 1)[1])
+
+							# Update the rank
+							most_abundant_rank = read_rank
+			
+			# Check if the read rank is not correctly ordered
+			if most_abundant_rank != 1:
+
+				# Sort the well to correct the order
+				self.sortWell()
+
+			# Decompress the gzip file
+			with gzip.open(self.clustered_file, "rt") as clustered_handle:
+
+				# Loop the clustered file, record by record
+				for record in SeqIO.parse(clustered_handle, "fasta"):
+
+					# Assign the abundance
+					read_abundance = int(record.id.split('=')[1])
 
 					# Check if the abundance is higher than the stored value
-					if read_abundance > most_abundant_count:
+					if read_abundance >= (0.5 * most_abundant_count):
 
-						# Update the count, and record is more abundant
-						most_abundant_count = read_abundance
+						# Write the fasta sequence to the common file
+						common_file.write(record.format("fasta"))
 
-						# Get the rank
-						read_rank = int(clustered_line.strip().split(';')[0].rsplit('_', 1)[1])
-
-						# Update the rank
-						most_abundant_rank = read_rank
-		
-		# Check if the read rank is not correctly ordered
-		if most_abundant_rank != 1:
-
-			# Sort the well to correct the order
-			self.sortWell()
-
-		# Decompress the gzip file
-		with gzip.open(self.clustered_file, "rt") as clustered_handle:
-
-			# Loop the clustered file, record by record
-			for record in SeqIO.parse(clustered_handle, "fasta"):
-
-				# Assign the abundance
-				read_abundance = int(record.id.split('=')[1])
-
-				# Check if the abundance is higher than the stored value
-				if read_abundance >= (0.5 * most_abundant_count):
-
-					# Write the fasta sequence to the common file
-					common_file.write(record.format("fasta"))
-
-		# Close the common file
-		common_file.close()
+			# Close the common file
+			common_file.close()
 
 	def yieldMostAbundant (self):
 
-		# Decompress the gzip file
-		with gzip.open(self.common_file, "rt") as common_handle:
+		# Confirm the file was specified
+		if self.common_file:
 
-			# Loop the common file, record by record
-			for record in SeqIO.parse(common_handle, "fasta"):
+			# Decompress the gzip file
+			with gzip.open(self.common_file, "rt") as common_handle:
 
-				# Yield the record as a fasta record
-				yield record
+				# Loop the common file, record by record
+				for record in SeqIO.parse(common_handle, "fasta"):
+
+					# Yield the record as a fasta record
+					yield record
 
 def moveFile (file_to_move, out_path):
 

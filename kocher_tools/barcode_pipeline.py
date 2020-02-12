@@ -138,7 +138,7 @@ if __name__== "__main__":
 		logging.info('Starting %s i7 deMultiplex' % plate.name)
 
 		# Run the i7 barcode job using the i7 map
-		plate.deMultiplex(barcode_args.i7_map)
+		plate.deMultiplexPlate(barcode_args.i7_map)
 
 		logging.info('Finished %s i7 deMultiplex' % plate.name)
 
@@ -146,12 +146,30 @@ if __name__== "__main__":
 		plate.moveWells()
 
 		# Remove any unmatched files for the current plate
-		plate.removeUnmatched()
+		plate.removeUnmatchedPlate()
 
 		logging.info('Starting %s abundant reads identification' % plate.name)
 
-		# Identify the most abundant reads for the current plate
-		plate.abundantReads()
+		# Loop each well
+		for well in plate:
+
+			# Merge the R1/R2 files for the current well
+			well.mergeWell()
+
+			# Truncate the merged file for the current well
+			well.truncateWell()
+
+			# Filter the truncated file for the current well
+			well.filterWell()
+
+			# Dereplicate the filtered file for the current well
+			well.dereplicateWell()
+
+			# Cluster the dereplicated file for the current well
+			well.clusterWell()
+
+			# Identify the most abundant reads
+			well.mostAbundantWell()
 
 		logging.info('Finished %s abundant reads identification' % plate.name)
 

@@ -3,6 +3,7 @@ import sys
 import sqlite3
 import unittest
 import filecmp
+import gzip
 import shutil
 import tempfile
 import io
@@ -169,6 +170,45 @@ def fileComp (test_output, expected_output):
 
 	# Compare two files, return bool
 	return filecmp.cmp(test_output, expected_output)
+
+def gzFileComp (test_output, expected_output, tmp_dir):
+
+	# Create the tmp paths
+	tmp_test_path = os.path.join(tmp_dir, 'Test')
+	tmp_expected_path = os.path.join(tmp_dir, 'Expected')
+
+	# Create test tmp directories, if needed
+	if not os.path.exists(tmp_test_path):
+		os.makedirs(tmp_test_path)
+
+	# Create test expected directories, if needed
+	if not os.path.exists(tmp_expected_path):
+		os.makedirs(tmp_expected_path)
+
+	# Assign the tmp output files
+	tmp_test_output = os.path.join(tmp_test_path, os.path.basename(test_output))
+	tmp_expected_output = os.path.join(tmp_expected_path, os.path.basename(expected_output))
+
+	# Open the gzip file
+	with gzip.open(test_output, 'rb') as test_file:
+
+		# Open the gunzip file
+		with open(tmp_test_output, 'wb') as tmp_test_file:
+			
+			# Copy the file
+			shutil.copyfileobj(test_file, tmp_test_file)
+
+	# Open the gzip file
+	with gzip.open(expected_output, 'rb') as expected_file:
+
+		# Open the gunzip file
+		with open(tmp_expected_output, 'wb') as tmp_expected_file:
+			
+			# Copy the file
+			shutil.copyfileobj(expected_file, tmp_expected_file)
+
+	# Call the file comparison function
+	return fileComp(tmp_test_output, tmp_expected_output)
 
 def randomGenerator (length = 10, char_set = string.ascii_uppercase + string.digits):
 
