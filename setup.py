@@ -10,7 +10,7 @@ requirements = ['pyyaml',
                 'pandas',
                 'Biopython',
                 'networkx',
-		'tox']
+                'tox']
 
 # Executable scripts in the package
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
@@ -33,7 +33,6 @@ setup(name=kocher_tools.__title__,
       description=kocher_tools.__summary__,
       long_description=readme,
       include_package_data=True,
-      test_suite="tests",
       packages=['kocher_tools'],
       package_data={'kocher_tools': ['data/*.txt']},
       install_requires=requirements,
