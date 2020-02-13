@@ -16,7 +16,7 @@ from tests.functions import randomGenerator
 class test_misc (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -25,13 +25,13 @@ class test_misc (unittest.TestCase):
 		cls.expected_dir = 'test_files'
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
 
 	# Check confirmExecutable from misc.py 
-	def test_01_confirmExecutable  (self):
+	def test_01_confirmExecutable (self):
 
 		# Check that the package functions are executable
 		self.assertIsNotNone(confirmExecutable('retrieve_samples.py'))

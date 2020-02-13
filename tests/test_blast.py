@@ -18,7 +18,7 @@ from tests.functions import fileComp, randomGenerator
 class test_blast (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -36,7 +36,7 @@ class test_blast (unittest.TestCase):
 		cls.blast_database = os.path.join(cls.expected_path, 'TestDB', 'TestDB.fasta')
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)

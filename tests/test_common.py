@@ -15,7 +15,7 @@ from kocher_tools.common import readCommonFile
 class test_common (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Assign the script directory
 		cls.script_dir = os.path.dirname(os.path.realpath(__file__))

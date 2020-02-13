@@ -16,7 +16,7 @@ from kocher_tools.assignment import assignTables, assignSelectionDict
 class test_assignment (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -43,13 +43,13 @@ class test_assignment (unittest.TestCase):
 			cls.config_data = None
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
 
 	# Check assignTables 
-	def test_01_assignTables  (self):
+	def test_01_assignTables (self):
 
 		# Check if the config data wasn't assigned
 		if self.config_data == None:

@@ -17,7 +17,7 @@ from tests.functions import fileComp
 class test_output (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -38,7 +38,7 @@ class test_output (unittest.TestCase):
 		cls.retrieved_entries = retrieveValues(cls.database, ['Table1', 'Table2'], {}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)

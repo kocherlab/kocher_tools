@@ -18,7 +18,7 @@ from tests.functions import fileComp, gzFileComp
 class test_multiplex (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -42,7 +42,7 @@ class test_multiplex (unittest.TestCase):
 		cls.demultiplex_job = None
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)

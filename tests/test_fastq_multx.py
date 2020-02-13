@@ -19,7 +19,7 @@ from tests.functions import fileComp, gzFileComp, randomGenerator
 class test_fastq_multx (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -34,13 +34,13 @@ class test_fastq_multx (unittest.TestCase):
 		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
 
 	# Check fastq_multx callFastqMultx function
-	def test_01_callFastqMultx(self):
+	def test_01_callFastqMultx (self):
 
 		# Assign the test input
 		reformatted_i5_map_file = os.path.join(self.expected_path, 'test_fastq_multx_map.txt')

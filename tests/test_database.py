@@ -16,7 +16,7 @@ from tests.functions import checkTable, checkColumn, checkValue
 class test_database (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -25,7 +25,7 @@ class test_database (unittest.TestCase):
 		cls.database = os.path.join(cls.test_dir, 'testDB.sqlite')
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)

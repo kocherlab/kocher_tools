@@ -18,7 +18,7 @@ from tests.functions import gzExpFileComp, randomGenerator
 class test_vsearch (unittest.TestCase):
 
 	@classmethod
-	def setUpClass(cls):
+	def setUpClass (cls):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
@@ -33,7 +33,7 @@ class test_vsearch (unittest.TestCase):
 		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
 
 	@classmethod
-	def tearDownClass(cls):
+	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
