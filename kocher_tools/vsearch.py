@@ -7,8 +7,8 @@ from kocher_tools.misc import confirmExecutable
 
 def checkVsearchForErrors (vsearch_stderr):
 
-	# Check if the stderr isn't empty
-	if vsearch_stderr:
+	# Check if an error was reported in the stderr
+	if 'Fatal error' in vsearch_stderr:
 
 		# Report the error
 		raise Exception(vsearch_stderr)
@@ -35,9 +35,8 @@ def callVsearch (vsearch_call_args):
 		vsearch_stdout = vsearch_stdout.decode()
 		vsearch_stderr = vsearch_stderr.decode()
 
-	# Update when starting logs
-	#print(vsearch_stdout)
-	#print(vsearch_stderr)
+	# Check for errors
+	checkVsearchForErrors(vsearch_stderr)
 
 def mergePairs (sample, r1_file, r2_file, merged_file, unmerged_R1_file, unmerged_R2_file, min_merge_len = 360, max_diff = 20):
 

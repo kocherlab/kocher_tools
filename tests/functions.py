@@ -207,8 +207,45 @@ def gzFileComp (test_output, expected_output, tmp_dir):
 			# Copy the file
 			shutil.copyfileobj(expected_file, tmp_expected_file)
 
-	# Call the file comparison function
-	return fileComp(tmp_test_output, tmp_expected_output)
+	# Check if the files have the same content
+	file_compare_results = fileComp(tmp_test_output, tmp_expected_output)
+
+	# Remove the tmp dirs
+	shutil.rmtree(tmp_test_path)
+	shutil.rmtree(tmp_expected_path)
+
+	# Return the results
+	return file_compare_results
+
+def gzExpFileComp (test_output, expected_output, tmp_dir):
+
+	# Create the tmp paths
+	tmp_expected_path = os.path.join(tmp_dir, 'Expected')
+
+	# Create test expected directories, if needed
+	if not os.path.exists(tmp_expected_path):
+		os.makedirs(tmp_expected_path)
+
+	# Assign the tmp output files
+	tmp_expected_output = os.path.join(tmp_expected_path, os.path.basename(expected_output))
+
+	# Open the gzip file
+	with gzip.open(expected_output, 'rb') as expected_file:
+
+		# Open the gunzip file
+		with open(tmp_expected_output, 'wb') as tmp_expected_file:
+			
+			# Copy the file
+			shutil.copyfileobj(expected_file, tmp_expected_file)
+
+	# Check if the files have the same content
+	file_compare_results = fileComp(test_output, tmp_expected_output)
+
+	# Remove the tmp dir
+	shutil.rmtree(tmp_expected_path)
+
+	# Return the results
+	return file_compare_results
 
 def randomGenerator (length = 10, char_set = string.ascii_uppercase + string.digits):
 

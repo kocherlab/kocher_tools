@@ -122,10 +122,15 @@ def checkFastqMultxForErrors (fastq_multx_stderr):
 			pass
 
 		# Check if there is an error
-		else:
+		elif 'Error:' in fastq_multx_stderr:
 
 			# Report the error
 			raise Exception(fastq_multx_stderr)
+
+		# Check if there are other messages
+		else:
+
+			print ('Error? - %s' % fastq_multx_stderr)
 
 def callFastqMultx (fastq_multx_call_args):
 
@@ -148,8 +153,5 @@ def callFastqMultx (fastq_multx_call_args):
 		fastq_multx_stdout = fastq_multx_stdout.decode()
 		fastq_multx_stderr = fastq_multx_stderr.decode()
 
-	# Update when starting logs
-	#print(fastq_multx_stderr)
-	#print(fastq_multx_stdout)
-	
-
+	# Check the stderr for errors
+	checkFastqMultxForErrors(fastq_multx_stderr)

@@ -35,9 +35,8 @@ def callBlast (blast_call_args):
 		blast_stdout = blast_stdout.decode()
 		blast_stderr = blast_stderr.decode()
 
-	# Update when starting logs
-	#print(blast_stdout)
-	#print(blast_stderr)
+	# Check the stderr for errors
+	checkBlastForErrors(blast_stderr)
 
 def pipeBlast (blast_call_args, blast_output, header = None):
 
@@ -58,7 +57,7 @@ def pipeBlast (blast_call_args, blast_output, header = None):
 		blast_output_file.write(header + '\n')
 
 		# Flush the file
-		blast_output_file.flush()  
+		blast_output_file.flush()
 
 	# blast subprocess call
 	blast_call = subprocess.Popen([blast_executable] + blast_call_args, stderr = subprocess.PIPE, stdout = blast_output_file)
@@ -72,9 +71,11 @@ def pipeBlast (blast_call_args, blast_output, header = None):
 		# Convert bytes to string
 		blast_stderr = blast_stderr.decode()
 
-	# Update when starting logs
-	#print(blast_stdout)
-	#print(blast_stderr)
+	# Check the stderr for errors
+	checkBlastForErrors(blast_stderr)
+
+	# Close the file
+	blast_output_file.close()
 
 def blastTopHit (query_file, blast_output, database_file, num_threads):
 

@@ -9,7 +9,8 @@ with io.open("README.md", "rt", encoding="utf8") as f:
 requirements = ['pyyaml',
                 'pandas',
                 'Biopython',
-                'networkx']
+                'networkx',
+		'tox']
 
 # Executable scripts in the package
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
