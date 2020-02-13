@@ -20,6 +20,9 @@ install:
   - conda install -c anaconda biopython
   - conda install -c anaconda networkx
   - conda install -c anaconda pyyaml
+  - conda install -c bioconda vsearch
+  - conda install -c bioconda fastq-multx
+  - conda install -c bioconda blast
   - python setup.py install
 
 script:
