@@ -1,0 +1,538 @@
+[
+    {
+        "Query ID": "SD_04-A2_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A2_3;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A4_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A5_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A6_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A10_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A10_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-A10_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B2_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B2_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B2_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B4_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B4_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B4_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-B5_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C3_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C3_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C3_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C3_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C5_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C5_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C5_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-C5_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D2_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D3_6;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-D10_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E2_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E2_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E4_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E4_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E5_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-E5_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F2_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F7_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F7_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-F11_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G2_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G2_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G2_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G2_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G3_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G3_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G3_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G7_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G7_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G7_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G8_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G8_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-G8_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_04-H5_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A1_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A1_3;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A1_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A1_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A1_6;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A5_6;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A9_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A10_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A10_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A10_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-A10_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-B4_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-B8_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-B8_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C3_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C3_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C4_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C4_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C6_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C7_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C10_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-C11_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D4_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D7_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D10_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D10_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-D10_3;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E2_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E2_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E2_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E2_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E4_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E4_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E4_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E7_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E7_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E7_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E7_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E10_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E11_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E11_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E11_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E11_4;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-E11_5;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F2_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F7_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F7_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F10_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-F11_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-G3_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-G3_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-G6_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-G6_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-G10_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H1_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H1_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H1_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H2_1;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H7_1;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H7_2;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H7_3;size=2",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H9_2;size=3",
+        "Status": "Insufficent reads"
+    },
+    {
+        "Query ID": "SD_07-H11_1;size=2",
+        "Status": "Insufficent reads"
+    }
+]

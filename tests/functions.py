@@ -247,6 +247,37 @@ def gzExpFileComp (test_output, expected_output, tmp_dir):
 	# Return the results
 	return file_compare_results
 
+def strFileComp (test_str, expected_output):
+
+	# Create a bool to store the outcome
+	compare_results = False
+
+	# Open the file
+	expected_file = open(expected_output, 'r')
+
+	# Read the file
+	expected_str = expected_file.read()
+
+	# Check if the test string has the same contents as the expected output file
+	if test_str.strip() == expected_str.strip():
+		
+		# Return True, if the same
+		compare_results = True
+	
+	# Check if the contents are not the same	
+	else:
+		
+		# Return False, if not the same
+		compare_results = False
+
+	# Close the file
+	expected_file.close()
+
+	# Return the comparison results
+	return compare_results
+
+
+
 def randomGenerator (length = 10, char_set = string.ascii_uppercase + string.digits):
 
 	# Return a random string of letters and numbers
