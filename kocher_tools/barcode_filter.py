@@ -4,6 +4,7 @@ import csv
 import argparse
 import logging
 import json
+import copy
 
 import pandas as pd
 from collections import defaultdict
@@ -56,8 +57,8 @@ def barcodeFilterParser ():
 	filter_parser.add_argument('--identity-cutoff', help = 'Identity cutoff - i.e. identity percentage between alignment sequences', type = float, default = 0.95)
 
 	# Best hit args
-	sort_by = ('len_align', 'percent_ident')
-	filter_parser.add_argument('--sort-best-hits-by', metavar = metavarList(sort_by), help = 'Sort method of best hits', choices = sort_by, default = 'percent_ident')
+	sort_by = ('percent_ident', 'align_len')
+	filter_parser.add_argument('--sort-best-hits-by', metavar = metavarList(sort_by), help = 'Sort method of best hits', choices = sort_by, default = sort_by, nargs = '+', type = str)
 	filter_parser.add_argument('--dont-merge-species', help = 'Do not merge best hits within a single species', action = 'store_true')
 
 	# Output file args
@@ -135,6 +136,7 @@ def sortBestHits (best_hits, method):
 	# Create list to store the sorted best hits
 	sorted_best_hits = []
 
+	# Check if the method is sort by percent identity
 	if method == 'percent_ident':
 
 		# Create a float to store the highest percent identity
@@ -157,6 +159,33 @@ def sortBestHits (best_hits, method):
 
 			# Check if this hit has a higher percent identity
 			elif best_percent_identity == current_identity:
+
+				# Update the best hit
+				sorted_best_hits.append(blast_hit)
+
+	# Check if the method is sort by percent identity
+	elif method == 'align_len':
+
+		# Create a float to store the highest alignment length
+		best_align_len = 0.0
+
+		# Loop the filtered hits
+		for blast_hit in best_hits:
+
+			# Save the current alignment length
+			current_align_len = float(blast_hit['Alignment Length'])
+
+			# Check if this hit has a higher alignment length
+			if best_align_len < current_align_len:
+
+				# Update the best hit
+				sorted_best_hits = [blast_hit]
+
+				# Update the highest alignment length
+				best_align_len = current_align_len
+
+			# Check if this hit has a higher alignment length
+			elif best_align_len == current_align_len:
 
 				# Update the best hit
 				sorted_best_hits.append(blast_hit)
@@ -336,8 +365,17 @@ def main():
 				# Log the failure
 				logging.warning('%s: %s' % (current_query.split(';')[0], warning_message))
 
-			# Sort the best hits
-			sorted_best_hits = sortBestHits(filtered_blast_hits, barcode_args.sort_best_hits_by)
+			# Copy the filtered list before sorting
+			sorted_best_hits = copy.deepcopy(filtered_blast_hits)
+
+			# Loop the sort methods
+			for sort_method in barcode_args.sort_best_hits_by:
+
+				# Sort the best hits
+				sorted_best_hits = sortBestHits(sorted_best_hits, sort_method)
+
+			if len(sorted_best_hits) >= 2:
+				sys.exit()
 
 			# Check if there is more than one sorted best hit
 			if len(sorted_best_hits) > 1:
@@ -411,6 +449,9 @@ def main():
 
 				# Write the passed blast entry to the output
 				blast_writer.writerow(sorted_best_hit)
+
+		# Close the output file
+		blast_out_file.close()
 
 	# Check if any samples failed to find best hits
 	if failed_samples_list:
