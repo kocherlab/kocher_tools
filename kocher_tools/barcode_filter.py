@@ -156,7 +156,7 @@ def sortBestHits (best_hits, method):
 				best_percent_identity = current_identity
 
 			# Check if this hit has a higher percent identity
-			if best_percent_identity == current_identity:
+			elif best_percent_identity == current_identity:
 
 				# Update the best hit
 				sorted_best_hits.append(blast_hit)
