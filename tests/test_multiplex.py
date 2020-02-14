@@ -23,6 +23,9 @@ class test_multiplex (unittest.TestCase):
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
 
+		# Assign the test path of the pipeline
+		cls.test_pipeline_path = os.path.join(cls.test_dir, 'Pipeline_Output')
+
 		# Assign the script directory
 		cls.script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -32,11 +35,8 @@ class test_multiplex (unittest.TestCase):
 		# Assign the expected path
 		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
 
-		# Assign the expected path
-		cls.pipeline_path = os.path.join(cls.expected_path, 'TestPipeline')
-
-		# Assign the output path
-		cls.out_dir = os.path.join(cls.test_dir, 'Pipeline_Output')
+		# Assign the expected path of the pipeline
+		cls.expected_pipeline_path = os.path.join(cls.expected_path, 'TestPipeline')
 
 		# Create an empty variable to store the multiplex job 
 		cls.demultiplex_job = None
@@ -65,14 +65,11 @@ class test_multiplex (unittest.TestCase):
 			# Skip the test if so
 			self.skipTest('Requires test_01 to pass')
 
-		# Assign the test output path
-		test_out_path = os.path.join(self.test_dir, 'Pipeline_Output')
-
 		# Assign the output path for all multiplex files
-		type(self).demultiplex_job.assignOutputPath(test_out_path)
+		type(self).demultiplex_job.assignOutputPath(self.test_pipeline_path)
 
 		# Check that output path was correctly assigned
-		self.assertEqual(self.demultiplex_job.out_path, test_out_path)
+		self.assertEqual(self.demultiplex_job.out_path, self.test_pipeline_path)
 		self.assertTrue(os.path.exists(self.demultiplex_job.out_path))
 
 	# Check Multiplex assignFiles function
@@ -153,7 +150,7 @@ class test_multiplex (unittest.TestCase):
 			if test_plate.discard_empty_output == False:
 
 				# Assign the expected file path
-				expected_plate_i5_filepath = os.path.join(self.out_dir, '%s_%s_i5.fastq.gz' % (test_plate.name, test_plate.locus))
+				expected_plate_i5_filepath = os.path.join(test_out_dir, '%s_%s_i5.fastq.gz' % (test_plate.name, test_plate.locus))
 
 				# Confirm the file was correctly assigned
 				self.assertEqual(test_plate.plate_i5_file, expected_plate_i5_filepath)
@@ -190,7 +187,7 @@ class test_multiplex (unittest.TestCase):
 			self.assertTrue(os.path.isfile(test_plate_R2_file))
 
 			# Assign the expected results path
-			expected_results_path = os.path.join(self.expected_path, 'TestPipeline', test_plate.name, test_plate.locus)
+			expected_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus)
 
 			# Assign the filename of files to compare
 			expected_plate_i7_file = os.path.join(expected_results_path, '%s_%s_i7.fastq.gz' % (test_plate.name, test_plate.locus))
@@ -376,7 +373,7 @@ class test_multiplex (unittest.TestCase):
 				self.assertTrue(os.path.isfile(test_well_R2_file))
 
 				# Assign the pipeline results path
-				pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Demultiplexed')
+				pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Demultiplexed')
 
 				# Assign the filename of files to compare
 				expected_well_R1_file = os.path.join(pipeline_results_path, '%s_R1.fastq.gz' % test_well.ID)
@@ -529,7 +526,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_unmerged_R2_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Merged')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Merged')
 
 					# Assign the filename to compare
 					expected_merged_file = os.path.join(pipeline_results_path, '%s_merged.fastq.gz' % test_well.ID)
@@ -568,7 +565,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_truncated_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Truncated')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Truncated')
 
 					# Assign the filename to compare
 					expected_truncated_file = os.path.join(pipeline_results_path, '%s_stripped.fastq.gz' % test_well.ID)
@@ -607,7 +604,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_filtered_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Filtered')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Filtered')
 
 					# Assign the filename to compare
 					expected_filtered_file = os.path.join(pipeline_results_path, '%s_filtered.fasta.gz' % test_well.ID)
@@ -646,7 +643,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_dereplicated_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Dereplicated')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Dereplicated')
 
 					# Assign the filename to compare
 					expected_dereplicated_file = os.path.join(pipeline_results_path, '%s_dereplicated.fasta.gz' % test_well.ID)
@@ -685,7 +682,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_clustered_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Clustered')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Clustered')
 
 					# Assign the filename to compare
 					expected_clustered_file = os.path.join(pipeline_results_path, '%s_clustered.fasta.gz' % test_well.ID)
@@ -724,7 +721,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(os.path.isfile(test_common_file))
 
 					# Assign the pipeline results path
-					pipeline_results_path = os.path.join(self.pipeline_path, test_plate.name, test_plate.locus, 'Common')
+					pipeline_results_path = os.path.join(self.expected_pipeline_path, test_plate.name, test_plate.locus, 'Common')
 
 					# Assign the filename to compare
 					expected_common_file = os.path.join(pipeline_results_path, '%s_common.fasta.gz' % test_well.ID)
@@ -767,14 +764,20 @@ class test_multiplex (unittest.TestCase):
 			# Skip the test if so
 			self.skipTest('Requires test_01 to pass')
 
-		# Assign the compiled filename
-		compiled_filepath = os.path.join(self.out_dir, 'Common.fasta')
+		# Assign the test files
+		test_compiled_filepath = os.path.join(self.test_pipeline_path, 'Common.fasta')
 
 		# Compile the most abundant reads into a single file
-		type(self).demultiplex_job.compileMostAbundant(compiled_filepath)
+		type(self).demultiplex_job.compileMostAbundant(test_compiled_filepath)
 
 		# Check if the file exists
-		self.assertTrue(os.path.isfile(compiled_filepath))
+		self.assertTrue(os.path.isfile(test_compiled_filepath))
+
+		# Assign the test files
+		expected_compiled_filepath = os.path.join(self.expected_pipeline_path, 'Common.fasta')
+
+		# Confirm the test file has the correct contents
+		self.assertTrue(fileComp(test_compiled_filepath, expected_compiled_filepath))
 
 if __name__ == "__main__":
 	unittest.main(verbosity = 2)

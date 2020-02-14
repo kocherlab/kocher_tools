@@ -62,8 +62,7 @@ def barcodePipelineParser ():
 	# Return the arguments
 	return pipeline_parser.parse_args()
 
-
-if __name__== "__main__":
+def main():
 
 	# Assign the barcode args
 	barcode_args = barcodePipelineParser()
@@ -188,3 +187,6 @@ if __name__== "__main__":
 	blastTopHit(compiled_file_path, blast_file_path, barcode_args.blast_database, barcode_args.threads)
 
 	logging.info('Finished BLAST')
+
+if __name__== "__main__":
+	main()
