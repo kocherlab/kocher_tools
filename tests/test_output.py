@@ -11,7 +11,7 @@ import random
 
 from kocher_tools.database import *
 from kocher_tools.output import *
-from tests.functions import fileComp
+from tests.functions import fileComp, stdoutToStr
 
 # Run tests for output.py
 class test_output (unittest.TestCase):
@@ -35,7 +35,7 @@ class test_output (unittest.TestCase):
 		cls.database = os.path.join(cls.script_dir, cls.expected_dir, 'testDB.sqlite')
 
 		# Retrieve values from the database
-		cls.retrieved_entries = retrieveValues(cls.database, ['Table1', 'Table2'], {}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
+		cls.retrieved_entries = retrieveValues(cls.database, ['Table1', 'Table2'], {'IN':{'Table1."Unique ID"': ['Value1']}}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
 
 	@classmethod
 	def tearDownClass (cls):
@@ -60,21 +60,9 @@ class test_output (unittest.TestCase):
 
 	# Check entriesToScreen
 	def test_02_entriesToScreen (self):
-		
-		# Create a StringIO object to store the stdout 
-		test_str_stdout = io.StringIO()
 
-		# Redirect stdout to StringIO objec
-		sys.stdout = test_str_stdout
-
-		# Call the stdout producing function
-		entriesToScreen(self.retrieved_entries, '\t')
-
-		# Reset the stdout
-		sys.stdout = sys.__stdout__
-
-		# Assign the test string
-		test_str = test_str_stdout.getvalue()
+		# Run the command, with stdout converted to a string
+		test_str = stdoutToStr(entriesToScreen, self.retrieved_entries, '\t')
 
 		# Assign the expected string
 		expected_str = 'Unique ID\tSpecies\nValue1\tValue2\n'

@@ -276,9 +276,26 @@ def strFileComp (test_str, expected_output):
 	# Return the comparison results
 	return compare_results
 
-
-
 def randomGenerator (length = 10, char_set = string.ascii_uppercase + string.digits):
 
 	# Return a random string of letters and numbers
 	return ''.join(random.choice(char_set) for i in range(length))
+
+def stdoutToStr (function_call, *args):
+
+	# Create a StringIO object to store the stdout 
+	test_str_stdout = io.StringIO()
+
+	# Redirect stdout to StringIO object
+	sys.stdout = test_str_stdout
+
+	# Run the command
+	function_call(*args)
+
+	# Reset the stdout
+	sys.stdout = sys.__stdout__
+
+	# Assign the stdout string
+	stdout_str = test_str_stdout.getvalue()
+
+	return stdout_str

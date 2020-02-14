@@ -102,145 +102,149 @@ def retrieveSampleParser ():
 
 	return retrieve_parser.parse_args()
 
-# Assign arguments
-retrieve_args = retrieveSampleParser()
+def main():
+	# Assign arguments
+	retrieve_args = retrieveSampleParser()
 
-# Create string to hold the output filename
-out_filename = ''
+	# Create string to hold the output filename
+	out_filename = ''
 
-# Check if an output filename was specified
-if retrieve_args.out:
+	# Check if an output filename was specified
+	if retrieve_args.out:
 
-	# Assign the out filename
-	out_filename = retrieve_args.out
+		# Assign the out filename
+		out_filename = retrieve_args.out
 
-# Assign the filename with --out-prefix otherwise
-else:
-
-	# Assign the out filename
-	out_filename = retrieve_args.out_prefix  + '.' + retrieve_args.out_format
-
-# Check that the output mode isn't stdout
-if not retrieve_args.stdout:
-
-	# Check if previous output should be overwritten
-	if retrieve_args.overwrite:
-
-		# Remove the previous output, if it exists
-		if os.path.exists(out_filename):
-			os.remove(out_filename)
-
-	# Check if previous output shouldn't be overwritten
+	# Assign the filename with --out-prefix otherwise
 	else:
 
-		# Check if previous output exists
-		if os.path.exists(out_filename):
+		# Assign the out filename
+		out_filename = retrieve_args.out_prefix  + '.' + retrieve_args.out_format
 
-			# Raise an exception
-			raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
+	# Check that the output mode isn't stdout
+	if not retrieve_args.stdout:
 
-# Read in the database config file
-db_config_data = readConfig(retrieve_args.yaml)
+		# Check if previous output should be overwritten
+		if retrieve_args.overwrite:
 
-# Check if log should be sent to stdout
-if retrieve_args.log_stdout:
+			# Remove the previous output, if it exists
+			if os.path.exists(out_filename):
+				os.remove(out_filename)
 
-	# Start logging to stdout for this run
-	startLogger()
+		# Check if previous output shouldn't be overwritten
+		else:
 
-else:
+			# Check if previous output exists
+			if os.path.exists(out_filename):
 
-	# Start a log file for this run
-	startLogger(log_filename = retrieve_args.out_log)
+				# Raise an exception
+				raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
 
-# Log the arguments used
-logArgs(retrieve_args)
+	# Read in the database config file
+	db_config_data = readConfig(retrieve_args.yaml)
 
-# List to hold columns to be printed
-columns_assignment_list = []
+	# Check if log should be sent to stdout
+	if retrieve_args.log_stdout:
 
-# List to hold table to be printed, required for printing single columns
-table_assignment_list = []
+		# Start logging to stdout for this run
+		startLogger()
 
-# Check if the user specified a table
-if retrieve_args.table:
+	else:
 
-	# Assign the tables
-	table_assignment_list.extend(retrieve_args.table)
+		# Start a log file for this run
+		startLogger(log_filename = retrieve_args.out_log)
 
-	# Loop the list of specified tables
-	for table_str in table_assignment_list:
+	# Log the arguments used
+	logArgs(retrieve_args)
 
-		# Check if the database has the specified table
-		if table_str not in db_config_data:
+	# List to hold columns to be printed
+	columns_assignment_list = []
 
-			# Print an error message
-			raise Exception('Table (%s) not found. Please select from: %s' % (table_str, ', '.join(db_config_data.tables)))
+	# List to hold table to be printed, required for printing single columns
+	table_assignment_list = []
 
-		# Get the columns from the table and add to the column assignment list
-		columns_assignment_list.extend(db_config_data[table_str].retieveColumnPaths(keep_db_specific_columns = True))
+	# Check if the user specified a table
+	if retrieve_args.table:
+
+		# Assign the tables
+		table_assignment_list.extend(retrieve_args.table)
+
+		# Loop the list of specified tables
+		for table_str in table_assignment_list:
+
+			# Check if the database has the specified table
+			if table_str not in db_config_data:
+
+				# Print an error message
+				raise Exception('Table (%s) not found. Please select from: %s' % (table_str, ', '.join(db_config_data.tables)))
+
+			# Get the columns from the table and add to the column assignment list
+			columns_assignment_list.extend(db_config_data[table_str].retieveColumnPaths(keep_db_specific_columns = True))
+
+			# Update log
+			logging.info('Successfully assigned table(s) from command-line')
+
+	# Check if the user specified a column
+	elif retrieve_args.column:
+		
+		# Assign the tables
+		table_assignment_list.extend(db_config_data.returnTables(retrieve_args.column))
+
+		# Loop the list of specified column
+		for column_str in retrieve_args.column:
+
+			# Assign the column path
+			columns_assignment_list.append(db_config_data.returnColumnPath(column_str))
 
 		# Update log
-		logging.info('Successfully assigned table(s) from command-line')
+		logging.info('Successfully assigned column(s) from command-line')
 
-# Check if the user specified a column
-elif retrieve_args.column:
-	
-	# Assign the tables
-	table_assignment_list.extend(db_config_data.returnTables(retrieve_args.column))
+	# Assign a defaultdict with all the selection information
+	selection_dict = assignSelectionDict(db_config_data, **vars(retrieve_args))
 
-	# Loop the list of specified column
-	for column_str in retrieve_args.column:
+	# Assign the tables that need to be updated
+	selection_tables = assignTables(db_config_data, **vars(retrieve_args))
 
-		# Assign the column path
-		columns_assignment_list.append(db_config_data.returnColumnPath(column_str))
+	# Assign the tables for retrieval
+	tables = table_assignment_list + selection_tables
 
-	# Update log
-	logging.info('Successfully assigned column(s) from command-line')
+	# Remove potential duplicates
+	tables = list(set(tables))
 
-# Assign a defaultdict with all the selection information
-selection_dict = assignSelectionDict(db_config_data, **vars(retrieve_args))
+	# Check if only a single table is required
+	if len(tables) == 1:
 
-# Assign the tables that need to be updated
-selection_tables = assignTables(db_config_data, **vars(retrieve_args))
+		# Retrieve the selected entries from the database 
+		retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list)
 
-# Assign the tables for retrieval
-tables = table_assignment_list + selection_tables
+	# Otherwise, run the process for multiple tables
+	else:
 
-# Remove potential duplicates
-tables = list(set(tables))
+		# Assign the tables and keys that need to be joined
+		tables, join_by_columns = db_config_data.returnJoinLists(tables)
 
-# Check if only a single table is required
-if len(tables) == 1:
+		# Retrieve the selected entries from the database 
+		retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
 
-	# Retrieve the selected entries from the database 
-	retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list)
+	# Set the deafult delimiter
+	delimiter = '\t'
 
-# Otherwise, run the process for multiple tables
-else:
+	# Check if the csv format was requested
+	if retrieve_args.out_format == 'csv':
 
-	# Assign the tables and keys that need to be joined
-	tables, join_by_columns = db_config_data.returnJoinLists(tables)
+		# Update the delimiter
+		delimiter = ','
 
-	# Retrieve the selected entries from the database 
-	retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
+	# Check if stdout was requested
+	if retrieve_args.stdout:
 
-# Set the deafult delimiter
-delimiter = '\t'
+		# Print the entries to stdout
+		entriesToScreen(retrieved_entries, delimiter)
 
-# Check if the csv format was requested
-if retrieve_args.out_format == 'csv':
+	else:
 
-	# Update the delimiter
-	delimiter = ','
+		# Write retrieved entries to a file
+		entriesToFile(retrieved_entries, out_filename, delimiter)
 
-# Check if stdout was requested
-if retrieve_args.stdout:
-
-	# Print the entries to stdout
-	entriesToScreen(retrieved_entries, delimiter)
-
-else:
-
-	# Write retrieved entries to a file
-	entriesToFile(retrieved_entries, out_filename, delimiter)
+if __name__ == "__main__":
+	unittest.main(verbosity = 2)
