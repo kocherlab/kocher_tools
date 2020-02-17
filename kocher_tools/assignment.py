@@ -142,13 +142,13 @@ def assignSelectionDict (config_data, include = None, exclude = None,
 	if include_nests:
 
 		# Update the selection dict
-		selection_dict['IN'][config_data.returnColumnPath('From Nest?')] = 'Yes'
+		selection_dict['IN'][config_data.returnColumnPath('From Nest?')] = ['Yes']
 
 	# Check if genus exclude is defined
 	if exclude_nests:
 
 		# Update the selection dict
-		selection_dict['NOT IN'][config_data.returnColumnPath('From Nest?')] = 'Yes'
+		selection_dict['NOT IN'][config_data.returnColumnPath('From Nest?')] = ['Yes']
 
 	# Update log
 	logging.info('Successfully assigned selection statement dict(s)')
