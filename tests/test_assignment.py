@@ -58,10 +58,10 @@ class test_assignment (unittest.TestCase):
 			self.skipTest('Requires working config file to operate. Check config tests for errors')
 
 		# Create test keyword dicts
-		test_01 = {'include_ID': 'TestID'}
-		test_02 = {'include_species': 'TestSpecies'}
-		test_03 = {'include_ID': 'TestID', 'exclude_species': 'TestSpecies'}
-		test_04 = {'exclude_ID': 'TestID', 'include_species': 'TestSpecies'}
+		test_01 = {'include_ID': ['TestID']}
+		test_02 = {'include_species': ['TestSpecies']}
+		test_03 = {'include_ID': ['TestID'], 'exclude_species': ['TestSpecies']}
+		test_04 = {'exclude_ID': ['TestID'], 'include_species': ['TestSpecies']}
 		test_05 = {'include_nests': True}
 		test_06 = {'include_species': 'TestSpecies', 'include_nests': True}
 
@@ -91,20 +91,20 @@ class test_assignment (unittest.TestCase):
 			self.skipTest('Requires working config file to operate. Check config tests for errors')
 
 		# Create test keyword dicts
-		test_01 = {'include_ID': 'TestID'}
-		test_02 = {'include_species': 'TestSpecies'}
-		test_03 = {'include_ID': 'TestID', 'exclude_species': 'TestSpecies'}
-		test_04 = {'exclude_ID': 'TestID', 'include_species': 'TestSpecies'}
+		test_01 = {'include_ID': ['TestID']}
+		test_02 = {'include_species': ['TestSpecies']}
+		test_03 = {'include_ID': ['TestID'], 'exclude_species': ['TestSpecies']}
+		test_04 = {'exclude_ID': ['TestID'], 'include_species': ['TestSpecies']}
 		test_05 = {'include_nests': True}
-		test_06 = {'include_species': 'TestSpecies', 'exclude_nests': True}
+		test_06 = {'include_species': ['TestSpecies'], 'exclude_nests': True}
 
 		# Create data of the expected results
-		expected_01 = {'IN': {'Table1."Unique ID"': 'TestID'}}
-		expected_02 = {'IN': {'Table2.Species': 'TestSpecies'}}
-		expected_03 = {'IN': {'Table1."Unique ID"': 'TestID'}, 'NOT IN': {'Table2.Species': 'TestSpecies'}}
-		expected_04 = {'NOT IN': {'Table1."Unique ID"': 'TestID'}, 'IN': {'Table2.Species': 'TestSpecies'}}
-		expected_05 = {'IN': {'Table3."From Nest?"': 'Yes'}}
-		expected_06 = {'IN': {'Table2.Species': 'TestSpecies'}, 'NOT IN': {'Table3."From Nest?"': 'Yes'}}
+		expected_01 = {'IN': {'Table1."Unique ID"': ['TestID']}}
+		expected_02 = {'IN': {'Table2.Species': ['TestSpecies']}}
+		expected_03 = {'IN': {'Table1."Unique ID"': ['TestID']}, 'NOT IN': {'Table2.Species': ['TestSpecies']}}
+		expected_04 = {'NOT IN': {'Table1."Unique ID"': ['TestID']}, 'IN': {'Table2.Species': ['TestSpecies']}}
+		expected_05 = {'IN': {'Table3."From Nest?"': ['Yes']}}
+		expected_06 = {'IN': {'Table2.Species': ['TestSpecies']}, 'NOT IN': {'Table3."From Nest?"': ['Yes']}}
 
 		# Test which tables are returned
 		self.assertEqual(assignSelectionDict(self.config_data, **test_01), expected_01)

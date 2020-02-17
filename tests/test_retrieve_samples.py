@@ -15,7 +15,7 @@ import subprocess
 from unittest.mock import patch
 
 from kocher_tools.retrieve_samples import *
-from functions import fileComp, stdoutToStr
+from tests.functions import fileComp, stdoutToStr
 
 # Run tests for retrieve_samples.py
 class test_retrieve_samples (unittest.TestCase):
