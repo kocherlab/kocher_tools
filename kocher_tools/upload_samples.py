@@ -9,6 +9,7 @@ from collections import defaultdict
 from kocher_tools.collection import addAppCollectionToDatabase, updateAppCollectionToDatabase
 from kocher_tools.location import addLocFileToDatabase, updateLocFileToDatabase, addAppLocationsToDatabase, updateAppLocationsToDatabase
 from kocher_tools.barcode import addSeqFilesToDatabase, updateSeqFilesToDatabase
+from kocher_tools.storage import addStorageFileToDatabase, updateStorageFileToDatabase
 from kocher_tools.assignment import assignSelectionDict, assignTables
 from kocher_tools.database import updateValues
 from kocher_tools.config_file import readConfig
@@ -168,146 +169,168 @@ def canUpdate (update_dict):
 			return False
 
 	return True
+
+def main():
 			
-# Assign arguments
-upload_args = upload_sample_parser()
+	# Assign arguments
+	upload_args = upload_sample_parser()
 
-# Read in the database config file
-db_config_data = readConfig(upload_args.yaml)
+	# Read in the database config file
+	db_config_data = readConfig(upload_args.yaml)
 
-# Start a log file for this run
-startLogger(log_filename = upload_args.out_log)
+	# Start a log file for this run
+	startLogger(log_filename = upload_args.out_log)
 
-# Log the arguments used
-logArgs(upload_args)
+	# Log the arguments used
+	logArgs(upload_args)
 
-# Check if a collection app file has been specified
-if upload_args.app_files:
+	# Check if a collection app file has been specified
+	if upload_args.app_files:
 
-	# Loop the collection app files
-	for app_file in upload_args.app_files:
+		# Loop the collection app files
+		for app_file in upload_args.app_files:
 
-		# Check if a selection key has been specified
-		if upload_args.update_with_file:
+			# Check if a selection key has been specified
+			if upload_args.update_with_file:
 
-			# Check if the Collection should be updated
-			if upload_args.app_upload_method in ['Collection', 'Both']:
+				# Check if the Collection should be updated
+				if upload_args.app_upload_method in ['Collection', 'Both']:
+
+					# Update the database with the file
+					updateAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', 'Unique ID', app_file)
+
+				# Check if the Collection should be updated
+				if upload_args.app_upload_method in ['Location', 'Both']:
+
+					# Update the database with the file
+					updateAppLocationsToDatabase(upload_args.sqlite_db, 'Locations', 'Site Code', app_file)
+
+			else:
+
+				# Check if the Collection should be added
+				if upload_args.app_upload_method in ['Collection', 'Both']:
+
+					# Add file to the database
+					addAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', app_file)
+
+				# Check if the Collection should be updated
+				if upload_args.app_upload_method in ['Location', 'Both']:
+
+					# Add file to the database
+					addAppLocationsToDatabase(upload_args.sqlite_db, 'Locations', app_file)
+
+	# Check if barcode files have been specified
+	if upload_args.barcode_files:
+
+		# Loop the collection app files
+		for barcode_files in upload_args.barcode_files:
+
+			# Check if only a pair of files was passed
+			if len(barcode_files) == 2: 
+
+				# Assign the blast and fasta file
+				blast_file, fasta_file = barcode_files
+
+				# Set the failed file to None
+				failed_file = None
+
+			# Check if all files was passed
+			elif len(barcode_files) == 3: 
+
+				# Assign the blast and fasta file
+				blast_file, fasta_file, failed_file = barcode_files
+
+			# Check if a selection key has been specified
+			if upload_args.update_with_file:
 
 				# Update the database with the file
-				updateAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', 'Unique ID', app_file)
+				updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
 
-			# Check if the Collection should be updated
-			if upload_args.app_upload_method in ['Location', 'Both']:
+			else:
+
+				# Add file to the database
+				addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
+
+	# Check if a location file has been specified
+	if upload_args.loc_files:
+
+		# Loop the location files
+		for loc_file in upload_args.loc_files:
+
+			# Check if a selection key has been specified
+			if upload_args.update_with_file:
 
 				# Update the database with the file
-				updateAppLocationsToDatabase(upload_args.sqlite_db, 'Location', 'Unique ID', app_file)
+				updateLocFileToDatabase(upload_args.sqlite_db, 'Locations', 'Site Code', loc_file)
 
-		else:
-
-			# Check if the Collection should be added
-			if upload_args.app_upload_method in ['Collection', 'Both']:
+			else:
 
 				# Add file to the database
-				addAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', app_file)
+				addLocFileToDatabase(upload_args.sqlite_db, 'Locations', loc_file)
 
-			# Check if the Collection should be updated
-			if upload_args.app_upload_method in ['Location', 'Both']:
+	# Check if a storage file has been specified
+	if upload_args.storage_files:
+
+		# Loop the storage files
+		for storage_file in upload_args.storage_files:
+
+			# Check if a selection key has been specified
+			if upload_args.update_with_file:
+
+				# Update the database with the file
+				updateStorageFileToDatabase(upload_args.sqlite_db, 'Storage', 'Storage ID', storage_file)
+
+			else:
 
 				# Add file to the database
-				addAppLocationsToDatabase(upload_args.sqlite_db, 'Location', app_file)
+				addStorageFileToDatabase(upload_args.sqlite_db, 'Storage', storage_file)
 
-# Check if barcode files have been specified
-if upload_args.barcode_files:
+	# Check if update data has been specified
+	if upload_args.update:
 
-	# Loop the collection app files
-	for barcode_files in upload_args.barcode_files:
+		# Check if the update is impossible
+		if not canUpdate(upload_args.update):
+			raise Exception('Not allowed to alter: %s' % column)
 
-		# Check if only a pair of files was passed
-		if len(barcode_files) == 2: 
+		# Assign the tables that need to be updated
+		selection_tables = assignTables(db_config_data, **vars(upload_args))
 
-			# Assign the blast and fasta file
-			blast_file, fasta_file = barcode_files
+		# Assign a defaultdict with all the selection information
+		selection_dict = assignSelectionDict(db_config_data, **vars(upload_args))
 
-			# Set the failed file to None
-			failed_file = None
+		# Create a list of the tables to update
+		tables_to_update = db_config_data.returnTables(list(upload_args.update.keys()))
+		
+		# Loop the tables that need to be updated 
+		for table_to_update in tables_to_update:
 
-		# Check if all files was passed
-		elif len(barcode_files) == 3: 
+			# Create the update statement dict for the current table
+			update_statement_dict = db_config_data.returnColumnDict(upload_args.update, table_to_update)
 
-			# Assign the blast and fasta file
-			blast_file, fasta_file, failed_file = barcode_files
+			# Check if the current table is within the tables to join
+			if table_to_update in selection_tables and len(selection_tables) == 1:
 
-		# Check if a selection key has been specified
-		if upload_args.update_with_file:
+				updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict)
 
-			# Update the database with the file
-			updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
+			# Run the expanded command if there are tables to join
+			else:
 
-		else:
+				# Assign the key for the table to update
+				join_by_column = db_config_data[table_to_update].join_by_key
 
-			# Add file to the database
-			addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
+				# Create a copy of the selection tables
+				tables_to_join = copy.copy(selection_tables)
 
-# Check if a location file has been specified
-if upload_args.loc_files:
+				# Add the table that is going to be updated
+				tables_to_join.append(table_to_update)
 
-	# Loop the location files
-	for loc_file in upload_args.loc_files:
+				# Remove any duplicates
+				tables_to_join = list(set(tables_to_join))
 
-		# Check if a selection key has been specified
-		if upload_args.update_with_file:
+				# Assign the tables and keys that need to be joined
+				join_by_names, join_by_columns = db_config_data.returnJoinLists(tables_to_join)
 
-			# Update the database with the file
-			updateLocFileToDatabase(upload_args.sqlite_db, 'Locations', 'Site Code', loc_file)
+				updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict, update_table_column = join_by_column, tables_to_join = join_by_names, join_table_columns = join_by_columns)
 
-		else:
-
-			# Add file to the database
-			addLocFileToDatabase(upload_args.sqlite_db, 'Locations', loc_file)
-
-# Check if update data has been specified
-if upload_args.update:
-
-	# Check if the update is impossible
-	if not canUpdate(upload_args.update):
-		raise Exception('Not allowed to alter: %s' % column)
-
-	# Assign the tables that need to be updated
-	selection_tables = assignTables(db_config_data, **vars(upload_args))
-
-	# Assign a defaultdict with all the selection information
-	selection_dict = assignSelectionDict(db_config_data, **vars(upload_args))
-
-	# Create a list of the tables to update
-	tables_to_update = db_config_data.returnTables(list(upload_args.update.keys()))
-	
-	# Loop the tables that need to be updated 
-	for table_to_update in tables_to_update:
-
-		# Create the update statement dict for the current table
-		update_statement_dict = db_config_data.returnColumnDict(upload_args.update, table_to_update)
-
-		# Check if the current table is within the tables to join
-		if table_to_update in selection_tables and len(selection_tables) == 1:
-
-			updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict)
-
-		# Run the expanded command if there are tables to join
-		else:
-
-			# Assign the key for the table to update
-			join_by_column = db_config_data[table_to_update].join_by_key
-
-			# Create a copy of the selection tables
-			tables_to_join = copy.copy(selection_tables)
-
-			# Add the table that is going to be updated
-			tables_to_join.append(table_to_update)
-
-			# Remove any duplicates
-			tables_to_join = list(set(tables_to_join))
-
-			# Assign the tables and keys that need to be joined
-			join_by_names, join_by_columns = db_config_data.returnJoinLists(tables_to_join)
-
-			updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict, update_table_column = join_by_column, tables_to_join = join_by_names, join_table_columns = join_by_columns)
+if __name__ == "__main__":
+	main()

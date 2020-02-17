@@ -103,6 +103,7 @@ def retrieveSampleParser ():
 	return retrieve_parser.parse_args()
 
 def main():
+	
 	# Assign arguments
 	retrieve_args = retrieveSampleParser()
 

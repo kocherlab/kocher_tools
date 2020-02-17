@@ -70,7 +70,6 @@ class test_collection (unittest.TestCase):
 						   'Life Stage', 'Has Pollen?', 'Sample Preservation Method', 'Head Preserved',
 						   'Head Preservation Method', 'From Nest?', 'Nest Code', 'Notes', 'Collection File']
 
-
 		# Create a bool to indicate the header has been checked
 		checked_header = False
 

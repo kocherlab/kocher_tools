@@ -106,7 +106,7 @@ def checkColumn (database, table, column):
 	except sqlite3.Error as error:
 		raise Exception(error)
 
-def checkValue (database, table, column, value):
+def checkValue (database, table, column, value, expected_count = None):
 	
 	try:
 
@@ -146,22 +146,45 @@ def checkValue (database, table, column, value):
 		if not selection_results:
 			raise Exception('Assignment error')
 
-		# Check if the table was found
-		if selection_results[0][0] >= 1:
+		# Check if an expected count has been defined
+		if expected_count:
 
-			# Return True
-			return True
+			# Check if the table was found
+			if selection_results[0][0] == int(expected_count):
 
-		# Check if the table was not found
-		elif selection_results[0][0] == 0:
+				# Return True
+				return True
 
-			# Return False
-			return False
+			# Check if the table was not found
+			elif selection_results[0][0] == 0:
 
-		# Check if there was an unknown error
+				# Return False
+				return False
+
+			# Check if there was an unknown error
+			else:
+
+				raise Exception('Unknown error')
+
+
 		else:
 
-			raise Exception('Unknown error')
+			# Check if the table was found
+			if selection_results[0][0] >= 1:
+
+				# Return True
+				return True
+
+			# Check if the table was not found
+			elif selection_results[0][0] == 0:
+
+				# Return False
+				return False
+
+			# Check if there was an unknown error
+			else:
+
+				raise Exception('Unknown error')
 
 	except sqlite3.Error as error:
 		raise Exception(error)
