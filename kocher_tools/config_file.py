@@ -114,7 +114,7 @@ class ConfigFile (list):
 		for db_table_source, db_table_dest in combinations(tables_to_join, 2):
 
 			# Save the simple paths
-			simple_paths = nx.all_simple_paths(self.table_graph, db_table_source, db_table_dest)
+			simple_paths = nx.all_shortest_paths(self.table_graph, db_table_source, db_table_dest)
 
 			# Loop the paths
 			for simple_path in simple_paths:
