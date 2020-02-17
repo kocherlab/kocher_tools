@@ -2,7 +2,7 @@ sql:
   #host: localhost
   #user: root
   #passwd: 
-  file: kocherDB.sqlite
+  file: testDB_large.sqlite
 
 database:
   
