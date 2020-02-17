@@ -10,7 +10,7 @@ import string
 import random
 
 from kocher_tools.database import *
-from tests.functions import checkTable, checkColumn, checkValue
+from functions import checkTable, checkColumn, checkValue
 
 # Run tests for database.py
 class test_database (unittest.TestCase):
@@ -20,6 +20,15 @@ class test_database (unittest.TestCase):
 
 		# Create a temporary directory
 		cls.test_dir = tempfile.mkdtemp()
+
+		# Assign the script directory
+		cls.script_dir = os.path.dirname(os.path.realpath(__file__))
+
+		# Assign the expected output directory
+		cls.expected_dir = 'test_files'
+
+		# Assign the expected path
+		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
 
 		# Assign the filename of the database
 		cls.database = os.path.join(cls.test_dir, 'testDB.sqlite')
@@ -164,6 +173,36 @@ class test_database (unittest.TestCase):
 		self.assertTrue(len(retrieved_entries[0]) == 2)
 		self.assertTrue(list(retrieved_entries[0].keys()) == ['Unique ID', 'Species'])
 		self.assertTrue(list(retrieved_entries[0]) == ['Updated2', 'Value2'])
+
+	# Check confirmValues
+	def test_13_confirmValues (self):
+
+		# Confirm the values are in the table
+		test_confirmed_entries = confirmValues(self.database, 'Table1', 'Unique ID', ['Value1', 'Updated2'])
+
+		# Save the expected results
+		expected_confirmed_entries = [False, True]
+
+		# Check the confirmed entries are as expected
+		self.assertEqual(test_confirmed_entries, expected_confirmed_entries)
+
+	# Check backupDatabase
+	def test_14_backupDatabase (self):
+
+		# Assign the out dir of the backup
+		backup_dir = os.path.join(self.expected_path, 'TestBackups')
+
+		# Assign the out dir of the backup
+		test_backup_dir = os.path.join(self.test_dir, 'TestBackups')
+
+		# Copy the backup dir
+		shutil.copytree(backup_dir, test_backup_dir)
+
+		backupDatabase(self.database, test_backup_dir, 5, 4)
+
+
+	
+		
 
 if __name__ == "__main__":
 	unittest.main(verbosity = 2)

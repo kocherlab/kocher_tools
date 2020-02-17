@@ -166,7 +166,6 @@ def checkValue (database, table, column, value, expected_count = None):
 
 				raise Exception('Unknown error')
 
-
 		else:
 
 			# Check if the table was found

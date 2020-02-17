@@ -530,3 +530,143 @@ def retrieveValues (database, tables, selection_dict, column_list, join_table_co
 
 	except sqlite3.Error as error:
 		raise Exception(error)
+
+def confirmValues (database, table, column, values):
+	
+	try:
+
+		# Create a list to store the check results
+		check_results = []
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(database)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
+		# Loop the values, value by value
+		for value in values:
+
+			# Check if the value is None
+			if value == None:
+				
+				# Create the value check string
+				sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s is NULL' % (table, quoteField(column))
+
+				# Execute the create table command
+				cursor.execute(sqlite_check_value)
+
+			else:
+			
+				# Create the value check string
+				sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s = ?' % (table, quoteField(column))
+
+				# Execute the create table command
+				cursor.execute(sqlite_check_value, [value])
+
+			# Save the selected results
+			selection_results = cursor.fetchall()
+
+			# Check if there was an assignment error
+			if not selection_results:
+				raise Exception('Assignment error when checking for presence of %s in %s:%s)' % (values, table, column))
+
+			# Check if the table was found
+			if selection_results[0][0] >= 1:
+
+				# Append True to the results list
+				check_results.append(True)
+
+			# Check if the table was not found
+			elif selection_results[0][0] == 0:
+
+				# Append False to the results list
+				check_results.append(False)
+
+			# Check if there was an unknown error
+			else:
+
+				raise Exception('Unknown error checking for presence of %s in %s:%s)' % (values, table, column))
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
+
+		# Return the results
+		return check_results
+
+	except sqlite3.Error as error:
+		raise Exception(error)
+
+def backupDatabase (database, out_dir, file_limit, update_freq, manual_backup = False):
+
+	# Assign the database basename and file extension
+	database_basename = os.path.basename(database)
+
+	# Assign the current date
+	current_date = datetime.date.today()
+
+	# Set the date format for the logging system
+	date_format = '%Y-%m-%d'
+		
+	# Convert the date into a string
+	current_date_str = current_date.strftime(date_format)
+
+	# Assign a bool to assign backup status
+	create_backup = True
+
+	# Check if this is a manual backup
+	if not manual_backup:
+
+		# Loop the files within the backup dir
+		for past_backup in os.listdir(out_dir):
+
+			# Assign the past backup date str
+			past_backup_date_str = past_backup.rsplit('.', 2)[-2]
+
+			# Convert the date string into a date list
+			past_backup_date_list = [int(date_str) for date_str in past_backup_date_str.split('-')]
+
+			# Assign the backup date
+			past_backup_date = datetime.date(*past_backup_date_list)
+
+			# Get the difference in time
+			date_difference = current_date - past_backup_date
+
+			# Check if the difference in greater than the update frequency
+			if update_freq >= date_difference.days:
+
+				# Update the bool
+				create_backup = False
+
+	# Check if the backup should be created
+	if create_backup:
+
+		# Assign the backup filename
+		backup = os.path.join(out_dir, '%s.%s.backup' % (database_basename, current_date_str))
+
+		# Connect to the databse 
+		sqlite_database_connection = sqlite3.connect(database)
+
+		# Connect to the backup
+		sqlite_backup_connection = sqlite3.connect(backup)
+
+		# Backup the database
+		with sqlite_backup_connection:
+			sqlite_database_connection.backup(sqlite_backup_connection, pages=1)
+		
+		# Close the connections 	
+		sqlite_backup_connection.close()
+		sqlite_database_connection.close()
+
+		# Update log
+		logging.info('Backup created: %s' % backup)
+
+	# Check if no backup is being created
+	else:
+
+		# Update log
+		logging.info('Recent backup found, skipping backup process')
+
