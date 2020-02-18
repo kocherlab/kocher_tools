@@ -8,9 +8,11 @@ import tempfile
 import io
 import string
 import random
+import datetime
+import pytz
 
 from kocher_tools.database import *
-from functions import checkTable, checkColumn, checkValue
+from tests.functions import checkTable, checkColumn, checkValue, randomGenerator
 
 # Run tests for database.py
 class test_database (unittest.TestCase):
@@ -198,11 +200,27 @@ class test_database (unittest.TestCase):
 		# Copy the backup dir
 		shutil.copytree(backup_dir, test_backup_dir)
 
-		backupDatabase(self.database, test_backup_dir, 5, 4)
+		# Assign the database basename and file extension
+		database_basename = os.path.basename(self.database)
 
-
-	
+		# Assign the current date
+		date_object = datetime.date.today()
 		
+		# Convert the date into a string
+		date_str = date_object.strftime('%Y-%m-%d')
+
+		# Assign the backup filename
+		backup_file = os.path.join(self.test_dir, 'TestBackups', '%s.%s.%s.backup' % (database_basename, randomGenerator(), date_str))
+
+		# Run the command
+		backupDatabase(self.database, backup_file)
+
+		# Check that the file was created
+		self.assertTrue(os.path.isfile(backup_file))
+
+		# Check that the expected values are found
+		self.assertTrue(checkValue(backup_file, 'Table1', '"Unique ID"', 'Updated2'))
+		self.assertTrue(checkValue(backup_file, 'Table2', '"Unique ID"', 'Updated2'))
 
 if __name__ == "__main__":
 	unittest.main(verbosity = 2)
