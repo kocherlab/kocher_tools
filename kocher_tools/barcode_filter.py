@@ -58,7 +58,7 @@ def barcodeFilterParser ():
 
 	# Best hit args
 	sort_by = ('percent_ident', 'align_len')
-	filter_parser.add_argument('--sort-best-hits-by', metavar = metavarList(sort_by), help = 'Sort method of best hits', choices = sort_by, default = sort_by, nargs = '+', type = str)
+	filter_parser.add_argument('--sort-best-hits-by', metavar = metavarList(sort_by), help = 'Sort method of best hits', choices = sort_by, default = ['percent_ident'], nargs = '+', type = str)
 	filter_parser.add_argument('--dont-merge-species', help = 'Do not merge best hits within a single species', action = 'store_true')
 
 	# Output file args
@@ -373,9 +373,6 @@ def main():
 
 				# Sort the best hits
 				sorted_best_hits = sortBestHits(sorted_best_hits, sort_method)
-
-			if len(sorted_best_hits) >= 2:
-				sys.exit()
 
 			# Check if there is more than one sorted best hit
 			if len(sorted_best_hits) > 1:
