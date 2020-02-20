@@ -89,7 +89,7 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	if has_indices:
 
 		# Create the basic input arg list
-		multiplex_call_args = ['-l', reformatted_i5_map_filename, i5_input, i7_input, r1_input, r2_input]
+		multiplex_call_args = ['-B', reformatted_i5_map_filename, i5_input, i7_input, r1_input, r2_input]
 
 		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
 		multiplex_call_args.extend(assignOutput(out_path, discard_i5, has_indices, 'i5'))
@@ -98,7 +98,7 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	else:
 
 		# Create the basic input arg list
-		multiplex_call_args = ['-l', reformatted_i5_map_filename, r1_input, r2_input]
+		multiplex_call_args = ['-B', reformatted_i5_map_filename, r1_input, r2_input]
 
 		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
 		multiplex_call_args.extend(assignOutput(out_path, discard_i5, has_indices, 'i5'))

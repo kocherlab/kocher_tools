@@ -99,18 +99,10 @@ class Multiplex (list):
 			# Loop the i5 map file, line by line
 			for i5_map_line in i5_map_file:
 
-
-
 				# Check if the line is empty
 				if not i5_map_line.strip():
 					continue
-					
-				if len(i5_map_line.split()) < 3:
-					print(i5_map_line.split())
-					continue
-
-					
-
+				
 				# Split the line into: plate, barcode, locus
 				i5_plate, i5_barcode, i5_locus = i5_map_line.split()
 
