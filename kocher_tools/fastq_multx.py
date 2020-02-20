@@ -85,8 +85,6 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	# Reformat the i5 map
 	i5ReformatMap(i5_map_filename, reformatted_i5_map_filename)
 
-	reformatted_i5_map_filename = i5_map_filename
-
 	# Check if the barcode job has indices
 	if has_indices:
 
@@ -109,7 +107,7 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	callFastqMultx(multiplex_call_args)
 
 	# Remove the reformatted i5 map
-	#os.remove(reformatted_i5_map_filename)
+	os.remove(reformatted_i5_map_filename)
 
 def i7BarcodeJob (i7_map_filename, i7_input, r1_input, r2_input, out_path, has_indices, discard_i7):
 
