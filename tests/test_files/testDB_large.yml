@@ -4,6 +4,11 @@ sql:
   #passwd: 
   file: testDB_large.sqlite
 
+backup:
+  out_dir: 'TestBackups'
+  limit: 5
+  update_freq: 4
+
 database:
   
   tables:

@@ -13,6 +13,7 @@ from kocher_tools.storage import addStorageFileToDatabase, updateStorageFileToDa
 from kocher_tools.assignment import assignSelectionDict, assignTables
 from kocher_tools.database import updateValues
 from kocher_tools.config_file import readConfig
+from kocher_tools.backup import Backups
 from kocher_tools.logger import startLogger, logArgs
 
 def upload_sample_parser ():
@@ -151,7 +152,8 @@ def upload_sample_parser ():
 	# Database arguments
 	upload_parser.add_argument('--sqlite-db', help = 'SQLite database filename', type = str, required = True, action = confirmFile())
 	upload_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, required = True, action = confirmFile())
-
+	upload_parser.add_argument('--backup', help = 'Will force the creation of a backup', action='store_true')
+	upload_parser.add_argument('--no-backup', help = 'Will skip backup procedure', action='store_true')
 
 	return upload_parser.parse_args()
 
@@ -183,6 +185,23 @@ def main():
 
 	# Log the arguments used
 	logArgs(upload_args)
+
+	# Check if the backup process should be skipped
+	if upload_args.no_backup:
+
+		logging.info('Skipping backup procedure')
+
+	else:
+
+		# Load the current backups
+		current_backups = Backups(out_dir = db_config_data.backup_out_dir, limit = db_config_data.backup_limit, update_freq = db_config_data.backup_update_freq)
+
+		# Check if a backup is required
+		if current_backups.backupNeeded() or upload_args.backup:
+
+			# Backup the database
+			#current_backups.newBackup(upload_args.sqlite_db)
+			pass
 
 	# Check if a collection app file has been specified
 	if upload_args.app_files:

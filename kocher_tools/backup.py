@@ -8,158 +8,225 @@ import string
 
 from kocher_tools.database import backupDatabase
 
-# Create a module date object to store a single date for all tasks
-module_date_object = None
+class Backups (list):
+	def __init__ (self, *arg, out_dir = None, limit = None, update_freq = None, **kw):
+		super(Backups, self).__init__(*arg, **kw)
+		self.out_dir = out_dir
+		self.limit = limit
+		self.update_freq = update_freq
+		self.timezone = pytz.timezone('US/Eastern')
+		self.str_format = '%Y-%m-%d'
+		self.date = datetime.datetime.now(self.timezone)
+		self.oldest_backup = None
+		self.most_recent_backup = None
 
-def returnDate (timezone = 'US/Eastern'):
+		# Check if data was not assigned
+		if not self:
 
-	# Assign the module date object as global
-	global module_date_object
+			# Assign the backups
+			self.assignBackups()
 
-	# Check if the module date object is already assigned
-	if not module_date_object:
+	@property
+	def date_str (self):
 
-		# Set the timezone
-		specified_timezone = pytz.timezone(timezone)
+		# Return the date as a string of Year-Month-Day
+		return self.date.strftime(self.str_format)
 
-		# Assign the current date
-		module_date_object = datetime.datetime.now(specified_timezone)
+	def assignBackups (self):
 
-	# Return the date object
-	return module_date_object
+		# Assign an empty object to store the oldest backup
+		oldest_backup = None
 
-def returnDateStr ():
+		# Assign an empty object to store the newest backup
+		most_recent_backup = None
+        
+		# Loop the files within the backup dir
+		for backup_file in os.listdir(self.out_dir):
 
-	# Assign the module date object as global
-	global module_date_object
+			# Assign the backup file path
+			backup_file_path = os.path.join(self.out_dir, backup_file)
 
-	# Check if the module date object is already assigned
-	if not module_date_object:
+			# Assign the past backup date str
+			past_backup_date_str = backup_file.rsplit('.', 2)[-2]
 
-		# Assign the current date
-		module_date_object = returnDate()
+			# Assign the backup date
+			past_backup_date = datetime.datetime.strptime(past_backup_date_str, self.str_format)
 
-	# Set the date format for the logging system
-	date_format = '%Y-%m-%d'
+			# Update the past backup date with the timezone
+			past_backup_date = past_backup_date.replace(tzinfo = self.timezone)
 
-	# Convert the date into a string
-	date_str = module_date_object.strftime(date_format)
+			# Assign a backup
+			past_backup = Backup(backup_file_path, past_backup_date)
 
-	# Return the date string
-	return date_str
+			# Check if the oldest backup has been defined
+			if not oldest_backup:
 
-def strToDate (date_str):
+				# Assign the current backup
+				oldest_backup = past_backup
 
-	# Convert the date string into a date object
-	date_object = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+			else:
 
-	# Return the date object
-	return date_object
+				# Check if the current backup is older than the stored oldest backup
+				if past_backup < oldest_backup:
 
-def backupNeeded (database, out_dir, update_freq, timezone = 'US/Eastern'):
+					# Assign the current backup
+					oldest_backup = past_backup
 
-	# Assign the database basename and file extension
-	database_basename = os.path.basename(database)
+			# Check if the newest backup has been defined
+			if not most_recent_backup:
 
-	# Assign the current date
-	current_date_object = returnDate()
+				# Assign the current backup
+				most_recent_backup = past_backup
 
-	# Set the timezone
-	specified_timezone = pytz.timezone(timezone)
+			else:
 
-	# Assign a bool to assign backup status
-	create_backup = True
+				# Check if the current backup is older than the stored oldest backup
+				if past_backup > most_recent_backup:
 
-	# Loop the files within the backup dir
-	for past_backup in os.listdir(out_dir):
+					# Assign the current backup
+					most_recent_backup = past_backup
 
-		# Assign the past backup date str
-		past_backup_date_str = past_backup.rsplit('.', 2)[-2]
+			# Save the table
+			self.append(past_backup)
 
-		# Assign the backup date
-		past_backup_date = strToDate(past_backup_date_str)
+		# Assing the oldest backup and the most recent date
+		self.oldest_backup = oldest_backup
+		self.most_recent_backup = most_recent_backup
 
-		# Update the past backup date with the timezone
-		past_backup_date = past_backup_date.replace(tzinfo = specified_timezone)
+	def updateBackups (self):
 
-		# Get the difference in time
-		date_diff = current_date_object - past_backup_date
+		# Check if the number of backups exceeds the backup limit
+		if len(self) > self.limit:
+
+			# Delete the oldest backup
+			self.deleteBackup(self.oldest_backup)
+
+			# Assign an empty object to store the oldest backup
+			oldest_backup = None
+
+			# Assign an empty object to store the newest backup
+			most_recent_backup = None
+	        
+			# Loop the backups, backup by backup
+			for current_backup in self:
+
+				# Check if the oldest backup has been defined
+				if not oldest_backup:
+
+					# Assign the current backup
+					oldest_backup = current_backup
+
+				else:
+
+					# Check if the current backup is older than the stored oldest backup
+					if current_backup < oldest_backup:
+
+						# Assign the current backup
+						oldest_backup = current_backup
+
+				# Check if the newest backup has been defined
+				if not most_recent_backup:
+
+					# Assign the current backup
+					most_recent_backup = current_backup
+
+				else:
+
+					# Check if the current backup is older than the stored oldest backup
+					if current_backup > most_recent_backup:
+
+						# Assign the current backup
+						most_recent_backup = current_backup
+
+			# Assing the oldest backup and the most recent date
+			self.oldest_backup = oldest_backup
+			self.most_recent_backup = most_recent_backup
+
+	def backupNeeded (self):
+
+		# Get the difference in time from the most recent backup
+		date_diff = self.date - self.most_recent_backup.backup_date
 
 		# Check if the difference in greater than the update frequency
-		if update_freq >= date_diff.days:
+		if self.update_freq >= date_diff.days:
 
-			# Update the bool
-			create_backup = False
+			# Return False if the limit to larger than the number of days
+			return False
 
-	# Return the result
-	return create_backup
+		# Return True if the limit is smaller
+		return True
 
-def createBackup (database, out_dir):
+	def newBackup (self, database):
 
-	# Assign the database basename and file extension
-	database_basename = os.path.basename(database)
-		
-	# Convert the date into a string
-	current_date_str = returnDateStr()
+		# Assign the database basename and file extension
+		database_basename = os.path.basename(database)
+			
+		# Create random string for database filename
+		random_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(6))
 
-	# Create random string for database filename
-	random_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(6))
+		# Assign the backup filename
+		backup_file = os.path.join(self.out_dir, '%s.%s.%s.backup' % (database_basename, random_str, self.date_str))
 
-	# Assign the backup filename
-	backup_file = os.path.join(out_dir, '%s.%s.%s.backup' % (database_basename, random_str, current_date_str))
+		# Create the database
+		backupDatabase(database, backup_file)
 
-	# Create the database
-	backupDatabase(database, backup_file)
+		# Assign the new backup
+		new_backup = Backup(backup_file, self.date)
 
-	# Update log
-	logging.info('Backup created: %s' % backup_file)
+		# Append the new backup
+		self.append(new_backup)
 
-def removeOldBackup (database, out_dir, file_limit):
+		# Update the most recent backup
+		self.most_recent_backup = new_backup
 
-	# Assign the database basename and file extension
-	database_basename = os.path.basename(database)
+		# Update the backups
+		self.updateBackups()
 
-	# Assign a dict to store the backups
-	backups = {}
+	def deleteBackup (self, backup_to_delete):
 
-	# Loop the files within the backup dir
-	for past_backup in os.listdir(out_dir):
+		# Assign the file path of the backup file
+		backup_file_path = str(backup_to_delete)
 
-		# Assign the past backup date str
-		past_backup_date_str = past_backup.rsplit('.', 2)[-2]
+		# Confirm the file exists, otherwise raise an error
+		if not os.path.isfile(backup_file_path):
+			raise Exception('Backup file (%s) not found' % backup_file_path)
 
-		# Assign the backup date
-		past_backup_date = strToDate(past_backup_date_str)
+		# Remove the file
+		os.remove(backup_file_path)
 
-		# Update the dict
-		backups[past_backup_date] = past_backup
+		# Loop the backups by index
+		for backup_pos in range(len(self)):
 
-	# Create a list of the dates
-	backup_date_list = list(backups.keys())
+			# Check if the current backup is the one to remove
+			if self[backup_pos] == backup_to_delete:
 
-	# Check if the number of backups is larger than the backup limit
-	while len(backup_date_list) > file_limit:
+				# Remove the backup object
+				del self[backup_pos]
+				break
 
-		# Sort the dates
-		backup_date_list.sort()
+class Backup ():
+	def __init__ (self, file_path, backup_date):
 
-		# Assign the oldest backup date
-		oldest_backup_date = backup_date_list[0]
+		# Confirm the file exists
+		if not os.path.isfile(file_path):
+			raise Exception('Backup file (%s) not found' % file_path)
 
-		# Assign the oldest backup basename
-		oldest_backup_basename = backups[oldest_backup_date]
+		self.file_path = file_path
+		self.backup_date = backup_date
 
-		# Assign the oldest backup filepath
-		oldest_backup_file = os.path.join(out_dir, oldest_backup_basename)
+	def __str__ (self):
 
-		# Confirm the file existsm if not, raise an exception
-		if not os.path.exists(oldest_backup_file):
-			raise Exception('Unable to delete backup %s. File not found' % oldest_backup_file)
+		# str() returns the file path
+		return self.file_path
 
-		# Remove the oldest backup
-		os.remove(oldest_backup_file)
+	def __gt__ (self, other_backup):
 
-		logging.info('Backup file (%s) deleted' % oldest_backup_basename)
+		# Check if the stored date is more recent
+		return self.backup_date > other_backup.backup_date
 
-		# Update the list by removing the deleted date
-		backup_date_list.remove(oldest_backup_date)
+	def __lt__ (self, other_backup):
+
+		# Check if the stored date is older
+		return self.backup_date < other_backup.backup_date
+
+

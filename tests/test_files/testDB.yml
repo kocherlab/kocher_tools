@@ -2,11 +2,12 @@ sql:
   #host: localhost
   #user: root
   #passwd: 
-  file: testDB.sqlite
-  backup:
-    out_dir: 'testDB_backups'
-    keep: 5
-    update_freq: 4
+  file: 'testDB.sqlite'
+
+backup:
+  out_dir: 'TestBackups'
+  limit: 5
+  update_freq: 4
 
 database:
   

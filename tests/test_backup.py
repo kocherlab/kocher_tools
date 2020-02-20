@@ -12,6 +12,7 @@ import datetime
 import pytz
 
 from kocher_tools.backup import *
+from kocher_tools.config_file import readConfig
 from tests.functions import checkValue
 
 # Run tests for backup.py
@@ -35,170 +36,170 @@ class test_backup (unittest.TestCase):
 		# Assign the filename of the database
 		cls.database = os.path.join(cls.expected_path, 'testDB.sqlite')
 
+		# Create empty variable to store the backups
+		cls.backups = None
+
 	@classmethod
 	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
 
-	# Check returnDate
-	def test_01_returnDate (self):
+	# Check Backups
+	def test_01_Backups (self):
 
-		# Assign the date object using the command
-		test_one_date_object = returnDate()
+		try:
 
-		# Set the timezone
-		specified_timezone = pytz.timezone('US/Eastern')
+			# Assign the path of the existing files/dir to copy
+			existing_config_file = os.path.join(self.expected_path, 'testDB.yml')
+			existing_backup_dir = os.path.join(self.expected_path, 'TestBackups')
 
-		# Assign the current date
-		expected_date_object = datetime.datetime.now(specified_timezone)
+			# Assign the path of the test files/dir to copy
+			test_config_file = os.path.join(self.test_dir, 'testDB.yml')
+			test_backup_dir = os.path.join(self.test_dir, 'TestBackups')
 
-		# Set the date format for the logging system
-		date_format = '%Y-%m-%d'
+			# Copy the test files/dir to copy
+			shutil.copy(existing_config_file, test_config_file)
+			shutil.copytree(existing_backup_dir, test_backup_dir)
 
-		# Convert the dates into a strings
-		test_one_date_str = test_one_date_object.strftime(date_format)
-		expected_date_str = expected_date_object.strftime(date_format)
+			# Read in the config file
+			config_data = readConfig(test_config_file)
 
-		# Confirm the dates are the same
-		self.assertEqual(test_one_date_str, expected_date_str)
+			# Load the current backups
+			type(self).backups = Backups(out_dir = config_data.backup_out_dir, limit = config_data.backup_limit, update_freq = config_data.backup_update_freq)
 
-		# Assign the date object using the command
-		test_two_date_object = returnDate()
+		except:
 
-		# Confirm the dates are the same
-		self.assertEqual(test_one_date_object, test_two_date_object)
+			raise Exception('Unable to assign Backups')
 
-	# Check returnDateStr
-	def test_02_returnDateStr (self):
+	# Check Backup
+	def test_02_Backup (self):
 
-		# Assign the date string using the command
-		test_date_str = returnDateStr()
+		# Check if the config data wasn't assigned
+		if self.backups == None:
 
-		# Set the timezone
-		specified_timezone = pytz.timezone('US/Eastern')
+			# Skip the test if so
+			self.skipTest('Requires test_01 to pass')
 
-		# Assign the current date
-		expected_date_object = datetime.datetime.now(specified_timezone)
+		# Confirm a single backup was found in the backups
+		self.assertEqual(len(self.backups), 1)
 
-		# Set the date format for the logging system
-		date_format = '%Y-%m-%d'
+		# Assign the test backup
+		test_backup = self.backups[0]
 
-		# Convert the date into a string
-		expected_date_str = expected_date_object.strftime(date_format)
+		# Check the string function returns the path
+		self.assertEqual(test_backup.file_path, str(test_backup))
 
-		# Confirm the dates are the same
-		self.assertEqual(test_date_str, expected_date_str)
+		# Assign the expected backup info
+		expected_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2020-01-01.backup')
+		expected_date_object = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
 
-	# Check strToDate
-	def test_03_strToDate (self):
+		# Add timezone information to the expected date object
+		expected_date_object = expected_date_object.replace(tzinfo = pytz.timezone('US/Eastern'))
+ 		
+ 		# Confirm the contents are as expected
+		self.assertEqual(test_backup.file_path, expected_file)
+		self.assertEqual(test_backup.backup_date, expected_date_object)
 
-		# Set the timezone
-		specified_timezone = pytz.timezone('US/Eastern')
+		# Assign a new backup for testing
+		test_01_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2000-01-01.backup')
+		test_01_date_object = datetime.datetime.strptime('2000-01-01', '%Y-%m-%d')
 
-		# Assign the current date
-		date_object = datetime.datetime.now(specified_timezone)
+		# Add timezone information to the expected date object
+		test_01_date_object = test_01_date_object.replace(tzinfo = pytz.timezone('US/Eastern'))
 
-		# Set the date format for the logging system
-		date_format = '%Y-%m-%d'
+		# Copy a file for the test
+		shutil.copy(expected_file, test_01_file)
 
-		# Convert the date into a string
-		date_str = date_object.strftime(date_format)
+		# Save the file as a backup
+		test_01 = Backup(test_01_file, test_01_date_object)
 
-		# Assign the expected date object
-		expected_date_object = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+		# Confirm the first test is older than the current backup
+		self.assertTrue(test_01 < test_backup)
 
-		# Assign the date object using the command
-		test_date_object = strToDate(date_str)
+		# Remove the test file
+		os.remove(test_01_file)
 
-		# Confirm the dates are the same
-		self.assertEqual(test_date_object, expected_date_object)
+		# Assign a new backup for testing
+		test_02_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2030-01-01.backup')
+		test_01_date_object = datetime.datetime.strptime('2030-01-01', '%Y-%m-%d')
+
+		# Add timezone information to the expected date object
+		test_02_date_object = test_01_date_object.replace(tzinfo = pytz.timezone('US/Eastern'))
+
+		# Copy a file for the test
+		shutil.copy(expected_file, test_02_file)
+
+		# Save the file as a backup
+		test_02 = Backup(test_02_file, test_02_date_object)
+
+		# Confirm the first test is older than the current backup
+		self.assertTrue(test_02 > test_backup)
+
+		# Remove the test file
+		os.remove(test_02_file)
 
 	# Check backupNeeded
-	def test_04_backupNeeded (self):
+	def test_03_backupNeeded (self):
 
-		# Assign the out dir of the backup
-		backup_dir = os.path.join(self.expected_path, 'TestBackups')
+		# Confirm that the backup needed function returns True when past the undate frequency
+		self.assertTrue(self.backups.backupNeeded())
 
-		# Run the command
-		backup_needed_result_one = backupNeeded(self.database, backup_dir, 10)
-		backup_needed_result_two = backupNeeded(self.database, backup_dir, 10**10)
+		# Save the orignal update frequency
+		update_freq = self.backups.update_freq
 
-		# Check that the commands returned the expected bool
-		self.assertTrue(backup_needed_result_one)
-		self.assertFalse(backup_needed_result_two)
+		# Update the update frequency
+		type(self).backups.update_freq = 10**10
 
-	# Check createBackup
-	def test_05_createBackup (self):
+		# Confirm that the backup needed function returns True when past the undate frequency
+		self.assertFalse(self.backups.backupNeeded())
 
-		# Assign the out dir of the backup
-		test_backup_dir = os.path.join(self.test_dir, 'TestBackups')
+		# Revert the update frequency
+		type(self).backups.update_freq = update_freq
 
-		# Create the test directory
-		if not os.path.exists(test_backup_dir):
-			os.makedirs(test_backup_dir)
+	# Check newBackup
+	def test_04_newBackup (self):
 
-		# Run the command
-		createBackup(self.database, test_backup_dir)
+		# Create a new backup
+		type(self).backups.newBackup(self.database)
 
-		# Assign the contents of the test dir
-		test_backup_files = os.listdir(test_backup_dir)
+		# Confirm two backups were found in the backups
+		self.assertEqual(len(self.backups), 2)
 
-		# Check that the file was created
-		self.assertTrue(len(test_backup_files) == 1)
+	# Check deleteBackup
+	def test_05_deleteBackup (self):
 
-		# List the files within the directory
-		for test_backup_file in test_backup_files:
+		# Confirm two backups were found in the backups
+		self.assertEqual(len(self.backups), 2)
 
-			# Assign the filepath of the test file
-			test_backup_filepath = os.path.join(test_backup_dir, test_backup_file)
+		# Delete the most recent backup
+		type(self).backups.deleteBackup(self.backups[-1])
 
-			# Check that the expected values are found
-			self.assertTrue(checkValue(test_backup_filepath, 'Table1', '"Unique ID"', 'Value1'))
-			self.assertTrue(checkValue(test_backup_filepath, 'Table2', '"Unique ID"', 'Value1'))
+		# Confirm a single backup was found in the backups
+		self.assertEqual(len(self.backups), 1)
 
-	# Check removeOldBackup
-	def test_06_removeOldBackup (self):
+	# Check deleteBackup
+	def test_06_updateBackups (self):
 
-		# Assign the out dir of the backup
-		test_backup_dir = os.path.join(self.test_dir, 'TestBackups')
+		# Create a new backup
+		type(self).backups.newBackup(self.database)
+		type(self).backups.newBackup(self.database)
+		type(self).backups.newBackup(self.database)
+		type(self).backups.newBackup(self.database)
 
-		# Create the test directory
-		if not os.path.exists(test_backup_dir):
-			os.makedirs(test_backup_dir)
+		# Confirm five backups were found in the backups
+		self.assertEqual(len(self.backups), 5)
 
-		# Assign the contents of the test dir
-		expected_backup_files = os.listdir(test_backup_dir)
+		# Save the orignal limit
+		limit = self.backups.limit
 
-		# Create filename for empty files to be deleted
-		old_backup_filenames = ['testDB.sqlite.AGH5C1.2018-01-01.backup',
-								'testDB.sqlite.NH147F.2019-01-01.backup']
+		# Update the limit
+		type(self).backups.limit = 4
 
-		# Loop filenames
-		for old_backup_filename in old_backup_filenames:
+		self.backups.updateBackups()
 
-			# Assign the filepath for the file
-			test_backup_filepath = os.path.join(test_backup_dir, old_backup_filename)
-
-			# Create the file
-			old_backup_file = open(test_backup_filepath, 'w')
-			old_backup_file.close()
-
-		# Assign the contents of the test dir
-		test_backup_files = os.listdir(test_backup_dir)
-
-		# Check that the file was created
-		self.assertTrue(len(test_backup_files) == 3)
-
-		# Run the command
-		removeOldBackup(self.database, test_backup_dir, 1)
-
-		# Assign the contents of the test dir
-		test_backup_files = os.listdir(test_backup_dir)
-
-		# Check that the file was created
-		self.assertTrue(len(test_backup_files) == 1)
-		self.assertEqual(test_backup_files, expected_backup_files)
+		# Confirm four backups were found in the backups
+		self.assertEqual(len(self.backups), 4)
 
 if __name__ == "__main__":
 	unittest.main(verbosity = 2)

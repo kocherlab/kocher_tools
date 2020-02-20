@@ -1,3 +1,4 @@
+import os
 import yaml
 import logging
 
@@ -6,11 +7,30 @@ import networkx as nx
 from collections import OrderedDict, defaultdict
 from itertools import combinations
 
+def orderedLoad (stream, Loader = yaml.Loader, object_pairs_hook = OrderedDict):
+	class OrderedLoader (Loader):
+		pass
+	def construct_mapping (loader, node):
+		loader.flatten_mapping(node)
+		return object_pairs_hook(loader.construct_pairs(node))
+	OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+	return yaml.load(stream, OrderedLoader)
+
 class ConfigFile (list):
-	def __init__ (self, *arg, **kw):
+	def __init__ (self, *arg, yaml = '', **kw):
 		super(ConfigFile, self).__init__(*arg, **kw)
+		self.yaml = yaml
+		self.yaml_dir = os.path.dirname(yaml)
 		self.sql_database = ''
 		self.table_graph = None
+
+		# Backup properties
+		self.backup_out_dir = None
+		self.backup_limit = None
+		self.backup_update_freq = None
+
+		# Assign using the Yaml file
+		self.assignFromYaml()
 
 	def __contains__ (self, table_str):
 		if table_str in self.tables:
@@ -35,40 +55,51 @@ class ConfigFile (list):
 
 		return False
 
-	def assignFromYaml (self, config_yaml):
-        
-		# Assign the database filename
-		self.sql_database = config_yaml['sql']['file']
+	def assignFromYaml (self):
 
-		# Create a list for the tables
-		table_list = []
+		# Read in the YAML config file
+		with open(self.yaml, 'r') as yml_config_file:
 
-		# Loop the config yaml
-		for table, table_yaml in config_yaml['database']['tables'].items():
+			# Load the YAML config file in order
+			config_yaml = orderedLoad(yml_config_file, yaml.SafeLoader)
 
-			# Create a DBTable object
-			db_table = DBTable()
+			# Assign the database
+			#self.sql_database = os.path.join(self.yaml_dir, config_yaml['sql']['file'])
+			self.sql_database= config_yaml['sql']['file']
+			# Assign the backup information
+			self.backup_out_dir = os.path.join(self.yaml_dir, config_yaml['backup']['out_dir'])
+			self.backup_limit = config_yaml['backup']['limit']
+			self.backup_update_freq = config_yaml['backup']['update_freq']
 
-			# Assign the name of the table
-			db_table.name = table
+			# Create a list for the tables
+			table_list = []
 
-			# Assign the table from the yaml config
-			db_table.assignFromYaml(table_yaml)
+			# Loop the config yaml
+			for table, table_yaml in config_yaml['database']['tables'].items():
 
-			# Save the table
-			self.append(db_table)
+				# Create a DBTable object
+				db_table = DBTable()
 
-		# Create a graph to store table edges
-		self.table_graph = nx.Graph()
+				# Assign the name of the table
+				db_table.name = table
 
-		# Loop all unique table combinations
-		for db_table_source, db_table_dest in combinations(self, 2):
+				# Assign the table from the yaml config
+				db_table.assignFromYaml(table_yaml)
 
-			# Check that the tables are compatible
-			if db_table_source.join_by_key in db_table_dest or db_table_dest.join_by_key in db_table_source:
+				# Save the table
+				self.append(db_table)
 
-				# Add an edge between the two tables
-				self.table_graph.add_edge(str(db_table_source), str(db_table_dest))
+			# Create a graph to store table edges
+			self.table_graph = nx.Graph()
+
+			# Loop all unique table combinations
+			for db_table_source, db_table_dest in combinations(self, 2):
+
+				# Check that the tables are compatible
+				if db_table_source.join_by_key in db_table_dest or db_table_dest.join_by_key in db_table_source:
+
+					# Add an edge between the two tables
+					self.table_graph.add_edge(str(db_table_source), str(db_table_dest))
 
 	def returnColumnPath (self, column):
 
@@ -607,31 +638,13 @@ class DBColumn ():
 				# Assign the db_specific value
 				self.join_by = True
 
-def orderedLoad (stream, Loader = yaml.Loader, object_pairs_hook = OrderedDict):
-	class OrderedLoader (Loader):
-		pass
-	def construct_mapping (loader, node):
-		loader.flatten_mapping(node)
-		return object_pairs_hook(loader.construct_pairs(node))
-	OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
-	return yaml.load(stream, OrderedLoader)
-
 def readConfig (filename):
 
-	# Read in the YAML config file
-	with open(filename, 'r') as yml_config_file:
-
-		# Load the YAML config file in order
-		config_yaml = orderedLoad(yml_config_file, yaml.SafeLoader)
-
-		# Create a ConfigFile object
-		config_file = ConfigFile()
-
-		# Get filename and tables from the yaml file
-		config_file.assignFromYaml(config_yaml)
-
-		# Load the YAML config file in order
-		return config_file
+	# Create a ConfigFile object
+	config_file = ConfigFile(yaml = filename)
 
 	# Update log
 	logging.info('Config file (%s) loaded' % filename)
+
+	# Load the YAML config file in order
+	return config_file
