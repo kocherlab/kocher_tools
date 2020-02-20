@@ -36,6 +36,10 @@ def barcodePipelineParser ():
 				setattr(args, self.dest, value)
 		return customAction
 
+	def metavarList (var_list):
+		'''Create a formmated metavar list for the help output'''
+		return '{' + ', '.join(var_list) + '}'
+
 	pipeline_parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
 	# Map files
@@ -43,8 +47,8 @@ def barcodePipelineParser ():
 	pipeline_parser.add_argument('--i7-map', help = 'Defines the filename of the i7 map (if not the default map)', type = str, action = parser_confirm_file())
 
 	# Read Files
-	pipeline_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file(), required = True)
-	pipeline_parser.add_argument('--i7-read-file', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file(), required = True)
+	pipeline_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file())
+	pipeline_parser.add_argument('--i7-read-file', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file())
 	pipeline_parser.add_argument('--R1-read-file', help = 'Defines the filename of the R1 reads (i.e. Read 1)', type = str, action = parser_confirm_file(), required = True)
 	pipeline_parser.add_argument('--R2-read-file', help = 'Defines the filename of the R2 reads (i.e. Read 4)', type = str, action = parser_confirm_file(), required = True)
 
@@ -58,6 +62,8 @@ def barcodePipelineParser ():
 	# Optional arguments
 	pipeline_parser.add_argument('--threads', help = 'Defines the number of threads. Default is all available threads', type = int, default = multiprocessing.cpu_count())
 	pipeline_parser.add_argument('--blast-database', help = 'Defines the blast database. Default is the COI database', type = str, default = 'BLAST_DBs/Filtered_BOLD.fasta')
+	abundance_methods = ('sample', 'read')
+	pipeline_parser.add_argument('--abundance-method', metavar = metavarList(abundance_methods), help = 'Abundance method', choices = abundance_methods, default = 'sample', type = str)
 
 	# Return the arguments
 	return pipeline_parser.parse_args()

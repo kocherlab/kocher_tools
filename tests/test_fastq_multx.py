@@ -126,16 +126,24 @@ class test_fastq_multx (unittest.TestCase):
 		expected_R2 = os.path.join(self.expected_path, '%_R2.fastq.gz')
 
 		# Assign the i5 test lists using the command
-		test_i5_1 = assignOutput(self.expected_path, True, 'i5')
-		test_i5_2 = assignOutput(self.expected_path, False, 'i5')
-		test_i7_1 = assignOutput(self.expected_path, True, 'i7')
-		test_i7_2 = assignOutput(self.expected_path, False, 'i7')
+		test_i5_1 = assignOutput(self.expected_path, True, True, 'i5')
+		test_i5_2 = assignOutput(self.expected_path, False, True, 'i5')
+		test_i5_3 = assignOutput(self.expected_path, True, False, 'i5')
+		test_i5_4 = assignOutput(self.expected_path, False, False, 'i5')
+		test_i7_1 = assignOutput(self.expected_path, True, True, 'i7')
+		test_i7_2 = assignOutput(self.expected_path, False, True, 'i7')
+		test_i7_3 = assignOutput(self.expected_path, True, False, 'i7')
+		test_i7_4 = assignOutput(self.expected_path, False, False, 'i7')
 
 		# Check the test lists are as expected
 		self.assertEqual(test_i5_1, ['-o', 'n/a', '-o', expected_i7, '-o', expected_R1, '-o', expected_R2])
 		self.assertEqual(test_i5_2, ['-o', expected_i5, '-o', expected_i7, '-o', expected_R1, '-o', expected_R2])
+		self.assertEqual(test_i5_3, ['-o', expected_R1, '-o', expected_R2])
+		self.assertEqual(test_i5_4, ['-o', expected_R1, '-o', expected_R2])
 		self.assertEqual(test_i7_1, ['-o', 'n/a', '-o', expected_R1, '-o', expected_R2])
 		self.assertEqual(test_i7_2, ['-o', expected_i7, '-o', expected_R1, '-o', expected_R2])
+		self.assertEqual(test_i7_3, ['-o', expected_R1, '-o', expected_R2])
+		self.assertEqual(test_i7_4, ['-o', expected_R1, '-o', expected_R2])
 
 	# Check fastq_multx i5ReformatMap function
 	def test_04_i5ReformatMap (self):
@@ -176,7 +184,7 @@ class test_fastq_multx (unittest.TestCase):
 			os.makedirs(test_dir)
 
 		# Run the command
-		i5BarcodeJob(test_i5_map_file, test_i5_read_file, test_i7_read_file, test_R1_read_file, test_R2_read_file, test_dir, True)
+		i5BarcodeJob(test_i5_map_file, test_i5_read_file, test_i7_read_file, test_R1_read_file, test_R2_read_file, test_dir, True, True)
 
 		# Assign the expected plates and locus
 		expected_plates = ['SD_04', 'SD_07']
@@ -223,7 +231,7 @@ class test_fastq_multx (unittest.TestCase):
 		test_plate_R2_file = os.path.join(test_dir, 'SD_04_Lep_R2.fastq.gz')
 
 		# Run the command
-		i7BarcodeJob (test_i7_map, test_plate_i7_file, test_plate_R1_file, test_plate_R2_file, test_dir, True)
+		i7BarcodeJob (test_i7_map, test_plate_i7_file, test_plate_R1_file, test_plate_R2_file, test_dir, True, True)
 
 		# Assign the expected results path
 		expected_results_path = os.path.join(self.expected_path, 'TestPipeline', 'SD_04', 'Lep', 'Demultiplexed')

@@ -20,6 +20,7 @@ class Multiplex (list):
 		self.R2_file = ''
 		self.out_path = ''
 		self.discard_empty_output = True
+		self.has_indices = False
 
 	def __contains__ (self, plate_str):
 		if plate_str in [str(plate) for plate in self]:
@@ -36,8 +37,27 @@ class Multiplex (list):
 
 	@property
 	def files (self):
+
+		# Create empty list for files
+		files_to_return = []
+
+		# Check if the job has indices
+		if self.has_indices:
+
+			# Loop the files
+			for file in [self.i5_file, self.i7_file]:
+
+				# Update files to return
+				files_to_return.append(file)
+
+		# Loop the files
+		for file in [self.R1_file, self.R2_file]:
+
+			# Update files to return
+			files_to_return.append(file)
+
 		# Return files
-		return [file for file in [self.i5_file, self.i7_file, self.R1_file, self.R2_file]]
+		return files_to_return
 
 	def assignOutputPath (self, out_path):
 
@@ -50,9 +70,18 @@ class Multiplex (list):
 
 		logging.info('Output directory assigned: %s' % out_path)
 
-	def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file):
-		self.i5_file = i5_barcode_file
-		self.i7_file = i7_barcode_file
+	def assignFiles (self, i5_index_file, i7_index_file, r1_file, r2_file):
+
+		# Check if both i5 and i7 indices were assigned
+		if i5_index_file and i7_index_file:
+
+			self.i5_file = i5_index_file
+			self.i7_file = i7_index_file
+
+			# Update the index status
+			self.has_indices = True
+
+		# Assign the read files
 		self.R1_file = r1_file
 		self.R2_file = r2_file
 
@@ -69,6 +98,18 @@ class Multiplex (list):
 
 			# Loop the i5 map file, line by line
 			for i5_map_line in i5_map_file:
+
+
+
+				# Check if the line is empty
+				if not i5_map_line.strip():
+					continue
+					
+				if len(i5_map_line.split()) < 3:
+					print(i5_map_line.split())
+					continue
+
+					
 
 				# Split the line into: plate, barcode, locus
 				i5_plate, i5_barcode, i5_locus = i5_map_line.split()
@@ -89,7 +130,7 @@ class Multiplex (list):
 				plate_object.locus = i5_locus
 
 				# Assign the filenames
-				plate_object.assignFilenames()
+				plate_object.assignFilenames(self.has_indices)
 
 				# Append the plate
 				self.append(plate_object)
@@ -105,7 +146,7 @@ class Multiplex (list):
 	def deMultiplex (self, i5_map_filename):
 
 		# Use the i5 map to demultiplex
-		i5BarcodeJob(i5_map_filename, self.i5_file, self.i7_file, self.R1_file, self.R2_file, self.out_path, self.discard_empty_output)
+		i5BarcodeJob(i5_map_filename, self.i5_file, self.i7_file, self.R1_file, self.R2_file, self.out_path, self.has_indices, self.discard_empty_output)
 
 	def compileMostAbundant (self, out_filename, out_format = 'fasta'):
 		
@@ -157,6 +198,7 @@ class Plate (list):
 		self.plate_R2_file = ''
 		self.out_path = ''
 		self.discard_empty_output = None
+		self.has_indices = False
 
 	def __str__(self):
 
@@ -179,8 +221,26 @@ class Plate (list):
 	@property
 	def files (self):
 
-		# Return the files, if assigned
-		return [file for file in [self.plate_i5_file, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file] if file]
+		# Create empty list for files
+		files_to_return = []
+
+		# Check if the job has indices
+		if self.has_indices:
+
+			# Loop the files
+			for file in [self.plate_i5_file, self.plate_i7_file]:
+
+				# Update files to return
+				files_to_return.append(file)
+
+		# Loop the files
+		for file in [self.plate_R1_file, self.plate_R2_file]:
+
+			# Update files to return
+			files_to_return.append(file)
+
+		# Return files
+		return files_to_return
 
 	@property
 	def well_path(self):
@@ -188,7 +248,7 @@ class Plate (list):
 		# Assign the well path, using the out_path, name, and locus
 		return os.path.join(self.out_path, self.name, self.locus)
 	
-	def assignFilenames (self):
+	def assignFilenames (self, has_indices):
 
 		# Define an empty output path as default
 		plate_out_path = ''
@@ -199,14 +259,22 @@ class Plate (list):
 			# Add a trailing directory symbol
 			plate_out_path = os.path.join(self.out_path, '')
 
-		# Check if the empty output should be assigned
-		if self.discard_empty_output == False:
+		# Check if the indices should be assigned
+		if has_indices:
 
-			# Assign the i5 filename, by inserting the output path, plate name, and locus
-			self.plate_i5_file = '%s%s_%s_i5.fastq.gz' % (plate_out_path, self.name, self.locus)
+			# Assign the i7 filename, by inserting the output path, plate name, and locus
+			self.plate_i7_file = '%s%s_%s_i7.fastq.gz' % (plate_out_path, self.name, self.locus)
+
+			# Check if the empty output should be assigned
+			if self.discard_empty_output == False :
+
+				# Assign the i5 filename, by inserting the output path, plate name, and locus
+				self.plate_i5_file = '%s%s_%s_i5.fastq.gz' % (plate_out_path, self.name, self.locus)
+
+			 # Update the index status
+			self.has_indices = True
 
 		# Assign the other filenames, by inserting the output path, plate name, and locus
-		self.plate_i7_file = '%s%s_%s_i7.fastq.gz' % (plate_out_path, self.name, self.locus)
 		self.plate_R1_file = '%s%s_%s_R1.fastq.gz' % (plate_out_path, self.name, self.locus)
 		self.plate_R2_file = '%s%s_%s_R2.fastq.gz' % (plate_out_path, self.name, self.locus)
 
@@ -219,18 +287,23 @@ class Plate (list):
 		if not os.path.exists(plate_out_path):
 			os.makedirs(plate_out_path)
 
-		# Check if the empty output should be moved
-		if self.discard_empty_output == False:
+		# Check if the indices files were assigned
+		if self.has_indices:
 
-			# Move the i5 file
-			self.plate_i5_file = moveFile(self.plate_i5_file, plate_out_path)
+			# Move/Rename the file
+			self.plate_i7_file = moveFile(self.plate_i7_file, plate_out_path)
+
+			# Check if the empty output should be moved
+			if self.discard_empty_output == False:
+
+				# Move the i5 file
+				self.plate_i5_file = moveFile(self.plate_i5_file, plate_out_path)
 
 		# Move/Rename the files
-		self.plate_i7_file = moveFile(self.plate_i7_file, plate_out_path)
 		self.plate_R1_file = moveFile(self.plate_R1_file, plate_out_path)
 		self.plate_R2_file = moveFile(self.plate_R2_file, plate_out_path)
 
-	def assignWells (self):
+	def assignWells (self, i7_map_filename = None):
 
 		# Check if files have been assigned 
 		if not self.files:
@@ -263,7 +336,7 @@ class Plate (list):
 				well_object.on_plate = self.name
 
 				# Assign the filenames
-				well_object.assignFilenames()
+				well_object.assignFilenames(self.has_indices)
 
 				# Append the well
 				self.append(well_object)
@@ -279,7 +352,7 @@ class Plate (list):
 	def deMultiplexPlate (self, i7_map_filename):
 
 		# Use the i7 map to demultiplex
-		i7BarcodeJob(i7_map_filename, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file, self.well_path, self.discard_empty_output)
+		i7BarcodeJob(i7_map_filename, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file, self.well_path, self.has_indices, self.discard_empty_output)
 
 	def yieldMostAbundant (self):
 
@@ -288,6 +361,17 @@ class Plate (list):
 
 			# Get the common fasta records from the well
 			for fasta_record in well.yieldMostAbundant():
+
+				# Yield the the records from the well
+				yield fasta_record
+
+	def yieldAbundantReads (self):
+
+		# Loop each well
+		for well in self:
+
+			# Get the common fasta records from the well
+			for fasta_record in well.yieldAbundantReads():
 
 				# Yield the the records from the well
 				yield fasta_record
@@ -319,6 +403,7 @@ class Well ():
 		self.out_path = ''
 		self.well_dir = 'Demultiplexed'
 		self.discard_empty_output = None
+		self.has_indices = False
 
 		# Merged Args
 		self.merged_file = ''
@@ -357,7 +442,7 @@ class Well ():
 		# Return the files, if they were defined
 		return [file for file in [self.well_i7_file, self.well_R1_file, self.well_R2_file] if file]
 	
-	def assignFilenames (self):
+	def assignFilenames (self, has_indices):
 
 		# Define an empty output path as default
 		well_out_path = ''
@@ -368,11 +453,17 @@ class Well ():
 			# Add a trailing directory symbol
 			well_out_path = os.path.join(self.out_path, '')
 
-		# Check if the empty output should be created
-		if self.discard_empty_output == False:
+		# Check if the indices should be assigned
+		if has_indices:
 
-			# Assign the i7 file
-			self.well_i7_file = '%s%s_i7.fastq.gz' % (well_out_path, self.ID)
+			# Check if the empty output should be created
+			if self.discard_empty_output == False:
+
+				# Assign the i7 file
+				self.well_i7_file = '%s%s_i7.fastq.gz' % (well_out_path, self.ID)
+
+			 # Update the index status
+			self.has_indices = True
 
 		# Assign the R1 and R2 filenames
 		self.well_R1_file = '%s%s_R1.fastq.gz' % (well_out_path, self.ID)
@@ -388,7 +479,7 @@ class Well ():
 			os.makedirs(well_out_path)
 
 		# Check if the empty output should be moved
-		if self.discard_empty_output == False:
+		if self.has_indices and self.discard_empty_output == False:
 
 			# Move the i7 file
 			self.well_i7_file = moveFile(self.well_i7_file, well_out_path)
@@ -398,6 +489,10 @@ class Well ():
 		self.well_R2_file = moveFile(self.well_R2_file, well_out_path)
 
 	def mergeWell (self):
+
+		if not self.well_R1_file or not self.well_R2_file:
+
+			print (self.well_R1_file, self.well_R2_file)
 
 		# Check if the R1 or R2 files are empty
 		if gzipIsEmpty(self.well_R1_file) or gzipIsEmpty(self.well_R2_file):
@@ -633,6 +728,20 @@ class Well ():
 
 				# Loop the common file, record by record
 				for record in SeqIO.parse(common_handle, "fasta"):
+
+					# Yield the record as a fasta record
+					yield record
+
+	def yieldAbundantReads (self):
+
+		# Confirm the file was specified
+		if self.clustered_file:
+
+			# Decompress the gzip file
+			with gzip.open(self.clustered_file, "rt") as clustered_handle:
+
+				# Loop the common file, record by record
+				for record in SeqIO.parse(clustered_handle, "fasta"):
 
 					# Yield the record as a fasta record
 					yield record

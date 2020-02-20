@@ -6,7 +6,7 @@ import signal
 
 from kocher_tools.misc import confirmExecutable
 
-def assignOutput (out_path, discard_empty_output, barcode_type):
+def assignOutput (out_path, discard_empty_output, include_indices, barcode_type):
 
 	# Create list to hold commands
 	output_list = []
@@ -15,7 +15,7 @@ def assignOutput (out_path, discard_empty_output, barcode_type):
 	output_filename = os.path.join(out_path, '%%_%s.fastq.gz')
 
 	# Check if the barcode type is i5
-	if barcode_type == 'i5':
+	if barcode_type == 'i5' and include_indices:
 
 		# Check if the empty output should not be assigned
 		if discard_empty_output:
@@ -33,7 +33,7 @@ def assignOutput (out_path, discard_empty_output, barcode_type):
 		output_list.extend(['-o', output_filename % 'i7'])
 
 	# Check if the barcode type is i7
-	elif barcode_type == 'i7':
+	elif barcode_type == 'i7' and include_indices:
 	
 		# Check if the empty output should not be assigned
 		if discard_empty_output:
@@ -64,6 +64,10 @@ def i5ReformatMap (i5_map_filename, reformatted_filename):
 		# Loop the i5 map file, line by line
 		for i5_map_line in i5_map_file:
 
+			# Check if the line is empty
+			if not i5_map_line.strip():
+				continue
+
 			# Split the line into: plate, barcode, locus
 			i5_plate, i5_barcode, i5_locus = i5_map_line.split()
 
@@ -73,7 +77,7 @@ def i5ReformatMap (i5_map_filename, reformatted_filename):
 	# Close the file
 	reformatted_i5_map.close()	
 
-def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_path, discard_i5):
+def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_path, has_indices, discard_i5):
 
 	# Define the reformatted i5 map filename
 	reformatted_i5_map_filename = i5_map_filename + '.reformatted'
@@ -81,25 +85,50 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	# Reformat the i5 map
 	i5ReformatMap(i5_map_filename, reformatted_i5_map_filename)
 
-	# Create the basic input arg list
-	multiplex_call_args = ['-B', reformatted_i5_map_filename, i5_input, i7_input, r1_input, r2_input]
+	reformatted_i5_map_filename = i5_map_filename
 
-	# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
-	multiplex_call_args.extend(assignOutput(out_path, discard_i5, 'i5'))
+	# Check if the barcode job has indices
+	if has_indices:
+
+		# Create the basic input arg list
+		multiplex_call_args = ['-l', reformatted_i5_map_filename, i5_input, i7_input, r1_input, r2_input]
+
+		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
+		multiplex_call_args.extend(assignOutput(out_path, discard_i5, has_indices, 'i5'))
+
+
+	else:
+
+		# Create the basic input arg list
+		multiplex_call_args = ['-l', reformatted_i5_map_filename, r1_input, r2_input]
+
+		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
+		multiplex_call_args.extend(assignOutput(out_path, discard_i5, has_indices, 'i5'))
 
 	# Call fastq-multz with the argus
 	callFastqMultx(multiplex_call_args)
 
 	# Remove the reformatted i5 map
-	os.remove(reformatted_i5_map_filename)
+	#os.remove(reformatted_i5_map_filename)
 
-def i7BarcodeJob (i7_map_filename, i7_input, r1_input, r2_input, out_path, discard_i7):
+def i7BarcodeJob (i7_map_filename, i7_input, r1_input, r2_input, out_path, has_indices, discard_i7):
 
-	# Create the basic input arg list
-	multiplex_call_args = ['-B', i7_map_filename, i7_input, r1_input, r2_input]
+	# Check if the barcode job has indices
+	if has_indices:
 
-	# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
-	multiplex_call_args.extend(assignOutput(out_path, discard_i7, 'i7'))
+		# Create the basic input arg list
+		multiplex_call_args = ['-B', i7_map_filename, i7_input, r1_input, r2_input]
+
+		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
+		multiplex_call_args.extend(assignOutput(out_path, discard_i7, has_indices, 'i7'))
+
+	else:
+
+		# Create the basic input arg list
+		multiplex_call_args = ['-B', i7_map_filename, r1_input, r2_input]
+
+		# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
+		multiplex_call_args.extend(assignOutput(out_path, discard_i7, has_indices, 'i7'))
 
 	# Call fastq-multz with the argus
 	callFastqMultx(multiplex_call_args)
