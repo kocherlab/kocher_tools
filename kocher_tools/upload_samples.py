@@ -200,8 +200,7 @@ def main():
 		if current_backups.backupNeeded() or upload_args.backup:
 
 			# Backup the database
-			#current_backups.newBackup(upload_args.sqlite_db)
-			pass
+			current_backups.newBackup(upload_args.sqlite_db)
 
 	# Check if a collection app file has been specified
 	if upload_args.app_files:

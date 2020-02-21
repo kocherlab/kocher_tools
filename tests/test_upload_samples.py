@@ -44,10 +44,10 @@ class test_upload_samples (unittest.TestCase):
 			existing_backup_dir = os.path.join(cls.expected_path, 'TestBackups')
 
 			# Assign the path of the test backup dir
-			test_backup_dir = os.path.join(cls.test_dir, 'TestBackups')
+			cls.test_backup_dir = os.path.join(cls.test_dir, 'TestBackups')
 
 			# Copy the backup dir
-			shutil.copytree(existing_backup_dir, test_backup_dir)
+			shutil.copytree(existing_backup_dir, cls.test_backup_dir)
 
 			# Assign the existing YAML filename
 			config_filename = os.path.join(cls.expected_path, 'testDB_large.yml')
@@ -113,6 +113,9 @@ class test_upload_samples (unittest.TestCase):
 			self.assertTrue(checkValue(self.database_filename, 'Collection', '"Nest Code"', '"N-1"'))
 			self.assertTrue(checkValue(self.database_filename, 'Collection', 'Sex', 'Multiple'))
 
+			# Check that a backup was created
+			self.assertEqual(len(os.listdir(self.test_backup_dir)), 2)
+
 		# Assign the collection filename
 		collection_filename = os.path.join(self.expected_path, 'test_collection_02_input.csv')
 
@@ -131,6 +134,8 @@ class test_upload_samples (unittest.TestCase):
 			self.assertTrue(checkValue(self.database_filename, 'Collection', '"Nest Code"', '"F-21"'))
 			self.assertTrue(checkValue(self.database_filename, 'Collection', 'Sex', 'N/A'))
 
+			# Check that a backup wasn't created
+			self.assertEqual(len(os.listdir(self.test_backup_dir)), 2)
 
 		# Storage Tests
 
