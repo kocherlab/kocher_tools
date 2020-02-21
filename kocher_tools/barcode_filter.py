@@ -207,6 +207,12 @@ def main():
 		# Define the BLAST output filename
 		blast_out_filename = barcode_args.out_blast
 
+		# Get the output dirname
+		out_dirname = os.path.dirname(blast_out_filename)
+
+		# Define the JSON output filename
+		failed_out_filename = os.path.join(out_dirname, barcode_args.out_failed)
+
 	# If not, define using a prefix
 	else:
 
@@ -219,20 +225,23 @@ def main():
 		# Define the BLAST output filename
 		blast_out_filename = os.path.join(blast_dirname, barcode_args.out_prefix + blast_basename)
 
+		# Define the JSON output filename
+		failed_out_filename = os.path.join(blast_dirname, barcode_args.out_failed)
+
 	# Check if previous output should be overwritten
 	if barcode_args.overwrite:
 
 		# Remove the previous output, if it exists
 		if os.path.exists(blast_out_filename):
 			os.remove(blast_out_filename)
-		if os.path.exists(barcode_args.out_failed):
-			os.remove(barcode_args.out_failed)
+		if os.path.exists(failed_out_filename):
+			os.remove(failed_out_filename)
 
 	# Check if previous output shouldn't be overwritten
 	else:
 
 		# Check if previous output exists
-		if os.path.exists(blast_out_filename) or os.path.exists(barcode_args.out_failed):
+		if os.path.exists(blast_out_filename) or os.path.exists(failed_out_filename):
 
 			# Raise an exception
 			raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
@@ -453,10 +462,10 @@ def main():
 	# Check if any samples failed to find best hits
 	if failed_samples_list:
 
-		logging.warning('Samples (%s) failed filters. Samples may be found in: %s' % (len(failed_samples_list), barcode_args.out_failed))
+		logging.warning('Samples (%s) failed filters. Samples may be found in: %s' % (len(failed_samples_list), failed_out_filename))
 
 	# Open the json failure file
-	with open(barcode_args.out_failed, 'w') as json_failed_file:
+	with open(failed_out_filename, 'w') as json_failed_file:
 
 		# Dump the failed sample list to the JSON file
 		json.dump(failed_samples_list, json_failed_file, indent = 4)
