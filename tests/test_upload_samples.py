@@ -40,14 +40,29 @@ class test_upload_samples (unittest.TestCase):
 		# Try creating the database
 		try:
 
-			# Save the YAML filename
-			cls.config_filename = os.path.join(cls.expected_path, 'testDB_large.yml')
+			# Assign the path of the existing backup dir
+			existing_backup_dir = os.path.join(cls.expected_path, 'TestBackups')
+
+			# Assign the path of the test backup dir
+			test_backup_dir = os.path.join(cls.test_dir, 'TestBackups')
+
+			# Copy the backup dir
+			shutil.copytree(existing_backup_dir, test_backup_dir)
+
+			# Assign the existing YAML filename
+			config_filename = os.path.join(cls.expected_path, 'testDB_large.yml')
+
+			# Assign the test YAML filename
+			cls.config_filename = os.path.join(cls.test_dir, 'testDB_large.yml')
+
+			# Copy the YAML file
+			shutil.copy(config_filename, cls.config_filename)
 
 			# Read in the YAML config file
 			config_data = readConfig(cls.config_filename)
 
 			# Assign the filename of the database
-			cls.database_filename = os.path.join(cls.test_dir, config_data.sql_database)
+			cls.database_filename = config_data.sql_database
 
 			# Loop the tables
 			for table in config_data:

@@ -35,11 +35,20 @@ class test_storage (unittest.TestCase):
 		# Try creating the database
 		try:
 
+			# Assign the existing YAML filename
+			config_filename = os.path.join(cls.expected_path, 'testDB_large.yml')
+
+			# Assign the test YAML filename
+			cls.config_filename = os.path.join(cls.test_dir, 'testDB_large.yml')
+
+			# Copy the YAML file
+			shutil.copy(config_filename, cls.config_filename)
+
 			# Read in the YAML config file
-			config_data = readConfig(os.path.join(cls.expected_path, 'testDB_large.yml'))
+			config_data = readConfig(cls.config_filename)
 
 			# Assign the filename of the database
-			cls.database_filename = os.path.join(cls.test_dir, config_data.sql_database)
+			cls.database_filename = config_data.sql_database
 
 			# Loop the tables
 			for table in config_data:

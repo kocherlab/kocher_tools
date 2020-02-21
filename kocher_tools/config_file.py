@@ -64,8 +64,8 @@ class ConfigFile (list):
 			config_yaml = orderedLoad(yml_config_file, yaml.SafeLoader)
 
 			# Assign the database
-			#self.sql_database = os.path.join(self.yaml_dir, config_yaml['sql']['file'])
-			self.sql_database= config_yaml['sql']['file']
+			self.sql_database = os.path.join(self.yaml_dir, config_yaml['sql']['file'])
+			#self.sql_database= config_yaml['sql']['file']
 			# Assign the backup information
 			self.backup_out_dir = os.path.join(self.yaml_dir, config_yaml['backup']['out_dir'])
 			self.backup_limit = config_yaml['backup']['limit']
