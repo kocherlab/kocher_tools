@@ -91,7 +91,7 @@ class test_backup (unittest.TestCase):
 		self.assertEqual(test_backup.file_path, str(test_backup))
 
 		# Assign the expected backup info
-		expected_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2020-01-01.backup')
+		expected_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR46G6.2020-01-01.backup')
 		expected_date_object = datetime.datetime.strptime('2020-01-01', '%Y-%m-%d')
 
 		# Add timezone information to the expected date object
@@ -102,7 +102,7 @@ class test_backup (unittest.TestCase):
 		self.assertEqual(test_backup.backup_date, expected_date_object)
 
 		# Assign a new backup for testing
-		test_01_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2000-01-01.backup')
+		test_01_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR46G6.2000-01-01.backup')
 		test_01_date_object = datetime.datetime.strptime('2000-01-01', '%Y-%m-%d')
 
 		# Add timezone information to the expected date object
@@ -121,7 +121,7 @@ class test_backup (unittest.TestCase):
 		os.remove(test_01_file)
 
 		# Assign a new backup for testing
-		test_02_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR56G6.2030-01-01.backup')
+		test_02_file = test_backup_dir = os.path.join(self.test_dir, 'TestBackups', 'testDB.sqlite.QR46G6.2030-01-01.backup')
 		test_01_date_object = datetime.datetime.strptime('2030-01-01', '%Y-%m-%d')
 
 		# Add timezone information to the expected date object
