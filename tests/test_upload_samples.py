@@ -259,7 +259,7 @@ class test_upload_samples (unittest.TestCase):
 
 			# Check that the values were correctly inserted
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Storage ID"', '"DBtest-A1"'))
-			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2"'))
+			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2_1"'))
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Species', '"Lasioglossum oenotherae"'))
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Status', '"Ambiguous Hits"'))
 
@@ -279,7 +279,7 @@ class test_upload_samples (unittest.TestCase):
 
 			# Check that the values were correctly inserted
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Ambiguous Hits"', None))
-			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2"'))
+			self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2_1"'))
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Species', '"Ceratina strenua"'))
 			self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Status', '"No Hits"'))
 

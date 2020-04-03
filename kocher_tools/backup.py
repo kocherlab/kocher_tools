@@ -144,6 +144,12 @@ class Backups (list):
 
 	def backupNeeded (self):
 
+		# Check if there are no backups
+		if not self.most_recent_backup:
+
+			# Return True if their is no backup
+			return True
+
 		# Get the difference in time from the most recent backup
 		date_diff = self.date - self.most_recent_backup.backup_date
 

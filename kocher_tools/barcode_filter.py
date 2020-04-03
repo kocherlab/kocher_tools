@@ -51,8 +51,8 @@ def barcodeFilterParser ():
 	filter_parser.add_argument('--negative-control-file', help = 'File of negative control IDs', type = str, action = confirmFile())
 
 	# Basic filter cutoff args\
-	filter_parser.add_argument('--abundance-cutoff', help = 'Read abundance Cutoff', type = int, default = 10)
-	filter_parser.add_argument('--evalue-cutoff', help = 'E-Value Cutoff', type = float, default = 1.0)
+	filter_parser.add_argument('--abundance-cutoff', help = 'Read abundance Cutoff', type = int, default = 25)
+	filter_parser.add_argument('--evalue-cutoff', help = 'E-Value Cutoff', type = float, default = 0.00001)
 	filter_parser.add_argument('--coverage-cutoff', help = 'Coverage cutoff - i.e. percentage of sequence aligned', type = float, default = 0.90)
 	filter_parser.add_argument('--identity-cutoff', help = 'Identity cutoff - i.e. identity percentage between alignment sequences', type = float, default = 0.95)
 

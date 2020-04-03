@@ -94,7 +94,7 @@ class test_barcode (unittest.TestCase):
 		json_filename = os.path.join(self.expected_path, 'test_barcode_01_input.json')
 
 		# Save the expected dict
-		expected_dict = {'DBtest-A1': '"DBtest-A1"', 'DBtest-A2': '"DBtest-A2"'}
+		expected_dict = {'DBtest-A1_1': '"DBtest-A1"', 'DBtest-A2_1': '"DBtest-A2"'}
 
 		# Assign the storage IDs
 		test_dict = assignStorageIDs(self.database_filename, 'Storage', 'Storage ID', blast_filename, json_filename)
@@ -128,8 +128,8 @@ class test_barcode (unittest.TestCase):
 							['Storage ID', 'Sequence ID', 'Reads', 'Status', 'Ambiguous Hits', 'BOLD Bins']]
 
 		# Save a list of the expected rows
-		expected_rows = [['"DBtest-A1"', 'DBtest-A1', 'Lasioglossum oenotherae', '500', 'ASIO003-06', '100.000', '313', '313', 'Species Identified'],
-						 ['"DBtest-A2"', 'DBtest-A2', '500', 'Ambiguous Hits', 'Ceratina mikmaqi, Ceratina strenua', 'BOLD:AAA2368']]
+		expected_rows = [['"DBtest-A1"', 'DBtest-A1_1', 'Lasioglossum oenotherae', '500', 'ASIO003-06', '100.000', '313', '313', 'Species Identified'],
+						 ['"DBtest-A2"', 'DBtest-A2_1', '500', 'Ambiguous Hits', 'Ceratina mikmaqi, Ceratina strenua', 'BOLD:AAA2368']]
 
 		# Index the sequence file
 		sequence_index = SeqIO.index(fasta_filename, 'fasta')
@@ -180,7 +180,7 @@ class test_barcode (unittest.TestCase):
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Storage ID"', '"DBtest-A1"'))
-		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2"'))
+		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2_1"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Species', '"Lasioglossum oenotherae"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Status', '"Ambiguous Hits"'))
 
@@ -207,7 +207,7 @@ class test_barcode (unittest.TestCase):
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Ambiguous Hits"', None))
-		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2"'))
+		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Sequence ID"', '"DBtest-A2_1"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Species', '"Ceratina strenua"'))
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', 'Status', '"No Hits"'))
 

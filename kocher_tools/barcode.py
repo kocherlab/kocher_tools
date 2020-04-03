@@ -41,7 +41,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 			query = row[query_id_index]
 			query_seqID = query.split(';')[0]
 			query_plate = query.split('-')[0]
-			query_well = query.split('-')[1].split(';')[0]
+			query_well = query.split('-')[1].rsplit('_', 1)[0]
 
 			# Assign the unique ID using the well and plate
 			id_assignments[query_seqID] = convertPlateWell(database, table, id_key, query_plate, query_well)
@@ -64,7 +64,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 				# Assign information that needs formatting
 				failed_sample_seqID = failed_sample.split(';')[0]
 				failed_sample_plate = failed_sample.split('-')[0]
-				failed_sample_well = failed_sample.split('-')[1].split(';')[0]
+				failed_sample_well = failed_sample.split('-')[1].rsplit('_', 1)[0]
 
 
 				# Assign the unique ID using the well and plate
