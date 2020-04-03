@@ -10,6 +10,7 @@ import string
 import random
 import multiprocessing
 import pkg_resources
+import tarfile
 
 from kocher_tools.multiplex import Multiplex
 from tests.functions import fileComp, gzFileComp
@@ -35,11 +36,31 @@ class test_multiplex (unittest.TestCase):
 		# Assign the expected path
 		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
 
-		# Assign the expected path of the pipeline
-		cls.expected_pipeline_path = os.path.join(cls.expected_path, 'TestPipeline')
+		# Try create the TestPipeline directory
+		try:
 
-		# Create an empty variable to store the multiplex job 
-		cls.demultiplex_job = None
+			# Assign the pipeline tar file path
+			pipeline_tar_filename = os.path.join(cls.expected_path, 'TestPipeline.tar.gz')
+
+			# Open the pipeline tar
+			pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
+
+			# Extract the tar into the test directory
+			pipeline_tar.extractall(path = cls.test_dir)
+
+			# Close the pipeline tar
+			pipeline_tar.close()
+
+			# Assign the expected path of the pipeline
+			cls.expected_pipeline_path = os.path.join(cls.test_dir, 'TestPipeline')
+
+			# Create an empty variable to store the multiplex job 
+			cls.demultiplex_job = None
+
+		# Set the directory to None if that fails
+		except:
+
+			raise Exception('Unable to generate the TestPipeline directory')
 
 	@classmethod
 	def tearDownClass (cls):

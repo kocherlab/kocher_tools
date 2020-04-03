@@ -11,6 +11,7 @@ import random
 import multiprocessing
 import pkg_resources
 import subprocess
+import tarfile
 
 from kocher_tools.fastq_multx import *
 from tests.functions import fileComp, gzFileComp, randomGenerator
@@ -32,6 +33,32 @@ class test_fastq_multx (unittest.TestCase):
 
 		# Assign the expected path
 		cls.expected_path = os.path.join(cls.script_dir, cls.expected_dir)
+
+		# Try create the TestPipeline directory
+		try:
+
+			# Assign the pipeline tar file path
+			pipeline_tar_filename = os.path.join(cls.expected_path, 'TestPipeline.tar.gz')
+
+			# Open the pipeline tar
+			pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
+
+			# Extract the tar into the test directory
+			pipeline_tar.extractall(path = cls.test_dir)
+
+			# Close the pipeline tar
+			pipeline_tar.close()
+
+			# Assign the expected path of the pipeline
+			cls.expected_pipeline_path = os.path.join(cls.test_dir, 'TestPipeline')
+
+			# Create an empty variable to store the multiplex job 
+			cls.demultiplex_job = None
+
+		# Set the directory to None if that fails
+		except:
+
+			raise Exception('Unable to generate the TestPipeline directory')
 
 	@classmethod
 	def tearDownClass (cls):
@@ -88,7 +115,7 @@ class test_fastq_multx (unittest.TestCase):
 			self.assertTrue(os.path.isfile(test_plate_R2_file))
 
 			# Assign the expected results path
-			expected_results_path = os.path.join(self.expected_path, 'TestPipeline', expected_plate, expected_locus)
+			expected_results_path = os.path.join(self.expected_pipeline_path, expected_plate, expected_locus)
 
 			# Assign the expected files
 			expected_plate_i7_file = os.path.join(expected_results_path, '%s_%s_i7.fastq.gz' % (expected_plate, expected_locus))
@@ -196,7 +223,7 @@ class test_fastq_multx (unittest.TestCase):
 			self.assertTrue(os.path.isfile(test_plate_R2_file))
 
 			# Assign the expected results path
-			expected_results_path = os.path.join(self.expected_path, 'TestPipeline', expected_plate, expected_locus)
+			expected_results_path = os.path.join(self.expected_pipeline_path, expected_plate, expected_locus)
 
 			# Assign the expected files
 			expected_plate_i7_file = os.path.join(expected_results_path, '%s_%s_i7.fastq.gz' % (expected_plate, expected_locus))
@@ -226,7 +253,7 @@ class test_fastq_multx (unittest.TestCase):
 		i7BarcodeJob (test_i7_map, test_plate_i7_file, test_plate_R1_file, test_plate_R2_file, test_dir, True)
 
 		# Assign the expected results path
-		expected_results_path = os.path.join(self.expected_path, 'TestPipeline', 'SD_04', 'Lep', 'Demultiplexed')
+		expected_results_path = os.path.join(self.expected_pipeline_path, 'SD_04', 'Lep', 'Demultiplexed')
 
 		# Loop the expected results path
 		for expected_file_str in os.listdir(expected_results_path):
