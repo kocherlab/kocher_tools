@@ -34,8 +34,23 @@ class test_output (unittest.TestCase):
 		# Assign the filename of the database
 		cls.database = os.path.join(cls.script_dir, cls.expected_dir, 'testDB.sqlite')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(cls.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Retrieve values from the database
-		cls.retrieved_entries = retrieveValues(cls.database, ['Table1', 'Table2'], {'IN':{'Table1."Unique ID"': ['Value1']}}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
+		cls.retrieved_entries = retrieveValues(cursor, ['Table1', 'Table2'], {'IN':{'Table1."Unique ID"': ['Value1']}}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 	@classmethod
 	def tearDownClass (cls):

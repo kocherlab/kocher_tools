@@ -4,12 +4,12 @@ import csv
 import logging
 
 from kocher_tools.common import readCommonFile
-from kocher_tools.database import insertValues, updateValues, retrieveValues
+from kocher_tools.database import insertValues, updateValues, retrieveValues, confirmValue
 
-def convertLoc (database, table, loc_column, loc_value, cvt_column):
+def convertLoc (cursor, table, loc_column, loc_value, cvt_column):
 	
 	# Retrieve the desired information from the database
-	location_data = retrieveValues(database, [table], {'IN':{loc_column:[loc_value]}}, [table + '.' +cvt_column])
+	location_data = retrieveValues(cursor, [table], {'IN':{loc_column:[loc_value]}}, [table + '.' +cvt_column])
 
 	# Update log
 	logging.info('Location conversion successful')
@@ -17,7 +17,7 @@ def convertLoc (database, table, loc_column, loc_value, cvt_column):
 	# Return the data
 	return location_data[0].keys()[0], location_data[0][0]
 
-def addLocFileToDatabase (database, table, loc_file):
+def addLocFileToDatabase (cursor, table, loc_file):
 
 	# Update log
 	logging.info('Uploading location file (%s) to database' % loc_file)
@@ -26,12 +26,12 @@ def addLocFileToDatabase (database, table, loc_file):
 	for header, loc_data in readCommonFile(loc_file):
 
 		# Insert the loc into the database
-		insertValues(database, table, header, loc_data)
+		insertValues(cursor, table, header, loc_data)
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateLocFileToDatabase (database, table, select_key, loc_file):
+def updateLocFileToDatabase (cursor, table, select_key, loc_file):
 
 	# Update log
 	logging.info('Uploading location file (%s) to database' % loc_file)
@@ -42,6 +42,9 @@ def updateLocFileToDatabase (database, table, select_key, loc_file):
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
 			raise Exception('Selection key (%s) not found. Please check the input file' % select_key)
+
+		# Create an empty string to store the select_value
+		select_value = ''
 
 		# Create an empty set dict
 		loc_set_dict = {}
@@ -56,6 +59,9 @@ def updateLocFileToDatabase (database, table, select_key, loc_file):
 			# Check if the current column is the selection key
 			if header_column == select_key:
 
+				# Update the select value
+				select_value = loc_value
+
 				# Populate the selection dict
 				loc_select_dict['IN'][header_column] = [loc_value]
 
@@ -64,8 +70,14 @@ def updateLocFileToDatabase (database, table, select_key, loc_file):
 				# Populate the selection dict
 				loc_set_dict[header_column] = loc_value
 
+		# Check that selected value is present
+		if not confirmValue(cursor, table, select_key, select_value):
+
+			# If not, log warning
+			logging.warning('Entry (%s) not found, unable to update. Please check input' % select_value)
+
 		# Update the values for the selected value
-		updateValues(database, table, loc_select_dict, loc_set_dict)
+		updateValues(cursor, table, loc_select_dict, loc_set_dict)
 
 	# Update log
 	logging.info('Upload successful')
@@ -75,7 +87,7 @@ def readAppLocations (collection_filename):
 	with open(collection_filename) as collection_file:
 
 		# Read the data file
-		collection_reader = csv.reader(collection_file)
+		collection_reader = csv.reader(collection_file, delimiter = '\t')
 
 		if sys.version_info[0] == 3:
 
@@ -136,7 +148,7 @@ def readAppLocations (collection_filename):
 			# Yield the location data
 			yield [header[site_code_index], header[gps_index]], unique_location
 
-def addAppLocationsToDatabase (database, table, app_file):
+def addAppLocationsToDatabase (cursor, table, app_file):
 
 	# Update log
 	logging.info('Uploading locations from app file (%s) to database' % app_file)
@@ -145,12 +157,12 @@ def addAppLocationsToDatabase (database, table, app_file):
 	for header, app_data in readAppLocations(app_file):
 
 		# Insert the loc into the database
-		insertValues(database, table, header, app_data)
+		insertValues(cursor, table, header, app_data)
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateAppLocationsToDatabase (database, table, select_key, app_file):
+def updateAppLocationsToDatabase (cursor, table, select_key, app_file):
 
 	# Update log
 	logging.info('Uploading locations from app file (%s) to database' % app_file)
@@ -161,6 +173,9 @@ def updateAppLocationsToDatabase (database, table, select_key, app_file):
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
 			raise Exception('Selection key (%s) not found. Please check the input file' % select_key)
+
+		# Create an empty string to store the select_value
+		select_value = ''
 
 		# Create an empty set dict
 		loc_set_dict = {}
@@ -175,6 +190,9 @@ def updateAppLocationsToDatabase (database, table, select_key, app_file):
 			# Check if the current column is the selection key
 			if header_column == select_key:
 
+				# Update the select value
+				select_value = loc_value
+
 				# Populate the selection dict
 				loc_select_dict['IN'][header_column] = [loc_value]
 
@@ -183,8 +201,14 @@ def updateAppLocationsToDatabase (database, table, select_key, app_file):
 				# Populate the selection dict
 				loc_set_dict[header_column] = loc_value
 
+		# Check that selected value is present
+		if not confirmValue(cursor, table, select_key, select_value):
+
+			# If not, log warning
+			logging.warning('Entry (%s) not found, unable to update. Please check input' % select_value)
+
 		# Update the values for the selected value
-		updateValues(database, table, loc_select_dict, loc_set_dict)
+		updateValues(cursor, table, loc_select_dict, loc_set_dict)
 
 	# Update log
 	logging.info('Upload successful')

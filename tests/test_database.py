@@ -109,10 +109,25 @@ class test_database (unittest.TestCase):
 	# Check createTable
 	def test_09_createTable (self):
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Create the database
-		createTable(self.database, 'Table1', '"Unique ID" text, "Last Modified (Table1)" text, "Entry Created (Table1)" text')
-		createTable(self.database, 'Table2', '"Unique ID" text, Species text, "Last Modified (Table2)" text, "Entry Created (Table2)" text')
-		createTable(self.database, 'Table3', 'Species text, "Last Modified (Table3)" text, "Entry Created (Table3)" text')
+		createTable(cursor, 'Table1', '"Unique ID" text, "Last Modified (Table1)" text, "Entry Created (Table1)" text')
+		createTable(cursor, 'Table2', '"Unique ID" text, Species text, "Last Modified (Table2)" text, "Entry Created (Table2)" text')
+		createTable(cursor, 'Table3', 'Species text, "Last Modified (Table3)" text, "Entry Created (Table3)" text')
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check the tables exist
 		self.assertTrue(checkTable(self.database, 'Table1'))
@@ -134,10 +149,25 @@ class test_database (unittest.TestCase):
 	# Check insertValues
 	def test_10_insertValues (self):
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+		
 		# Insert values into the database
-		insertValues(self.database, 'Table1', ["Unique ID"], ['Value1'])
-		insertValues(self.database, 'Table2', ["Unique ID", 'Species'], ['Value1', 'Value2'])
-		insertValues(self.database, 'Table3', ['Species'], ['Value2'])
+		insertValues(cursor, 'Table1', ["Unique ID"], ['Value1'])
+		insertValues(cursor, 'Table2', ["Unique ID", 'Species'], ['Value1', 'Value2'])
+		insertValues(cursor, 'Table3', ['Species'], ['Value2'])
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database, 'Table1', '"Unique ID"', 'Value1'))
@@ -148,17 +178,47 @@ class test_database (unittest.TestCase):
 	# Check updateValues
 	def test_11_updateValues (self):
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Update values in the database withing having to join tables
-		updateValues(self.database, 'Table1', {'IN': {'"Unique ID"':['Value1']}}, {'"Unique ID"': 'Updated1'})
-		updateValues(self.database, 'Table2', {'IN': {'"Unique ID"':['Value1']}}, {'"Unique ID"': 'Updated1'})
+		updateValues(cursor, 'Table1', {'IN': {'"Unique ID"':['Value1']}}, {'"Unique ID"': 'Updated1'})
+		updateValues(cursor, 'Table2', {'IN': {'"Unique ID"':['Value1']}}, {'"Unique ID"': 'Updated1'})
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database, 'Table1', '"Unique ID"', 'Updated1'))
 		self.assertTrue(checkValue(self.database, 'Table2', '"Unique ID"', 'Updated1'))
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Update value in the database with joined tables
-		updateValues(self.database, 'Table1', {'IN':{'Table1."Unique ID"': ['Updated1'], 'Table2.Species': ['Value2']}}, {'"Unique ID"': 'Updated2'}, update_table_column = "Unique ID", tables_to_join = ['Table1', 'Table2'], join_table_columns = ['"Unique ID"'])
-		updateValues(self.database, 'Table2', {'IN': {'"Unique ID"':['Updated1']}}, {'"Unique ID"': 'Updated2'})
+		updateValues(cursor, 'Table1', {'IN':{'Table1."Unique ID"': ['Updated1'], 'Table2.Species': ['Value2']}}, {'"Unique ID"': 'Updated2'}, update_table_column = "Unique ID", tables_to_join = ['Table1', 'Table2'], join_table_columns = ['"Unique ID"'])
+		updateValues(cursor, 'Table2', {'IN': {'"Unique ID"':['Updated1']}}, {'"Unique ID"': 'Updated2'})
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the value were correctly inserted 
 		self.assertTrue(checkValue(self.database, 'Table1', '"Unique ID"', 'Updated2'))
@@ -167,8 +227,23 @@ class test_database (unittest.TestCase):
 	# Check retrieveValues
 	def test_12_retrieveValues (self):
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Retrieve values from the database
-		retrieved_entries = retrieveValues(self.database, ['Table1', 'Table2'], {}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
+		retrieved_entries = retrieveValues(cursor, ['Table1', 'Table2'], {}, ['Table1."Unique ID"', 'Table2.Species'], join_table_columns = ['"Unique ID"'])
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the value were correctly retrieved
 		self.assertTrue(len(retrieved_entries) == 1)
@@ -177,13 +252,28 @@ class test_database (unittest.TestCase):
 		self.assertTrue(list(retrieved_entries[0]) == ['Updated2', 'Value2'])
 
 	# Check confirmValues
-	def test_13_confirmValues (self):
+	def test_13_confirmValue (self):
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
 
 		# Confirm the values are in the table
-		test_confirmed_entries = confirmValues(self.database, 'Table1', 'Unique ID', ['Value1', 'Updated2'])
+		test_confirmed_entries = confirmValue(cursor, 'Table1', 'Unique ID', 'Value1')
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Save the expected results
-		expected_confirmed_entries = [False, True]
+		expected_confirmed_entries = False
 
 		# Check the confirmed entries are as expected
 		self.assertEqual(test_confirmed_entries, expected_confirmed_entries)

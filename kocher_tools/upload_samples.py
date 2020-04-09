@@ -3,6 +3,7 @@ import sys
 import argparse
 import copy
 import logging
+import sqlite3
 
 from collections import defaultdict
 
@@ -147,7 +148,8 @@ def upload_sample_parser ():
 	upload_parser.add_argument('--update', metavar = ('column', 'value'), help = 'Column/value pair to update', type = str, nargs = 2, action = updateDict())
 
 	# Output arguments
-	upload_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'retrieve_samples.log')
+	upload_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'upload_samples.log')
+	upload_parser.add_argument('--log-stdout', help = 'Direct logging to stdout', action = 'store_true')
 
 	# Database arguments
 	upload_parser.add_argument('--sqlite-db', help = 'SQLite database filename', type = str, required = True, action = confirmFile())
@@ -177,12 +179,20 @@ def main():
 	# Assign arguments
 	upload_args = upload_sample_parser()
 
+	# Check if log should be sent to stdout
+	if upload_args.log_stdout:
+
+		# Start logging to stdout for this run
+		startLogger()
+
+	else:
+
+		# Start a log file for this run
+		startLogger(log_filename = upload_args.out_log)
+
 	# Read in the database config file
 	db_config_data = readConfig(upload_args.yaml)
-
-	# Start a log file for this run
-	startLogger(log_filename = upload_args.out_log)
-
+	
 	# Log the arguments used
 	logArgs(upload_args)
 
@@ -202,6 +212,15 @@ def main():
 			# Backup the database
 			current_backups.newBackup(upload_args.sqlite_db)
 
+	# Connect to the sqlite database
+	sqlite_connection = sqlite3.connect(upload_args.sqlite_db)
+
+	# Setup SQLite to reture the rows as dict with columns
+	sqlite_connection.row_factory = sqlite3.Row
+
+	# Create the cursor
+	cursor = sqlite_connection.cursor()
+
 	# Check if a collection app file has been specified
 	if upload_args.app_files:
 
@@ -215,13 +234,13 @@ def main():
 				if upload_args.app_upload_method in ['Collection', 'Both']:
 
 					# Update the database with the file
-					updateAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', 'Unique ID', app_file)
+					updateAppCollectionToDatabase(cursor, 'Collection', 'Unique ID', app_file)
 
 				# Check if the Collection should be updated
 				if upload_args.app_upload_method in ['Location', 'Both']:
 
 					# Update the database with the file
-					updateAppLocationsToDatabase(upload_args.sqlite_db, 'Locations', 'Site Code', app_file)
+					updateAppLocationsToDatabase(cursor, 'Locations', 'Site Code', app_file)
 
 			else:
 
@@ -229,13 +248,13 @@ def main():
 				if upload_args.app_upload_method in ['Collection', 'Both']:
 
 					# Add file to the database
-					addAppCollectionToDatabase(upload_args.sqlite_db, 'Collection', app_file)
+					addAppCollectionToDatabase(cursor, 'Collection', app_file)
 
 				# Check if the Collection should be updated
 				if upload_args.app_upload_method in ['Location', 'Both']:
 
 					# Add file to the database
-					addAppLocationsToDatabase(upload_args.sqlite_db, 'Locations', app_file)
+					addAppLocationsToDatabase(cursor, 'Locations', app_file)
 
 	# Check if barcode files have been specified
 	if upload_args.barcode_files:
@@ -262,12 +281,12 @@ def main():
 			if upload_args.update_with_file:
 
 				# Update the database with the file
-				updateSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
+				updateSeqFilesToDatabase(cursor, 'Sequencing', 'Sequence ID', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
 
 			else:
 
 				# Add file to the database
-				addSeqFilesToDatabase(upload_args.sqlite_db, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
+				addSeqFilesToDatabase(cursor, 'Sequencing', blast_file, fasta_file, failed_file, 'Storage', 'Storage ID')
 
 	# Check if a location file has been specified
 	if upload_args.loc_files:
@@ -279,12 +298,12 @@ def main():
 			if upload_args.update_with_file:
 
 				# Update the database with the file
-				updateLocFileToDatabase(upload_args.sqlite_db, 'Locations', 'Site Code', loc_file)
+				updateLocFileToDatabase(cursor, 'Locations', 'Site Code', loc_file)
 
 			else:
 
 				# Add file to the database
-				addLocFileToDatabase(upload_args.sqlite_db, 'Locations', loc_file)
+				addLocFileToDatabase(cursor, 'Locations', loc_file)
 
 	# Check if a storage file has been specified
 	if upload_args.storage_files:
@@ -296,12 +315,12 @@ def main():
 			if upload_args.update_with_file:
 
 				# Update the database with the file
-				updateStorageFileToDatabase(upload_args.sqlite_db, 'Storage', 'Storage ID', storage_file)
+				updateStorageFileToDatabase(cursor, 'Storage', 'Storage ID', storage_file)
 
 			else:
 
 				# Add file to the database
-				addStorageFileToDatabase(upload_args.sqlite_db, 'Storage', storage_file)
+				addStorageFileToDatabase(cursor, 'Storage', storage_file)
 
 	# Check if update data has been specified
 	if upload_args.update:
@@ -328,7 +347,8 @@ def main():
 			# Check if the current table is within the tables to join
 			if table_to_update in selection_tables and len(selection_tables) == 1:
 
-				updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict)
+				# Update the specified data 
+				updateValues(cursor, table_to_update, selection_dict, update_statement_dict)
 
 			# Run the expanded command if there are tables to join
 			else:
@@ -348,7 +368,14 @@ def main():
 				# Assign the tables and keys that need to be joined
 				join_by_names, join_by_columns = db_config_data.returnJoinLists(tables_to_join)
 
-				updateValues(upload_args.sqlite_db, table_to_update, selection_dict, update_statement_dict, update_table_column = join_by_column, tables_to_join = join_by_names, join_table_columns = join_by_columns)
+				# Update the specified data 
+				updateValues(cursor, table_to_update, selection_dict, update_statement_dict, update_table_column = join_by_column, tables_to_join = join_by_names, join_table_columns = join_by_columns)
+
+	# Commit any changes
+	sqlite_connection.commit()
+
+	# Close the connection
+	cursor.close()
 
 if __name__ == "__main__":
 	main()

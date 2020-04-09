@@ -7,10 +7,10 @@ import logging
 
 from Bio import SeqIO
 
-from kocher_tools.database import retrieveValues, insertValues, updateValues
+from kocher_tools.database import insertValues, updateValues, confirmValue
 from kocher_tools.storage import convertPlateWell
 
-def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
+def assignStorageIDs (cursor, table, id_key, blast_filename, failed_filename):
 
 	# Create dict to store ID assignsments
 	id_assignments = {}
@@ -44,7 +44,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 			query_well = query.split('-')[1].rsplit('_', 1)[0]
 
 			# Assign the unique ID using the well and plate
-			id_assignments[query_seqID] = convertPlateWell(database, table, id_key, query_plate, query_well)
+			id_assignments[query_seqID] = convertPlateWell(cursor, table, id_key, query_plate, query_well)
 
 	# Check if a failed filename was assigned
 	if failed_filename:
@@ -68,7 +68,7 @@ def assignStorageIDs (database, table, id_key, blast_filename, failed_filename):
 
 
 				# Assign the unique ID using the well and plate
-				id_assignments[failed_sample_seqID] = convertPlateWell(database, table, id_key, failed_sample_plate, failed_sample_well)
+				id_assignments[failed_sample_seqID] = convertPlateWell(cursor, table, id_key, failed_sample_plate, failed_sample_well)
 
 	# Update log
 	logging.info('ID assignment using Plate/Well successful')
@@ -200,7 +200,7 @@ def readSeqFiles (blast_filename, sequence_index, failed_filename, id_assignment
 				# Return the header and row
 				yield header, row
 
-def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
+def addSeqFilesToDatabase (cursor, table, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
 
 	# Create string for file output
 	file_str = '%s, %s' % (blast_filename, sequence_filename)
@@ -215,7 +215,7 @@ def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, f
 	logging.info('Uploading barcode files (%s) to database' % file_str)
 
 	# Assign the Unique IDs for each sample using the storage table
-	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
+	id_assignment_dict = assignStorageIDs(cursor, storage_table, storage_key, blast_filename, failed_filename)
 
 	# Index the sequence file
 	sequence_index = SeqIO.index(sequence_filename, 'fasta')
@@ -224,14 +224,14 @@ def addSeqFilesToDatabase (database, table, blast_filename, sequence_filename, f
 	for header, seq_data in readSeqFiles(blast_filename, sequence_index, failed_filename, id_assignment_dict, storage_key):
 
 		# Insert the sequence and speices into the database
-		insertValues(database, table, header, seq_data)
+		insertValues(cursor, table, header, seq_data)
 
 	sequence_index.close()
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateSeqFilesToDatabase (database, table, select_key, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
+def updateSeqFilesToDatabase (cursor, table, select_key, blast_filename, sequence_filename, failed_filename, storage_table, storage_key):
 
 	# Create string for file output
 	file_str = '%s, %s' % (blast_filename, sequence_filename)
@@ -246,7 +246,7 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 	logging.info('Uploading barcode files (%s) to database' % file_str)
 
 	# Assign the Unique IDs for each sample using the storage table
-	id_assignment_dict = assignStorageIDs(database, storage_table, storage_key, blast_filename, failed_filename)
+	id_assignment_dict = assignStorageIDs(cursor, storage_table, storage_key, blast_filename, failed_filename)
 
 	# Index the sequence file
 	sequence_index = SeqIO.index(sequence_filename, 'fasta')
@@ -257,6 +257,9 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
 			raise Exception('Selection key (%s) not found. Please check the input file' % select_key)
+
+		# Create an empty string to store the select_value
+		select_value = ''
 
 		# Create an empty set dict
 		seq_set_dict = {}
@@ -271,6 +274,9 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 			# Check if the current column is the selection key
 			if header_column == select_key:
 
+				# Update the select value
+				select_value = seq_value
+
 				# Populate the selection dict
 				seq_select_dict['IN'][header_column] = [seq_value]
 
@@ -279,8 +285,14 @@ def updateSeqFilesToDatabase (database, table, select_key, blast_filename, seque
 				# Populate the selection dict
 				seq_set_dict[header_column] = seq_value
 
+		# Check that selected value is present
+		if not confirmValue(cursor, table, select_key, select_value):
+
+			# If not, log warning
+			logging.warning('Entry (%s) not found, unable to update. Please check input' % select_value)
+
 		# Update the values for the selected value
-		updateValues(database, table, seq_select_dict, seq_set_dict)
+		updateValues(cursor, table, seq_select_dict, seq_set_dict)
 
 	sequence_index.close()
 

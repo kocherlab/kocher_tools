@@ -11,7 +11,7 @@ def startLogger (log_filename = None):
 	else:
 
 		# Config the log file
-		logging.basicConfig(level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s', stream = sys.stdout)
+		logging.basicConfig(stream = sys.stdout, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
 
 	# Start logging to stdout
 	stdout_log = logging.StreamHandler()

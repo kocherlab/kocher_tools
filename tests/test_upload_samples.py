@@ -64,11 +64,26 @@ class test_upload_samples (unittest.TestCase):
 			# Assign the filename of the database
 			cls.database_filename = config_data.sql_database
 
+			# Connect to the sqlite database
+			sqlite_connection = sqlite3.connect(cls.database_filename)
+
+			# Setup SQLite to reture the rows as dict with columns
+			sqlite_connection.row_factory = sqlite3.Row
+
+			# Create the cursor
+			cursor = sqlite_connection.cursor()
+
 			# Loop the tables
 			for table in config_data:
 
 				# Create the table
-				createTable(cls.database_filename, table.name, table.assignment_str)
+				createTable(cursor, table.name, table.assignment_str)
+
+			# Commit any changes
+			sqlite_connection.commit()
+
+			# Close the connection
+			cursor.close()
 
 		# Set the data to None if that fails
 		except:
@@ -92,11 +107,10 @@ class test_upload_samples (unittest.TestCase):
 			# Skip the test if so
 			self.skipTest('Requires database to operate. Check database tests for errors')
 
-		
 		# Collection App Tests
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.tsv')
 
 		# Assign the upload_samples args
 		upload_args = [sys.argv[0], '--sqlite-db', self.database_filename, '--yaml', self.config_filename, '--app-file', collection_filename]
@@ -117,7 +131,7 @@ class test_upload_samples (unittest.TestCase):
 			self.assertEqual(len(os.listdir(self.test_backup_dir)), 2)
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_collection_02_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_collection_02_input.tsv')
 
 		# Assign the upload_samples args
 		upload_args = [sys.argv[0], '--sqlite-db', self.database_filename, '--yaml', self.config_filename, '--app-file', collection_filename, '--update-with-file']
@@ -210,7 +224,7 @@ class test_upload_samples (unittest.TestCase):
 			self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50.123, -74.50.123"'))
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.tsv')
 
 		# Assign the upload_samples args
 		upload_args = [sys.argv[0], '--sqlite-db', self.database_filename, '--yaml', self.config_filename, '--app-file', collection_filename, '--app-upload-method', 'Location']
@@ -226,7 +240,7 @@ class test_upload_samples (unittest.TestCase):
 			self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"40.00, -74.00"'))
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_location_04_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_location_04_input.tsv')
 
 		# Assign the upload_samples args
 		upload_args = [sys.argv[0], '--sqlite-db', self.database_filename, '--yaml', self.config_filename, '--app-file', collection_filename, '--app-upload-method', 'Location', '--update-with-file']
@@ -239,7 +253,6 @@ class test_upload_samples (unittest.TestCase):
 
 			# Check that the values were correctly inserted
 			self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50, -75"'))
-
 
 		# Barcode Tests
 
@@ -384,7 +397,6 @@ class test_upload_samples (unittest.TestCase):
 			# Check that the values were correctly inserted
 			self.assertTrue(checkValue(self.database_filename, 'Collection', '"Collected By"', 'AEW_07', expected_count = 2))
 
-
 		# Assign the upload_samples args
 		upload_args = [sys.argv[0], '--sqlite-db', self.database_filename, '--yaml', self.config_filename, '--include', 'Sex', 'Male', '--update', 'Collected By', 'AEW_08']
 
@@ -408,18 +420,6 @@ class test_upload_samples (unittest.TestCase):
 
 			# Check that the values were correctly inserted
 			self.assertTrue(checkValue(self.database_filename, 'Collection', '"Collected By"', 'AEW_09', expected_count = 3))
-
-
-
-
-
-
-
-		
-
-
-
-
-			
+	
 if __name__ == "__main__":
 	unittest.main(verbosity = 2)

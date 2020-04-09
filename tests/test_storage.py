@@ -50,11 +50,26 @@ class test_storage (unittest.TestCase):
 			# Assign the filename of the database
 			cls.database_filename = config_data.sql_database
 
+			# Connect to the sqlite database
+			sqlite_connection = sqlite3.connect(cls.database_filename)
+
+			# Setup SQLite to reture the rows as dict with columns
+			sqlite_connection.row_factory = sqlite3.Row
+
+			# Create the cursor
+			cursor = sqlite_connection.cursor()
+
 			# Loop the tables
 			for table in config_data:
 
 				# Create the table
-				createTable(cls.database_filename, table.name, table.assignment_str)
+				createTable(cursor, table.name, table.assignment_str)
+
+			# Commit any changes
+			sqlite_connection.commit()
+
+			# Close the connection
+			cursor.close()
 
 		# Set the data to None if that fails
 		except:
@@ -80,8 +95,23 @@ class test_storage (unittest.TestCase):
 		# Assign the storage filename
 		storage_filename = os.path.join(self.expected_path, 'test_storage_01_input.tsv')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Upload the Storage data
-		addStorageFileToDatabase(self.database_filename, 'Storage', storage_filename)
+		addStorageFileToDatabase(cursor, 'Storage', storage_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Storage', '"Unique ID"', '"DBtest-0001"'))
@@ -101,8 +131,23 @@ class test_storage (unittest.TestCase):
 		# Assign the storage filename
 		storage_filename = os.path.join(self.expected_path, 'test_storage_02_input.tsv')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Upload the Storage data
-		updateStorageFileToDatabase(self.database_filename, 'Storage', 'Storage ID', storage_filename)
+		updateStorageFileToDatabase(cursor, 'Storage', 'Storage ID', storage_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Storage', 'Plate', 'DBtest2'))
@@ -121,9 +166,24 @@ class test_storage (unittest.TestCase):
 		test_plate_1, test_well_1 = ['DBtest', 'A1']
 		test_plate_2, test_well_2 = ['DBtest2', 'A4']
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Get the IDs for the tests
-		test_ID_1 = convertPlateWell(self.database_filename, 'Storage', 'Storage ID', test_plate_1, test_well_1)
-		test_ID_2 = convertPlateWell(self.database_filename, 'Storage', 'Storage ID', test_plate_2, test_well_2)
+		test_ID_1 = convertPlateWell(cursor, 'Storage', 'Storage ID', test_plate_1, test_well_1)
+		test_ID_2 = convertPlateWell(cursor, 'Storage', 'Storage ID', test_plate_2, test_well_2)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Make sure we were able to get the correct IDs
 		self.assertEqual(test_ID_1, '"DBtest-A1"')

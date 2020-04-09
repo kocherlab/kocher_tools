@@ -4,12 +4,12 @@ import csv
 import logging
 
 from kocher_tools.common import readCommonFile
-from kocher_tools.database import insertValues, updateValues, retrieveValues
+from kocher_tools.database import insertValues, updateValues, retrieveValues, confirmValue
 
-def convertPlateWell (database, table, key, plate, well):
+def convertPlateWell (cursor, table, key, plate, well):
 
 	# Get the key data from the Storage table
-	key_data = retrieveValues(database, [table], {'IN':{'Plate':[plate], 'Well':[well]}}, [key])
+	key_data = retrieveValues(cursor, [table], {'IN':{'Plate':[plate], 'Well':[well]}}, [key])
 
 	# Check if more than one ID was found
 	if len(key_data) > 1: 
@@ -24,7 +24,7 @@ def convertPlateWell (database, table, key, plate, well):
 
 	return key_data[0][0]
 
-def addStorageFileToDatabase (database, table, storage_file):
+def addStorageFileToDatabase (cursor, table, storage_file):
 
 	# Update log
 	logging.info('Uploading storage file (%s) to database' % storage_file)
@@ -33,12 +33,12 @@ def addStorageFileToDatabase (database, table, storage_file):
 	for header, storage_data in readCommonFile(storage_file):
 
 		# Insert the loc into the database
-		insertValues(database, table, header, storage_data)
+		insertValues(cursor, table, header, storage_data)
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateStorageFileToDatabase (database, table, select_key, storage_file):
+def updateStorageFileToDatabase (cursor, table, select_key, storage_file):
 
 	# Update log
 	logging.info('Uploading storage file (%s) to database' % storage_file)
@@ -49,6 +49,9 @@ def updateStorageFileToDatabase (database, table, select_key, storage_file):
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
 			raise Exception('Selection key (%s) not found. Please check the input file' % select_key)
+
+		# Create an empty string to store the select_value
+		select_value = ''
 
 		# Create an empty set dict
 		storage_set_dict = {}
@@ -63,6 +66,9 @@ def updateStorageFileToDatabase (database, table, select_key, storage_file):
 			# Check if the current column is the selection key
 			if header_column == select_key:
 
+				# Update the select value
+				select_value = storage_value
+
 				# Populate the selection dict
 				storage_select_dict['IN'][header_column] = [storage_value]
 
@@ -71,8 +77,14 @@ def updateStorageFileToDatabase (database, table, select_key, storage_file):
 				# Populate the selection dict
 				storage_set_dict[header_column] = storage_value
 
+		# Check that selected value is present
+		if not confirmValue(cursor, table, select_key, select_value):
+
+			# If not, log warning
+			logging.warning('Entry (%s) not found, unable to update. Please check input' % select_value)
+
 		# Update the values for the selected value
-		updateValues(database, table, storage_select_dict, storage_set_dict)
+		updateValues(cursor, table, storage_select_dict, storage_set_dict)
 
 	# Update log
 	logging.info('Upload successful')

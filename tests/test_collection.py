@@ -50,11 +50,26 @@ class test_collection (unittest.TestCase):
 			# Assign the filename of the database
 			cls.database_filename = config_data.sql_database
 
+			# Connect to the sqlite database
+			sqlite_connection = sqlite3.connect(cls.database_filename)
+
+			# Setup SQLite to reture the rows as dict with columns
+			sqlite_connection.row_factory = sqlite3.Row
+
+			# Create the cursor
+			cursor = sqlite_connection.cursor()
+
 			# Loop the tables
 			for table in config_data:
 
 				# Create the table
-				createTable(cls.database_filename, table.name, table.assignment_str)
+				createTable(cursor, table.name, table.assignment_str)
+
+			# Commit any changes
+			sqlite_connection.commit()
+
+			# Close the connection
+			cursor.close()
 
 		# Set the data to None if that fails
 		except:
@@ -72,7 +87,7 @@ class test_collection (unittest.TestCase):
 	def test_01_readAppCollection (self):
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.tsv')
 
 		# Assign the expected header names
 		expected_header = ['Unique ID', 'Site Code', 'Date Collected', 'Time Entered', 'Sex', 
@@ -85,16 +100,16 @@ class test_collection (unittest.TestCase):
 		# Assign the expected rows
 		expected_rows = 	[['DBtest-0001', 'RIM', '11/6/2019', '1:48:14 PM', 'Female', 'Adult', 
 		                	  'No', 'EtoH', 'Yes', 'PFA', 'No', 'N/A', 'These are notes', 
-		                	  'test_collection_01_input.csv']]
+		                	  'test_collection_01_input.tsv']]
 		expected_rows.append(['DBtest-0002', 'WIM', '11/6/2019', '2:17:47 PM', 'Male', 'Adult', 
 							  'No', 'EtoH', 'No', 'N/A', 'No', 'N/A', 'Also notes ', 
-							  'test_collection_01_input.csv'])
+							  'test_collection_01_input.tsv'])
 		expected_rows.append(['DBtest-0003', 'VEN', '11/6/2019', '2:18:47 PM', 'Unknown', 'Big larva', 
 							  'No', 'RNAlater', 'No', 'N/A', 'Yes', 'N-1', 'From nest on Mars', 
-							  'test_collection_01_input.csv'])
+							  'test_collection_01_input.tsv'])
 		expected_rows.append(['DBtest-0004', 'TOM', '11/6/2019', '2:19:57 PM', 'Multiple', 'Small larva', 
 							  'No', 'RNAlater', 'No', 'N/A', 'Yes', 'Nest 21', 'All the larvae from this nest', 
-							  'test_collection_01_input.csv'])
+							  'test_collection_01_input.tsv'])
 
 		# Parse the common file
 		for line_pos, (header, row) in enumerate(readAppCollection(collection_filename)):
@@ -121,10 +136,22 @@ class test_collection (unittest.TestCase):
 			self.skipTest('Requires database to operate. Check database tests for errors')
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.tsv')
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
 
 		# Add the data to the database
-		addAppCollectionToDatabase(self.database_filename, 'Collection', collection_filename)
+		addAppCollectionToDatabase(cursor, 'Collection', collection_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database_filename, 'Collection', '"Unique ID"', '"DBtest-0001"'))
@@ -142,10 +169,22 @@ class test_collection (unittest.TestCase):
 			self.skipTest('Requires database to operate. Check database tests for errors')
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_collection_02_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_collection_02_input.tsv')
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
 
 		# Add the data to the database
-		updateAppCollectionToDatabase(self.database_filename, 'Collection', "Unique ID", collection_filename)
+		updateAppCollectionToDatabase(cursor, 'Collection', "Unique ID", collection_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Collection', '"Has Pollen?"', 'Yes'))

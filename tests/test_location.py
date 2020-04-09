@@ -50,11 +50,26 @@ class test_location (unittest.TestCase):
 			# Assign the filename of the database
 			cls.database_filename = config_data.sql_database
 
+			# Connect to the sqlite database
+			sqlite_connection = sqlite3.connect(cls.database_filename)
+
+			# Setup SQLite to reture the rows as dict with columns
+			sqlite_connection.row_factory = sqlite3.Row
+
+			# Create the cursor
+			cursor = sqlite_connection.cursor()
+
 			# Loop the tables
 			for table in config_data:
 
 				# Create the table
-				createTable(cls.database_filename, table.name, table.assignment_str)
+				createTable(cursor, table.name, table.assignment_str)
+
+			# Commit any changes
+			sqlite_connection.commit()
+
+			# Close the connection
+			cursor.close()
 
 		# Set the data to None if that fails
 		except:
@@ -80,8 +95,20 @@ class test_location (unittest.TestCase):
 		# Assign the location filename
 		loc_filename = os.path.join(self.expected_path, 'test_location_01_input.tsv')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Add the data to the database
-		addLocFileToDatabase (self.database_filename, 'Locations', loc_filename)
+		addLocFileToDatabase(cursor, 'Locations', loc_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Locations', '"Site Code"', 'TOM'))
@@ -100,8 +127,20 @@ class test_location (unittest.TestCase):
 		# Assign the location filename
 		loc_filename = os.path.join(self.expected_path, 'test_location_02_input.tsv')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Add the data to the database
-		updateLocFileToDatabase (self.database_filename, 'Locations', 'Site Code', loc_filename)
+		updateLocFileToDatabase(cursor, 'Locations', 'Site Code', loc_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Locations', 'Location', '"Inner Rim"'))
@@ -119,8 +158,23 @@ class test_location (unittest.TestCase):
 		# Assign the expected location tuple
 		expected_loc = ('Location', '"Inner Rim"')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Assign the test loc from the loc file
-		test_loc = convertLoc(self.database_filename, 'Locations', '"Site Code"', 'RIM', 'Location')
+		test_loc = convertLoc(cursor, 'Locations', '"Site Code"', 'RIM', 'Location')
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check if we get the expected value from the test results
 		self.assertEqual(test_loc, expected_loc)
@@ -129,7 +183,7 @@ class test_location (unittest.TestCase):
 	def test_04_readAppLocations (self):
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.tsv')
 
 		# Assign the expected header names
 		expected_header = ['Site Code', 'GPS']
@@ -168,10 +222,22 @@ class test_location (unittest.TestCase):
 			self.skipTest('Requires database to operate. Check database tests for errors')
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_location_03_input.tsv')
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
 
 		# Add the locations to the database
-		addAppLocationsToDatabase(self.database_filename, 'Locations', collection_filename)
+		addAppLocationsToDatabase(cursor, 'Locations', collection_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Locations', '"Site Code"', 'RIM2'))
@@ -187,10 +253,22 @@ class test_location (unittest.TestCase):
 			self.skipTest('Requires database to operate. Check database tests for errors')
 
 		# Assign the collection filename
-		collection_filename = os.path.join(self.expected_path, 'test_location_04_input.csv')
+		collection_filename = os.path.join(self.expected_path, 'test_location_04_input.tsv')
+
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
 
 		# Add the locations to the database
-		updateAppLocationsToDatabase(self.database_filename, 'Locations', 'Site Code',collection_filename)
+		updateAppLocationsToDatabase(cursor, 'Locations', 'Site Code',collection_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Locations', 'GPS', '"50, -75"'))

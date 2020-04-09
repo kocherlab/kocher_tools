@@ -280,35 +280,26 @@ def reportSqlError (sql_error, column_list = None, value_list = None):
 			# Add punctuation
 			sql_error_message += '. '
 
-		# Raise the updated exception
-		raise Exception('%s%s does not support duplicate entries' % (sql_error_message, sql_column_path)) from sql_error
+		# Quote the column path, if needed
+		sql_quoted_column_path = quoteField(sql_column_path)
+
+		# Display warning for duplicates, as raise would only report the first entry
+		logging.warning('%s%s does not support duplicate entries' % (sql_error_message, sql_quoted_column_path))
 
 	# If not a known error, report the standard message
 	else:
 
 		raise sql_error
 
-def createTable (database, table, column_assignment_str):
+def createTable (cursor, table, column_assignment_str):
 
 	try:
 		
 		# Createt the table assignment string
 		sqlite_create_table = 'CREATE TABLE IF NOT EXISTS %s (%s)' % (table, column_assignment_str)
 
-		# Connect to the sqlite database
-		sqlite_connection = sqlite3.connect(database)
-
-		# Create the cursor
-		cursor = sqlite_connection.cursor()
-
 		# Execute the create table command
 		cursor.execute(sqlite_create_table)
-
-		# Commit any changes
-		sqlite_connection.commit()
-
-		# Close the connection
-		cursor.close()
 
 		# Update log
 		logging.info('Successfully created table (%s) in database' % table)
@@ -316,13 +307,7 @@ def createTable (database, table, column_assignment_str):
 	except sqlite3.Error as error:
 		raise Exception(error)
 
-def insertValues (database, table, column_list, value_list):
-
-	# Confirm the database exists
-	if not os.path.exists(database):
-
-		# Report the error
-		raise IOError('Database (%s) not found' % database)
+def insertValues (cursor, table, column_list, value_list):
 
 	try:
 
@@ -344,20 +329,8 @@ def insertValues (database, table, column_list, value_list):
 		# Create the insert string
 		sqlite_insert_values = 'INSERT INTO %s (%s) VALUES (%s)' % (table, ', '.join(column_list_w_dates), valueMarksStr(column_list_w_dates))
 
-		# Connect to the sqlite database
-		sqlite_connection = sqlite3.connect(database)
-
-		# Create the cursor
-		cursor = sqlite_connection.cursor()
-
 		# Execute the insert values command
 		cursor.execute(sqlite_insert_values, value_list_w_dates)
-
-		# Commit any changes
-		sqlite_connection.commit()
-
-		# Close the connection
-		cursor.close()
 
 		# Update log
 		logging.info('Successfully inserted data into the database')
@@ -367,13 +340,7 @@ def insertValues (database, table, column_list, value_list):
 		# Report the error
 		reportSqlError(sql_error, column_list = column_list, value_list = value_list)
 
-def updateValues (database, table, selection_dict, update_dict, update_table_column = None, tables_to_join = None, join_table_columns = None):
-
-	# Confirm the database exists
-	if not os.path.exists(database):
-
-		# Report the error
-		raise IOError('Database (%s) not found' % database)
+def updateValues (cursor, table, selection_dict, update_dict, update_table_column = None, tables_to_join = None, join_table_columns = None):
 
 	try:
 
@@ -421,34 +388,17 @@ def updateValues (database, table, selection_dict, update_dict, update_table_col
 		# Create the update string
 		sqlite_update_values = 'UPDATE %s SET %s WHERE %s' % (table, update_expression, select_expression)
 
-		# Connect to the sqlite database
-		sqlite_connection = sqlite3.connect(database)
-
-		# Create the cursor
-		cursor = sqlite_connection.cursor()
-
 		# Execute the insert values command
 		cursor.execute(sqlite_update_values, sqlite_value_list)
-
-		# Commit any changes
-		sqlite_connection.commit()
-
-		# Close the connection
-		cursor.close()
 
 		# Update log
 		logging.info('Successfully updated the database')
 
 	except sqlite3.Error as error:
+
 		raise Exception(error)
 
-def retrieveValues (database, tables, selection_dict, column_list, join_table_columns = None):
-
-	# Confirm the database exists
-	if not os.path.exists(database):
-
-		# Report the error
-		raise IOError('Database (%s) not found' % database)
+def retrieveValues (cursor, tables, selection_dict, column_list, join_table_columns = None):
 
 	try:
 
@@ -487,15 +437,6 @@ def retrieveValues (database, tables, selection_dict, column_list, join_table_co
 			# Update the sqlite string if an expression was given
 			sqlite_select_values += ' WHERE %s' % select_expression
 
-		# Connect to the sqlite database
-		sqlite_connection = sqlite3.connect(database)
-
-		# Setup SQLite to reture the rows as dict with columns
-		sqlite_connection.row_factory = sqlite3.Row
-
-		# Create the cursor
-		cursor = sqlite_connection.cursor()
-
 		# Check if selection expression values were created
 		if select_value_list:
 
@@ -509,12 +450,6 @@ def retrieveValues (database, tables, selection_dict, column_list, join_table_co
 
 		# Save the selected results
 		selection_results = cursor.fetchall()
-
-		# Commit any changes
-		sqlite_connection.commit()
-
-		# Close the connection
-		cursor.close()
 
 		# Check if anything was returned
 		if len(selection_results) == 0:
@@ -531,71 +466,53 @@ def retrieveValues (database, tables, selection_dict, column_list, join_table_co
 	except sqlite3.Error as error:
 		raise Exception(error)
 
-def confirmValues (database, table, column, values):
+def confirmValue (cursor, table, column, value):
 	
 	try:
 
 		# Create a list to store the check results
 		check_results = []
 
-		# Connect to the sqlite database
-		sqlite_connection = sqlite3.connect(database)
-
-		# Create the cursor
-		cursor = sqlite_connection.cursor()
-
-		# Loop the values, value by value
-		for value in values:
-
-			# Check if the value is None
-			if value == None:
-				
-				# Create the value check string
-				sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s is NULL' % (table, quoteField(column))
-
-				# Execute the create table command
-				cursor.execute(sqlite_check_value)
-
-			else:
+		# Check if the value is None
+		if value == None:
 			
-				# Create the value check string
-				sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s = ?' % (table, quoteField(column))
+			# Create the value check string
+			sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s is NULL' % (table, quoteField(column))
 
-				# Execute the create table command
-				cursor.execute(sqlite_check_value, [value])
+			# Execute the create table command
+			cursor.execute(sqlite_check_value)
 
-			# Save the selected results
-			selection_results = cursor.fetchall()
+		else:
+		
+			# Create the value check string
+			sqlite_check_value = 'SELECT COUNT(*) FROM %s WHERE %s = ?' % (table, quoteField(column))
 
-			# Check if there was an assignment error
-			if not selection_results:
-				raise Exception('Assignment error when checking for presence of %s in %s:%s)' % (values, table, column))
+			# Execute the create table command
+			cursor.execute(sqlite_check_value, [quoteField(value)])
 
-			# Check if the table was found
-			if selection_results[0][0] >= 1:
+		# Save the selected results
+		selection_results = cursor.fetchall()
 
-				# Append True to the results list
-				check_results.append(True)
+		# Check if there was an assignment error
+		if not selection_results:
+			raise Exception('Assignment error when checking for presence of %s in %s:%s)' % (value, table, column))
 
-			# Check if the table was not found
-			elif selection_results[0][0] == 0:
+		# Check if the table was found
+		if selection_results[0][0] >= 1:
 
-				# Append False to the results list
-				check_results.append(False)
+			# Return True
+			return True
 
-			# Check if there was an unknown error
-			else:
+		# Check if the table was not found
+		elif selection_results[0][0] == 0:
 
-				raise Exception('Unknown error checking for presence of %s in %s:%s)' % (values, table, column))
+			# Return False
+			return False
 
-		# Commit any changes
-		sqlite_connection.commit()
+		# Check if there was an unknown error
+		else:
 
-		# Close the connection
-		cursor.close()
-
-		# Return the results
-		return check_results
+			raise Exception('Unknown error checking for presence of %s in %s:%s)' % (value, table, column))
 
 	except sqlite3.Error as error:
 		raise Exception(error)

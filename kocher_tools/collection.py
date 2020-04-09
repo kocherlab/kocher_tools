@@ -4,14 +4,14 @@ import csv
 import copy
 import logging
 
-from kocher_tools.database import insertValues, updateValues
+from kocher_tools.database import insertValues, updateValues, confirmValue
 
 def readAppCollection (collection_filename, add_filename_col = True, filename_header = 'Collection File', remove_GPS = True):
 
 	with open(collection_filename) as collection_file:
 
 		# Read the data file
-		collection_reader = csv.reader(collection_file)
+		collection_reader = csv.reader(collection_file, delimiter = '\t')
 
 		if sys.version_info[0] == 3:
 
@@ -73,24 +73,24 @@ def readAppCollection (collection_filename, add_filename_col = True, filename_he
 			# Return the header and row
 			yield header, row
 
-def addAppCollectionToDatabase (database, table, app_file):
+def addAppCollectionToDatabase (cursor, table, app_file):
 
 	# Update log
-	logging.info('Uploading collections from app file (%s) to database' % app_file)
+	logging.info('Uploading collection from app file (%s) to database' % app_file)
 
 	# Loop the collection app file by line
 	for header, sample_data in readAppCollection(app_file):
 
 		# Insert the sample into the database
-		insertValues(database, table, header, sample_data)
+		insertValues(cursor, table, header, sample_data)
 
 	# Update log
 	logging.info('Upload successful')
 
-def updateAppCollectionToDatabase (database, table, select_key, app_file):
+def updateAppCollectionToDatabase (cursor, table, select_key, app_file):
 
 	# Update log
-	logging.info('Uploading collections from app file (%s) to database' % app_file)
+	logging.info('Uploading collection from app file (%s) to database' % app_file)
 
 	# Loop the collection app file by line
 	for header, sample_data in readAppCollection(app_file):
@@ -98,6 +98,9 @@ def updateAppCollectionToDatabase (database, table, select_key, app_file):
 		# Check if the selection key isn't among the headers
 		if select_key not in header:
 			raise Exception('Selection key (%s) not found. Please check the input file' % select_key)
+
+		# Create an empty string to store the select_value
+		select_value = ''
 
 		# Create an empty set dict
 		app_set_dict = {}
@@ -112,6 +115,9 @@ def updateAppCollectionToDatabase (database, table, select_key, app_file):
 			# Check if the current column is the selection key
 			if header_column == select_key:
 
+				# Update the select value
+				select_value = sample_value
+
 				# Populate the selection dict
 				app_select_dict['IN'][header_column] = [sample_value]
 
@@ -120,8 +126,14 @@ def updateAppCollectionToDatabase (database, table, select_key, app_file):
 				# Populate the selection dict
 				app_set_dict[header_column] = sample_value
 
+		# Check that selected value is present
+		if not confirmValue(cursor, table, select_key, select_value):
+
+			# If not, log warning
+			logging.warning('Entry (%s) not found, unable to update. Please check input' % select_value)
+
 		# Update the values for the selected value
-		updateValues(database, table, app_select_dict, app_set_dict)
+		updateValues(cursor, table, app_select_dict, app_set_dict)
 
 	# Update log
 	logging.info('Upload successful')

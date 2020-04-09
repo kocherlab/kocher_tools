@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import logging
+import sqlite3
 
 from collections import defaultdict
 
@@ -141,9 +142,6 @@ def main():
 				# Raise an exception
 				raise Exception('Output already exists. Please alter the output arguments or use --overwrite')
 
-	# Read in the database config file
-	db_config_data = readConfig(retrieve_args.yaml)
-
 	# Check if log should be sent to stdout
 	if retrieve_args.log_stdout:
 
@@ -154,6 +152,9 @@ def main():
 
 		# Start a log file for this run
 		startLogger(log_filename = retrieve_args.out_log)
+
+	# Read in the database config file
+	db_config_data = readConfig(retrieve_args.yaml)
 
 	# Log the arguments used
 	logArgs(retrieve_args)
@@ -212,11 +213,20 @@ def main():
 	# Remove potential duplicates
 	tables = list(set(tables))
 
+	# Connect to the sqlite database
+	sqlite_connection = sqlite3.connect(retrieve_args.sqlite_db)
+
+	# Setup SQLite to reture the rows as dict with columns
+	sqlite_connection.row_factory = sqlite3.Row
+
+	# Create the cursor
+	cursor = sqlite_connection.cursor()
+
 	# Check if only a single table is required
 	if len(tables) == 1:
 
 		# Retrieve the selected entries from the database 
-		retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list)
+		retrieved_entries = retrieveValues(cursor, tables, selection_dict, columns_assignment_list)
 
 	# Otherwise, run the process for multiple tables
 	else:
@@ -225,7 +235,13 @@ def main():
 		tables, join_by_columns = db_config_data.returnJoinLists(tables)
 
 		# Retrieve the selected entries from the database 
-		retrieved_entries = retrieveValues(retrieve_args.sqlite_db, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
+		retrieved_entries = retrieveValues(cursor, tables, selection_dict, columns_assignment_list, join_table_columns = join_by_columns)
+
+	# Commit any changes
+	sqlite_connection.commit()
+
+	# Close the connection
+	cursor.close()
 
 	# Set the deafult delimiter
 	delimiter = '\t'

@@ -53,18 +53,32 @@ class test_barcode (unittest.TestCase):
 			# Assign the filename of the database
 			cls.database_filename = config_data.sql_database
 
+			# Connect to the sqlite database
+			sqlite_connection = sqlite3.connect(cls.database_filename)
+
+			# Setup SQLite to reture the rows as dict with columns
+			sqlite_connection.row_factory = sqlite3.Row
+
+			# Create the cursor
+			cursor = sqlite_connection.cursor()
+			
 			# Loop the tables
 			for table in config_data:
 
 				# Create the table
-				createTable(cls.database_filename, table.name, table.assignment_str)
+				createTable(cursor, table.name, table.assignment_str)
 
 			# Assign the storage filename
 			storage_filename = os.path.join(cls.expected_path, 'test_storage_02_input.tsv')
 
 			# Upload the Storage data
-			addStorageFileToDatabase(cls.database_filename, 'Storage', storage_filename)
+			addStorageFileToDatabase(cursor, 'Storage', storage_filename)
 
+			# Commit any changes
+			sqlite_connection.commit()
+
+			# Close the connection
+			cursor.close()
 
 		# Set the data to None if that fails
 		except:
@@ -96,8 +110,23 @@ class test_barcode (unittest.TestCase):
 		# Save the expected dict
 		expected_dict = {'DBtest-A1_1': '"DBtest-A1"', 'DBtest-A2_1': '"DBtest-A2"'}
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Assign the storage IDs
-		test_dict = assignStorageIDs(self.database_filename, 'Storage', 'Storage ID', blast_filename, json_filename)
+		test_dict = assignStorageIDs(cursor, 'Storage', 'Storage ID', blast_filename, json_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Make sure we were able to get the correct IDs
 		self.assertEqual(test_dict, expected_dict)
@@ -120,8 +149,23 @@ class test_barcode (unittest.TestCase):
 		# Assign the json filename
 		json_filename = os.path.join(self.expected_path, 'test_barcode_01_input.json')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Assign the storage IDs
-		assigned_IDs = assignStorageIDs(self.database_filename, 'Storage', 'Storage ID', blast_filename, json_filename)
+		assigned_IDs = assignStorageIDs(cursor, 'Storage', 'Storage ID', blast_filename, json_filename)
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Save a list of the expected headers
 		expected_headers = [['Storage ID', 'Sequence ID', 'Species', 'Reads', 'BOLD Identifier', 'Percent Identity', 'Alignment Length', 'Sequence Length', 'Status'],
@@ -175,8 +219,23 @@ class test_barcode (unittest.TestCase):
 		# Assign the json filename
 		json_filename = os.path.join(self.expected_path, 'test_barcode_01_input.json')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Add the data to the database
-		addSeqFilesToDatabase(self.database_filename, 'Sequencing', blast_filename, fasta_filename, json_filename, 'Storage', 'Storage ID')
+		addSeqFilesToDatabase(cursor, 'Sequencing', blast_filename, fasta_filename, json_filename, 'Storage', 'Storage ID')
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Storage ID"', '"DBtest-A1"'))
@@ -202,8 +261,23 @@ class test_barcode (unittest.TestCase):
 		# Assign the json filename
 		json_filename = os.path.join(self.expected_path, 'test_barcode_02_input.json')
 
+		# Connect to the sqlite database
+		sqlite_connection = sqlite3.connect(self.database_filename)
+
+		# Setup SQLite to reture the rows as dict with columns
+		sqlite_connection.row_factory = sqlite3.Row
+
+		# Create the cursor
+		cursor = sqlite_connection.cursor()
+
 		# Update the data to the database
-		updateSeqFilesToDatabase(self.database_filename, 'Sequencing', "Sequence ID", blast_filename, fasta_filename, json_filename, 'Storage', 'Storage ID')
+		updateSeqFilesToDatabase(cursor, 'Sequencing', "Sequence ID", blast_filename, fasta_filename, json_filename, 'Storage', 'Storage ID')
+
+		# Commit any changes
+		sqlite_connection.commit()
+
+		# Close the connection
+		cursor.close()
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'Sequencing', '"Ambiguous Hits"', None))

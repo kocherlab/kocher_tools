@@ -2,10 +2,11 @@ import os
 import sys
 import argparse
 import logging
+import sqlite3
 
 from kocher_tools.logger import startLogger, logArgs
 from kocher_tools.config_file import readConfig
-from kocher_tools.database import createTable
+from kocher_tools.database import createTable2
 
 def confirmFile ():
 	'''Custom action to confirm file exists'''
@@ -31,11 +32,20 @@ logArgs(db_args)
 # Read in the YAML config file
 db_config_data = readConfig(db_args.yaml)
 
-# Get filename from config file
-sqlite_file = db_config_data.sql_database
+# Connect to the sqlite database
+sqlite_connection = sqlite3.connect(db_config_data.sql_database)
+
+# Create the cursor
+cursor = sqlite_connection.cursor()
 
 # Loop the tables
 for table in db_config_data:
 
 	# Create the table
-	createTable(sqlite_file, table.name, table.assignment_str)
+	createTable2(sqlite_file, table.name, table.assignment_str)
+
+# Commit any changes
+sqlite_connection.commit()
+
+# Close the connection
+cursor.close()
