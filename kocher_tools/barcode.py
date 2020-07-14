@@ -127,7 +127,7 @@ def readSeqFiles (blast_filename, sequence_index, failed_filename, id_assignment
 
 			# Assign the subject information that needs formatting
 			subject = blast_line[subject_id_index]
-			subject_ident = subject.split('|')[0][1:]
+			subject_ident = subject.split('|')[0]
 			subject_species = subject.split('|')[1].replace('_', ' ')
 
 			# Assign the header
