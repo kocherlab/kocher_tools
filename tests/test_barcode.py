@@ -172,7 +172,7 @@ class test_barcode (unittest.TestCase):
 							['Storage ID', 'Sequence ID', 'Reads', 'Status', 'Ambiguous Hits', 'BOLD Bins']]
 
 		# Save a list of the expected rows
-		expected_rows = [['"DBtest-A1"', 'DBtest-A1_1', 'Lasioglossum oenotherae', '500', 'ASIO003-06', '100.000', '313', '313', 'Species Identified'],
+		expected_rows = [['"DBtest-A1"', 'DBtest-A1_1', 'Lasioglossum oenotherae', '500', 'LASIO003-06', '100.000', '313', '313', 'Species Identified'],
 						 ['"DBtest-A2"', 'DBtest-A2_1', '500', 'Ambiguous Hits', 'Ceratina mikmaqi, Ceratina strenua', 'BOLD:AAA2368']]
 
 		# Index the sequence file
