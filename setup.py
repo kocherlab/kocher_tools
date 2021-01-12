@@ -16,8 +16,15 @@ requirements = ['pyyaml',
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
                 'kocher_tools/barcode_filter.py',
                 'kocher_tools/create_database.py',
+                'kocher_tools/insert_file.py']
+
+'''
+tool_scripts = ['kocher_tools/barcode_pipeline.py',
+                'kocher_tools/barcode_filter.py',
+                'kocher_tools/create_database.py',
                 'kocher_tools/retrieve_samples.py',
                 'kocher_tools/upload_samples.py']
+'''
 
 setup(name=kocher_tools.__title__,
       version=kocher_tools.__version__,

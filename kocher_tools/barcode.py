@@ -2,11 +2,122 @@ import os
 import sys
 import csv
 import json
-import sqlite3
 import logging
 
 from Bio import SeqIO
 
+from kocher_tools.config_file import ConfigDB
+from kocher_tools.database import *
+
+def insertBarcodeFiles (config_file, schema, filepaths):
+
+	def append_seq (query_id, seq_index):
+		return seq_index[query_id].format('fasta')
+
+	def join_list (value_list):
+		try: return ', '.join([value_str for value_str in value_list if value_str != 'BOLD:N/A'])
+		except: return ''
+
+	# Assign the expected filetypes
+	blast_filepath = None
+	fasta_filepath = None
+	failed_filepath = None
+
+	# Loop the filepaths
+	for filepath in filepaths:
+
+		# Assign the blast file
+		if filepath.endswith('.out'):
+			if blast_filepath: raise Exception(f'BLAST file already assigned ({blast_filepath}), cannot assign: {filepath}')
+			blast_filepath = filepath
+
+		# Assign the fasta file
+		if filepath.endswith('.fasta') or filepath.endswith('.fa') or filepath.endswith('.fas'):
+			if fasta_filepath: raise Exception(f'FASTA file already assigned ({fasta_filepath}), cannot assign: {filepath}')
+			fasta_filepath = filepath
+
+		# Assign the failed file
+		if filepath.endswith('.json'):
+			if failed_filepath: raise Exception(f'Failed file already assigned ({failed_filepath}), cannot assign: {filepath}')
+			failed_filepath = filepath
+
+	# Confirm the insert is possible
+	if not blast_filepath or not fasta_filepath: raise Exception(f'Both a BLAST and FASTA file are required to operate')
+
+	# Open the config and assign the table
+	config_data = ConfigDB.readConfig(config_file)
+	sql_table_assign = config_data[schema]
+
+	# Start the engine and connect to the database
+	sql_engine = createEngineFromConfig(config_data)
+	sql_connection = sql_engine.connect()
+
+	# Assign the sequencing columns
+	sequence_std_cols = ['sequence_id', 'seq_len', 'seq_percent_ident', 
+						 'seq_align_len', 'sequence', 'reads', 'sample_id', 
+						 'bold_id', 'species', 'sequence_status']
+	
+	# Assign the sequencing header data				 
+	sequence_label_dict = {'Query ID': 'sequence_id', 
+						   'Percent Identity': 'seq_percent_ident', 
+						   'Alignment Length': 'seq_align_len',
+						   'Query Length': 'seq_len'}
+
+	# Index the sequence file
+	sequence_index = SeqIO.index(fasta_filepath, 'fasta')
+
+	# Read in the file as a pandas dataframe, prep for database
+	input_dataframe = pd.read_csv(blast_filepath, dtype = str, sep = '\t')
+
+	# Clean up the BLAST dataframe
+	input_dataframe['sequence'] = input_dataframe['Query ID'].apply(append_seq, seq_index = sequence_index)
+	input_dataframe[['Query ID', 'reads']] = input_dataframe['Query ID'].str.split(';size=', expand = True) 
+	input_dataframe['sample_id'] = input_dataframe['Query ID'].str.split('_', expand = True)[0]
+	input_dataframe[['bold_id', 'species']] = input_dataframe['Subject ID'].str.split('|', expand = True)[[0, 1]]
+	input_dataframe['bold_id'] = input_dataframe['bold_id'].replace('_', ' ')
+	input_dataframe['sequence_status'] = 'Species Identified'
+	input_dataframe = input_dataframe.rename(columns = sequence_label_dict)
+
+	# Remove the non standard columns
+	sequence_non_std_cols = list(set(input_dataframe.columns) - set(sequence_std_cols))
+	input_dataframe = input_dataframe.drop(columns =  sequence_non_std_cols)
+
+	sql_insert = SQLInsert.fromConfig(config_data, sql_connection)
+	sql_insert.addTableToInsert(sql_table_assign)
+	sql_insert.addDataFrameValues(input_dataframe)
+	sql_insert.insert()
+
+	# Open the failed file
+	with open(failed_filepath) as failed_file:
+
+		# Assign the sequencing header data				 
+		failed_label_dict = {'Query ID': 'sequence_id', 
+							 'Status': 'sequence_status',
+							 'Species': 'ambiguous_hits',
+							 'Bins': 'bold_bins'}
+
+		# Load the JSON into a dataframe
+		failed_data = json.load(failed_file)
+		failed_dataframe = pd.DataFrame(failed_data)
+		
+		# Join the lists, if found
+		failed_dataframe['Species'] = failed_dataframe['Species'].apply(join_list)
+		failed_dataframe['Bins'] = failed_dataframe['Bins'].apply(join_list)
+
+		# Clean up the dataframe
+		failed_dataframe['sequence'] = failed_dataframe['Query ID'].apply(append_seq, seq_index = sequence_index)
+		failed_dataframe[['Query ID', 'reads']] = failed_dataframe['Query ID'].str.split(';size=', expand = True)
+		failed_dataframe['sample_id'] = failed_dataframe['Query ID'].str.split('_', expand = True)[0] 
+		failed_dataframe = failed_dataframe.rename(columns = failed_label_dict)
+		
+		sql_insert = SQLInsert.fromConfig(config_data, sql_connection)
+		sql_insert.addTableToInsert(sql_table_assign)
+		sql_insert.addDataFrameValues(failed_dataframe)
+		sql_insert.insert()
+
+	sequence_index.close()
+
+'''
 from kocher_tools.database import insertValues, updateValues, confirmValue
 from kocher_tools.storage import convertPlateWell
 
@@ -298,3 +409,4 @@ def updateSeqFilesToDatabase (cursor, table, select_key, blast_filename, sequenc
 
 	# Update log
 	logging.info('Upload successful')
+'''

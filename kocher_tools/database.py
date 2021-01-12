@@ -1,12 +1,558 @@
 import os
 import sys
-import sqlite3
-import datetime
-import pytz
-import copy
+#import sqlite3
+#import datetime
+#import pytz
+#import copy
 import itertools
+import operator
+import csv
+import zipfile
+import tempfile
 import logging
 
+import pandas as pd
+
+from sqlalchemy import inspect
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import select
+from sqlalchemy.schema import CreateTable
+
+def createEngineFromFilename (sql_filename, echo = False):
+
+	return create_engine("sqlite:///%s" % sql_filename, echo = echo)
+
+def createEngineFromAddress (sql_address, echo = False):
+
+	return create_engine("postgresql://%s" % sql_address, echo = echo)
+
+def createEngineFromConfig (config_data, echo = False):
+
+	if config_data.type == 'sqlite': return create_engine("sqlite:///%s" % config_data.filename, echo = echo)
+	else: return create_engine("postgresql://%s" % config_data.sql_address, echo = echo)
+	
+def startSession (engine):
+	
+	Session = sessionmaker(bind=engine)
+	return Session()
+
+def createAllFromConfig (config_data, engine):
+
+	# Create the tables
+	config_data.meta.create_all(engine)
+
+def printCreateSQL (sql_tables):
+
+	# Loop tables and print SQL statments
+	for sql_table in sql_tables:
+		print(CreateTable(sql_table))
+
+def foreignKeyPairs (sql_tables):
+
+	# Assign the pairs of foreign and parent keys
+	for fk_sql_table in sql_tables:
+		for column in fk_sql_table.columns:
+			if column.foreign_keys:
+				for foreign_key in column.foreign_keys:
+					yield foreign_key.column, column
+
+def prepDataFrameUsingConfig (config_data, table, dataframe, custom_labels = {}):
+
+	# Confirm the table is within the config file
+	if not table in config_data: raise Exception(f'{table} not found in database')
+
+	col_header_dict = config_data._table_col_to_label[table]
+	col_label_dict = custom_labels if custom_labels != {} else config_data._table_label_to_col[table]
+
+	# Check which header values were found
+	col_header_count = len(set(dataframe.columns) & set(list(col_header_dict)))
+	col_label_count = len(set(dataframe.columns) & set(list(col_label_dict)))
+
+	# Fix the headers, if necessary 
+	header_method = 'header' if col_header_count > col_label_count else 'label'
+	if header_method == 'label': dataframe = dataframe.rename(columns = col_label_dict)
+
+	# Define the standard columns
+	std_cols = list(custom_labels.values()) if custom_labels != {} else list(col_header_dict)
+
+	# Check if the file has non-standard columns
+	non_std_cols = list(set(dataframe.columns) - set(std_cols))
+	dataframe = dataframe.drop(columns = non_std_cols)
+
+	# Return the dataframe
+	return dataframe
+
+class SQLSelect ():
+	def __init__ (self, sql_select_tables = [], sql_select_columns = [], sql_where = [], sql_tables = [], tables_in_select = [], sql_connection = None):
+		self.select_results = None
+		self._sql_select_tables = sql_select_tables
+		self._sql_select_columns = sql_select_columns
+		self._sql_where = sql_where
+		self._sql_tables = sql_tables
+		self._tables_in_select = tables_in_select 
+		self._sql_connection = sql_connection
+
+	@property
+	def _total_tables_in_select (self):
+
+		return sum(self._tables_in_select)
+
+	@property
+	def _sql_tables_in_select (self):
+
+		return [sql_table for table_bool, sql_table in zip(self._tables_in_select, self._sql_tables) if table_bool]
+
+	def select (self):
+
+		if self._total_tables_in_select > 1:
+			for parent_key, foreign_key in foreignKeyPairs(self._sql_tables_in_select):
+				if not self._sql_where:
+					self._sql_where = SQLWhere.fromQuery(self._sql_tables)
+				self._sql_where.addEQColWhere(parent_key, foreign_key)
+		self.select_results = list(self._sql_connection.execute(select(self.removeRepeatsInSelect(self._sql_select_tables, self._sql_select_columns)).where(self._sql_where.where_statement)))
+
+	def toFile (self, out_filename, sep):
+
+		# Create the output file, using DictWriter
+		header = self.select_results[0].keys()
+		with open(out_filename, 'w') as entries_file:
+			entries_writer = csv.DictWriter(entries_file, fieldnames = header, delimiter = sep)
+			entries_writer.writeheader()
+			for results_row in self.select_results:
+				entries_writer.writerow(dict(results_row))
+
+		# Update log
+		logging.info('Retrieved results written to file (%s)' % out_filename)
+
+	def toScreen (self, sep):
+
+		# Print the header using sep
+		header = self.select_results[0].keys()
+		print(sep.join(header))
+
+		# Print the values to stdout, seperated by sep
+		for results_row in self.select_results:
+			print(sep.join(map(str, results_row.values())))
+
+		# Update log
+		logging.info('Retrieved results sent to stdout')
+
+	@classmethod
+	def fromConfig (cls, config_data, sql_connection):
+
+		# Create a SQLQuery object from the config file and sql_connection
+		return cls(sql_select_tables = [], 
+				   sql_select_columns = [], 
+				   sql_where = [], 
+				   sql_tables = config_data.sql_tables, 
+				   tables_in_select = [False] * len(config_data.sql_tables), 
+				   sql_connection = sql_connection)
+
+	def addTableToSelect (self, table):
+
+		# Add the table, update the tables in use
+		for table_pos, sql_table in enumerate(self._sql_tables):
+			if table == sql_table:
+				self._tables_in_select[table_pos] = True
+		if table in self._sql_select_tables: raise Exception('Table (%s) already assigned' % table)
+		self._sql_select_tables.append(table)
+
+	def addTablesToSelect (self, tables):
+
+		# Add the tables, update the tables in use
+		for table in tables:
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				if table == sql_table:
+					self._tables_in_select[table_pos] = True
+			if table in self._sql_select_tables: raise Exception('Table (%s) already assigned' % table)
+			self._sql_select_tables.append(table)
+
+	def addColumnToSelect (self, column):
+
+		# Add the column, update the tables in use
+		for table_pos, sql_table in enumerate(self._sql_tables):
+			for sql_column in sql_table.columns:
+				if column == sql_column:
+					self._tables_in_select[table_pos] = True
+		if column in self._sql_select_columns: raise Exception('Column (%s) already assigned' % column)
+		self._sql_select_columns.append(column)
+
+	def addColumnsToSelect (self, columns):
+
+		# Add the columns, update the tables in use
+		for column in columns:
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				for sql_column in sql_table.columns:
+					if column == sql_column:
+						self._tables_in_select[table_pos] = True
+			if column in self._sql_select_columns: raise Exception('Column (%s) already assigned' % column)
+			self._sql_select_columns.append(column)
+
+	def addDictWhere (self, where_dict, include = None, cmp_type = None, dict_type = None):
+
+		if not include: raise Exception('Must indicate include/exclude type for where statement')
+		if not cmp_type: raise Exception('Must indicate comparison type for where statement')
+		if not dict_type: raise Exception('Must indicate dict type for where statement')
+
+		# Add the where statement from a dict, update the tables in use
+		if not self._sql_where:
+			self._sql_where = SQLWhere.fromQuery(self._sql_tables)
+		if dict_type == 'Column': self._sql_where.addColDictWhere(where_dict, include = include, cmp_type = cmp_type)
+		elif dict_type == 'Table': self._sql_where.addTableDictWhere(where_dict, include = include, cmp_type = cmp_type)
+		for table_pos in self._sql_where._tables_used:
+			if not self._tables_in_select[table_pos]:
+				self._tables_in_select[table_pos] = True
+
+	@staticmethod
+	def removeRepeatsInSelect (sql_tables, sql_columns):
+
+		remove_dict = {}
+		for sql_table in sql_tables:
+			for column in sql_table.columns:
+				if column.foreign_keys:
+					for foreign_key in column.foreign_keys:
+						if foreign_key.column.table in sql_tables:
+							remove_dict[sql_table] = column
+
+		updated_tables = []
+		updated_columns = []
+		for sql_table in sql_tables:
+			if sql_table not in remove_dict:
+				updated_tables.append(sql_table)
+			else:
+				for column in sql_table.columns:
+					if column != remove_dict[sql_table]:
+						updated_columns.append(column)
+
+		all_columns = list(itertools.chain.from_iterable([list(updated_table.columns) for updated_table in updated_tables])) + updated_columns
+		for sql_column in sql_columns:
+			if sql_column not in all_columns:
+				updated_columns.append(sql_column)
+
+		return updated_tables + updated_columns
+
+class SQLUpdate ():
+	def __init__ (self, sql_update = None, sql_values = {}, sql_where = [], sql_tables = [], tables_in_update = [], sql_connection = None):
+		self._sql_update = sql_update
+		self._sql_values = sql_values
+		self._sql_where = sql_where
+		self._sql_tables = sql_tables
+		self._tables_in_update = tables_in_update 
+		self._sql_connection = sql_connection
+
+	@property
+	def _total_tables_in_update (self):
+		return sum(self._tables_in_update)
+
+	@property
+	def _sql_tables_in_update (self):
+		return [sql_table for table_bool, sql_table in zip(self._tables_in_update, self._sql_tables) if table_bool]
+
+	def update (self):
+
+		# Update the values
+		if self._sql_where:
+			if self._total_tables_in_update > 1:
+				for parent_key, foreign_key in foreignKeyPairs(self._sql_tables_in_update):
+					if not self._sql_where:
+						self._sql_where = SQLWhere.fromQuery(self._sql_tables)
+					self._sql_where.addEQColWhere(parent_key, foreign_key)
+			self._sql_connection.execute(self._sql_update.update().values(**self._sql_values).where(self._sql_where.where_statement))
+		else:
+			self._sql_connection.execute(self._sql_update.update().values(**self._sql_values))
+
+	@classmethod
+	def fromConfig (cls, config_data, sql_connection):
+
+		# Create a SQLQuery object from the config file and sql_connection
+		return cls(sql_update = None, 
+				   sql_values = {}, 
+				   sql_where = [], 
+				   sql_tables = config_data.sql_tables, 
+				   tables_in_update = [False] * len(config_data.sql_tables), 
+				   sql_connection = sql_connection)
+
+	def addTableToUpdate(self, table):
+
+		# Add the table, update the tables in use
+		for table_pos, sql_table in enumerate(self._sql_tables):
+			if table == sql_table:
+				self._tables_in_update[table_pos] = True
+		if self._sql_update: raise Exception('Table (%s) already assigned' % self._sql_update)
+		self._sql_update = table
+
+	def addDictValues(self, col_dict):
+
+		# Add the update from a dict, update the tables in use
+		sql_values = SQLValues.fromColDictValues(self._sql_update, col_dict)
+		self._sql_values = sql_values
+
+	'''
+	def addDictWhere(self, where_dict, include = None, type = None, table_dict = False):
+
+		# Add the where statement from a dict, update the tables in use
+		if not self._sql_where:
+			self._sql_where = SQLWhere.fromQuery(self._sql_tables)
+		self._sql_where.addEQColDictWhere(where_dict)
+		self._sql_where.addTableDictWhere(where_dict)
+		for table_pos in self._sql_where._tables_used:
+			if not self._tables_in_update[table_pos]:
+				self._tables_in_update[table_pos] = True
+	'''
+
+	def addDictWhere (self, where_dict, include = None, cmp_type = None, dict_type = None):
+
+		if not include: raise Exception('Must indicate include/exclude type for where statement')
+		if not cmp_type: raise Exception('Must indicate comparison type for where statement')
+		if not dict_type: raise Exception('Must indicate dict type for where statement')
+
+		# Add the where statement from a dict, update the tables in use
+		if not self._sql_where:
+			self._sql_where = SQLWhere.fromQuery(self._sql_tables)
+		if dict_type == 'Column': self._sql_where.addColDictWhere(where_dict, include = include, cmp_type = cmp_type)
+		elif dict_type == 'Table': self._sql_where.addTableDictWhere(where_dict, include = include, cmp_type = cmp_type)
+		for table_pos in self._sql_where._tables_used:
+			if not self._tables_in_update[table_pos]:
+				self._tables_in_update[table_pos] = True
+
+class SQLInsert ():
+	def __init__ (self, sql_insert = None, sql_values = [], sql_tables = [], tables_in_insert = [], sql_connection = None):
+		self._sql_insert = sql_insert
+		self._sql_values = sql_values
+		self._sql_tables = sql_tables
+		self._tables_in_insert = tables_in_insert
+		self._sql_connection = sql_connection
+
+	def insert (self):
+		
+		self._sql_connection.execute(self._sql_insert.insert(),self._sql_values)
+
+	@classmethod
+	def fromConfig (cls, config_data, sql_connection):
+
+		# Create a SQLQuery object from the config file and sql_connection
+		return cls(sql_insert = None, 
+				   sql_values = [], 
+				   sql_tables = config_data.sql_tables, 
+				   tables_in_insert = [False] * len(config_data.sql_tables),
+				   sql_connection = sql_connection)
+
+	def addTableToInsert (self, table):
+
+		# Add the table, update the tables in use
+		for table_pos, sql_table in enumerate(self._sql_tables):
+			if table == sql_table:
+				self._tables_in_insert[table_pos] = True
+		if self._sql_insert: raise Exception('Table (%s) already assigned' % self._sql_insert)
+
+		self._sql_insert = table
+
+	def addDictValues (self, col_dict_list):
+		
+		# Confirm the data is within a list
+		if not isinstance(col_dict_list, list): raise Exception('Values must be stored within a List')
+
+		# Add the insert from a list of dict
+		for col_dict in col_dict_list:
+			sql_values = SQLValues.fromColDictValues(self._sql_insert, col_dict)
+			self._sql_values.append(sql_values)
+
+	def addDataFrameValues (self, dataframe):
+
+		# Convert the dataframe
+		col_dict_list = dataframe.to_dict('records')
+
+		# Add the values
+		self.addDictValues(col_dict_list)
+		
+class SQLValues (dict):
+	def __init__(self, *arg, **kw):
+		super(SQLValues, self).__init__(*arg, **kw)
+
+	@classmethod
+	def fromColDictValues (cls, sql_table, col_dict):
+
+		# Add the column-based dict values
+		for col_name, col_value in col_dict.items():
+			try: 
+				getattr(sql_table.columns, col_name)
+			except: raise Exception('Unable to assign value: %s: %s' % (col_name, col_value))
+		# Create a SQLValues object
+		return cls(col_dict)
+
+class SQLWhere ():
+	def __init__ (self, sql_tables = [], tables_in_where = []):
+		self._sql_where = []
+		self._tables_in_where = tables_in_where
+		self._sql_tables = sql_tables
+
+	@property
+	def where_statement(self):
+		if len(self._sql_where) == 1: return self._sql_where
+		else: return operator.and_(*self._sql_where)
+
+	@property
+	def _tables_used (self):
+		return [table_pos for table_pos, table_bool in enumerate(self._tables_in_where) if table_bool]
+
+	def __contains__ (self, new_where):
+
+		# Check if the object contains the where statement
+		for sql_where in self._sql_where:
+			if new_where.compare(sql_where): return True
+		else: return False
+
+	def addTableDictWhere (self, table_dict, include, cmp_type):
+
+		table_dict_pos, table_dict_arg = None, None
+		for table_name, col_dict in table_dict.items():
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				if str(sql_table) == table_name: 
+					table_dict_arg = sql_table
+					table_dict_pos = table_pos
+			if table_dict_pos == None: raise Exception('Unable to assign table: %s' % table_name)
+			if not self._tables_in_where[table_dict_pos]: self._tables_in_where[table_dict_pos] = True
+			if cmp_type == 'EQ': self.addEQTableDictWhere(table_dict_arg, col_dict, include)
+			elif cmp_type == 'IN': self.addINTableDictWhere(table_dict_arg, col_dict, include)
+			elif cmp_type == 'LIKE': self.addLIKETableDictWhere(table_dict_arg, col_dict, include)
+
+	def addEQTableDictWhere (self, sql_table, col_dict, include):
+
+		# Add the table-based dict where
+		for col_name, col_value in col_dict.items():
+			where_arg = None
+			where_passed = False
+			try:
+				test_arg = getattr(sql_table.columns, col_name)
+				if len(test_arg.foreign_keys) >= 1:
+					continue
+				where_arg = test_arg
+				where_passed = True
+			except: pass
+			if not where_passed: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
+			if include: self._sql_where.append(where_arg == col_value)
+			else: self._sql_where.append(where_arg != col_value)
+
+	def addLIKETableDictWhere (self, sql_table, col_dict, include):
+
+		# Add the table-based dict where
+		for col_name, col_value in col_dict.items():
+			where_arg = None
+			where_passed = False
+			try:
+				test_arg = getattr(sql_table.columns, col_name)
+				if len(test_arg.foreign_keys) >= 1:
+					continue
+				where_arg = test_arg
+				where_passed = True
+			except: pass
+			if not where_passed: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
+			if include: self._sql_where.append(where_arg.like(col_value))
+			else: self._sql_where.append(where_arg.notilike(col_value))
+
+	def addINTableDictWhere (self, sql_table, col_dict, include):
+
+		# Add the table-based dict where
+		for col_name, col_values in col_dict.items():
+			if not isinstance(col_values, list): Exception('Column values are not list')
+			where_arg = None
+			where_passed = False
+			try:
+				test_arg = getattr(sql_table.columns, col_name)
+				if len(test_arg.foreign_keys) >= 1:
+					continue
+				where_arg = test_arg
+				where_passed = True
+			except: pass
+			if not where_passed: raise Exception('Unable to assign where: %s: %s' % (col_name, col_values))
+			if include: self._sql_where.append(where_arg.in_(col_values))
+			else: self._sql_where.append(where_arg.notin_(col_values))
+
+	def addColDictWhere (self, col_dict, include, cmp_type):
+
+		if cmp_type == 'EQ': self.addEQColDictWhere(col_dict, include)
+		elif cmp_type == 'IN': self.addINColDictWhere(col_dict, include)
+		elif cmp_type == 'LIKE': self.addLIKEColDictWhere(col_dict, include)
+
+	def addEQColDictWhere (self, col_dict, include):
+
+		# Add the column-based dict where
+		for col_name, col_value in col_dict.items():
+			where_pos, where_arg = None, None
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				try:
+					test_arg = getattr(sql_table.columns, col_name)
+					if len(test_arg.foreign_keys) >= 1:
+						continue
+					where_arg = test_arg
+					where_pos = table_pos	
+				except: pass
+			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
+			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if include: self._sql_where.append(where_arg == col_value)
+			else: self._sql_where.append(where_arg != col_value)
+
+	def addLIKEColDictWhere (self, col_dict, include):
+
+		# Add the column-based dict where
+		for col_name, col_value in col_dict.items():
+			where_pos, where_arg = None, None
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				try:
+					test_arg = getattr(sql_table.columns, col_name)
+					if len(test_arg.foreign_keys) >= 1:
+						continue
+					where_arg = test_arg
+					where_pos = table_pos	
+				except: pass
+			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
+			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if include: self._sql_where.append(where_arg.like(col_value))
+			else: self._sql_where.append(where_arg.notilike(col_value))
+
+	def addINColDictWhere (self, col_dict, include):
+
+		# Add the column-based dict where
+		for col_name, col_values in col_dict.items():
+			if not isinstance(col_values, list): Exception('Column values are not list')
+			where_pos, where_arg = None, None
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				try:
+					test_arg = getattr(sql_table.columns, col_name)
+					if len(test_arg.foreign_keys) >= 1:
+						continue
+					where_arg = test_arg
+					where_pos = table_pos	
+				except: pass
+			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_values))
+			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if include: self._sql_where.append(where_arg.in_(col_values))
+			else: self._sql_where.append(where_arg.notin_(col_values))
+			
+	def addEQColWhere (self, col1, col2):
+
+		# Add the column eq were (i.e. col1 == col2)
+		new_where = (col1 == col2)
+		if new_where not in self._sql_where:
+			self._sql_where.append(new_where)
+		else:
+			logging.warning('Where (%s) already assigned' % str(new_where))
+
+	@classmethod
+	def fromConfig (cls, config_data):
+
+		# Create a SQLWhere object
+		return cls(sql_tables = config_data.sql_tables, tables_in_where = [False] * len(config_data.sql_tables))
+
+	@classmethod
+	def fromQuery (cls, sql_tables):
+
+		# Create a SQLWhere object
+		return cls(sql_tables = sql_tables, 
+				   tables_in_where = [False] * len(sql_tables))
+
+'''
 def currentTime(timezone = 'US/Eastern'):
 
 	# Set the time format for the logging system
@@ -532,3 +1078,233 @@ def backupDatabase (database, backup_database):
 	# Close the connections 	
 	sqlite_backup_connection.close()
 	sqlite_database_connection.close()
+'''
+
+'''
+class SQLQuery ():
+	def __init__ (self, sql_query = [], sql_filters = None, sql_updates = {}, sql_tables = [], tables_in_query = [], sql_session = None):
+		self.query_results = None
+		self._sql_query = sql_query
+		self._sql_filters = sql_filters
+		self._sql_updates = sql_updates
+		self._sql_tables = sql_tables
+		self._tables_in_query = tables_in_query
+		self._sql_session = sql_session
+
+	@property
+	def _total_tables_in_query (self):
+		return sum(self._tables_in_query)
+
+	@property
+	def _total_tables_in_results (self):
+		return len(self._sql_query)
+
+	def query_all (self):
+
+		if self._total_tables_in_query > 1:
+			for parent_key, foreign_key in foreignKeyPairs(self._sql_tables):
+				if not self._sql_filters:
+					self._sql_filters = SQLFilter.fromQuery(self._sql_tables)
+				self._sql_filters.addColEQFilter(parent_key, foreign_key)
+		self.query_results = self._sql_session.query(*self._sql_query).filter(*self._sql_filters.filters).all()
+
+	def query_update (self):
+
+		if self._total_tables_in_query > 1:
+			for parent_key, foreign_key in foreignKeyPairs(self._sql_tables):
+				if not self._sql_filters:
+					self._sql_filters = SQLFilter.fromQuery(self._sql_tables)
+				self._sql_filters.addColEQFilter(parent_key, foreign_key)
+		self.query_results = self._sql_session.query(*self._sql_query).filter(*self._sql_filters.filters).all()
+
+		if self._total_tables_in_results > 1:
+
+			for row in self.query_results:
+				#session.add(prop)
+				#row_dict = {}
+				for result_table in row:
+					for update_table in self._sql_updates.updates:
+						if result_table.__tablename__ != update_table.__tablename__:
+							continue
+							for key, value in self._sql_updates.updates[update_table].items():
+								key = value
+								self._sql_session.add(key)
+
+
+								#print (key == result_table)
+
+
+					#session.add(prop)
+					#for result_key, result_value in self.object_as_dict(result_table).items():
+					#	row_dict[result_key] = result_value
+				#print(row_dict)
+		else:
+
+			for row in self.query_results:
+				print('Here')
+				#print(self.object_as_dict(row))
+
+	def toCSV (self):
+
+		if self._total_tables_in_results > 1:
+
+			for row in self.query_results:
+				row_dict = {}
+				for result_table in row:
+					for result_key, result_value in self.object_as_dict(result_table).items():
+						row_dict[result_key] = result_value
+				print(row_dict)
+		else:
+
+			for row in self.query_results:
+				print(self.object_as_dict(row))
+
+	@classmethod
+	def fromConfig (cls, config_data, sql_session):
+
+		# Create a SQLQuery object from the config file and sql_session
+		return cls(sql_tables = config_data.sql_tables, tables_in_query = [False] * len(config_data.sql_tables), sql_session = sql_session)
+
+	def addQuery(self, query, type = None):
+
+		# Add the query, update the tables in use
+		for table_pos, sql_table in enumerate(self._sql_tables):
+			if query == sql_table:
+				self._tables_in_query[table_pos] = True
+		self._sql_query.append(query)
+
+	def addDictFilter(self, col_dict, include = None, type = None, table_dict = False):
+
+		# Add the filter from a dict, update the tables in use
+		sql_filter = SQLFilter.fromQuery(self._sql_tables)
+		sql_filter.addColDictFilter(col_dict)
+		for table_pos in sql_filter._tables_used:
+			if not self._tables_in_query[table_pos]:
+				self._tables_in_query[table_pos] = True
+		self._sql_filters = sql_filter
+
+	def addDictUpdate(self, col_dict):
+
+		# Add the update from a dict, update the tables in use
+		sql_update = SQLUpdate.fromQuery(self._sql_tables)
+		sql_update.addColDictUpdate(col_dict)
+		for table_pos in sql_update._tables_used:
+			if not self._tables_in_query[table_pos]:
+				self._tables_in_query[table_pos] = True
+		self._sql_updates = sql_update
+
+	@staticmethod
+	def object_as_dict(obj):
+		return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
+
+class SQLFilter ():
+	def __init__ (self, sql_tables = [], tables_in_filters = []):
+		self._filters = []
+		self._tables_in_filters = tables_in_filters
+		self._sql_tables = sql_tables
+
+	@property
+	def filters (self):
+		return self._filters
+
+	@property
+	def _tables_used (self):
+		return [table_pos for table_pos, table_bool in enumerate(self._tables_in_filters) if table_bool]
+
+	def __contains__ (self, new_filter):
+
+		# Check if the object contains the filter
+		for sql_filter in self._filters:
+			if new_filter.compare(sql_filter): return True
+		else: return False
+
+	def addColDictFilter (self, col_dict):
+
+		# Add the column-based dict filter
+		for col_name, col_value in col_dict.items():
+			filter_pos, filter_arg = None, None
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				try:
+					test_arg = getattr(sql_table, col_name)
+					if len(test_arg.foreign_keys) >= 1:
+						continue
+					filter_arg = test_arg
+					filter_pos = table_pos
+				except: pass
+			if not filter_arg: raise Exception('Unable to assign filter: %s: %s' % (col_name, col_value))
+			if not self._tables_in_filters[filter_pos]: self._tables_in_filters[table_pos] = True
+			self._filters.append(filter_arg == col_value)
+
+	def addColEQFilter (self, col1, col2):
+
+		# Add the column eq filter (i.e. col1 == col2)
+		new_filter = (col1 == col2)
+		if new_filter not in self:
+			self._filters.append(new_filter)
+		else:
+			logging.warning('Filter (%s) already assigned' % str(new_filter))
+
+	@classmethod
+	def fromConfig (cls, config_data):
+
+		# Create a SQLFilter object
+		return cls(sql_tables = config_data.sql_tables, tables_in_filters = [False] * len(config_data.sql_tables))
+
+	@classmethod
+	def fromQuery (cls, sql_tables):
+
+		# Create a SQLFilter object
+		return cls(sql_tables = sql_tables, tables_in_filters = [False] * len(sql_tables))
+
+class SQLUpdate ():
+	def __init__ (self, sql_tables = [], tables_in_updates = []):
+		self._updates = defaultdict(lambda: defaultdict(str))
+		self._tables_in_updates = tables_in_updates
+		self._sql_tables = sql_tables
+
+	@property
+	def updates (self):
+		return self._updates
+
+	@property
+	def _tables_used (self):
+		return [table_pos for table_pos, table_bool in enumerate(self._tables_in_updates) if table_bool]
+
+	def __contains__ (self, new_update):
+
+		# Check if the object contains the filter
+		for update_column in list(new_update):
+			if update_column in list(self._updates): return True
+		else: return False
+
+	def addColDictUpdate (self, col_dict):
+
+		# Add the column-based dict update
+		for col_name, col_value in col_dict.items():
+			update_pos, update_arg, update_table = None, None, None
+			for table_pos, sql_table in enumerate(self._sql_tables):
+				try: 
+					test_arg = getattr(sql_table, col_name)
+					if len(test_arg.foreign_keys) >= 1:
+						continue
+					update_arg = test_arg
+					update_pos = table_pos
+					update_table = sql_table
+				except: pass
+			if not update_arg: raise Exception('Unable to assign update: %s: %s' % (col_name, col_value))
+
+			if not self._tables_in_updates[update_pos]: self._tables_in_updates[update_pos] = True
+			self._updates[update_table][update_arg] = col_value
+
+	@classmethod
+	def fromConfig (cls, config_data):
+
+		# Create a SQLFilter object
+		return cls(sql_tables = config_data.sql_tables, tables_in_updates = [False] * len(config_data.sql_tables))
+
+	@classmethod
+	def fromQuery (cls, sql_tables):
+
+		# Create a SQLFilter object
+		return cls(sql_tables = sql_tables, tables_in_updates = [False] * len(sql_tables))
+'''

@@ -2,11 +2,12 @@ import os
 import sys
 import argparse
 import logging
+import getpass
 import sqlite3
 
 from kocher_tools.logger import startLogger, logArgs
-from kocher_tools.config_file import readConfig
-from kocher_tools.database import createTable2
+from kocher_tools.config_file import ConfigDB
+from kocher_tools.database import *
 
 def confirmFile ():
 	'''Custom action to confirm file exists'''
@@ -30,22 +31,12 @@ startLogger(log_filename = db_args.out_log)
 logArgs(db_args)
 
 # Read in the YAML config file
-db_config_data = readConfig(db_args.yaml)
+db_config_data = ConfigDB.readConfig(db_args.yaml)
 
-# Connect to the sqlite database
-sqlite_connection = sqlite3.connect(db_config_data.sql_database)
-
-# Create the cursor
-cursor = sqlite_connection.cursor()
-
-# Loop the tables
-for table in db_config_data:
-
-	# Create the table
-	createTable2(sqlite_file, table.name, table.assignment_str)
-
-# Commit any changes
-sqlite_connection.commit()
-
-# Close the connection
-cursor.close()
+# Get the password, if not found
+if db_config_data.passwd_required and not db_config_data.passwd:
+	db_config_data.passwd = getpass.getpass("Password: ")
+	
+# Create the tables
+sql_engine = createEngineFromConfig(db_config_data)
+createAllFromConfig(db_config_data, sql_engine)
