@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
-from kocher_tools.barcode import *
+from kocher_tools.kocher_database import *
 
 def uploadSampleParser ():
 	'''
@@ -71,25 +71,6 @@ def uploadSampleParser ():
 
 	return upload_parser.parse_args()
 
-def insertFile (config_file, schema, filepath):
-
-	# Open the config
-	config_data = ConfigDB.readConfig(config_file)
-
-	# Start the engine and connect to the database
-	sql_engine = createEngineFromConfig(config_data)
-	sql_connection = sql_engine.connect()
-
-	# Read in the file as a pandas dataframe, prep for database
-	input_dataframe = pd.read_csv(filepath, dtype = str, sep = '\t')
-	input_dataframe = prepDataFrameUsingConfig(config_data, schema, input_dataframe)
-
-	sql_table_assign = config_data[schema]
-	sql_insert = SQLInsert.fromConfig(config_data, sql_connection)
-	sql_insert.addTableToInsert(sql_table_assign)
-	sql_insert.addDataFrameValues(input_dataframe)
-	sql_insert.insert()
-
 def main():
 			
 	# Assign arguments
@@ -127,14 +108,23 @@ def main():
 			for file in files:
 				zip_contents.append(os.path.join(root, file))
 
-		# Check if a collection and/or storage zip archive has been specified
-		if upload_args.schema in ['collection', 'storage']:
+		# Check if a collection  zip archive has been specified
+		if upload_args.schema == 'collection':
 
-			# Check if there are too many files for the Collection and Storage schema
-			if len(zip_contents) > 1: raise Exception (f'Type ({upload_args.schema}) only supports a single input file')
+			# Check if there are too many files for the Collection schema
+			if len(zip_contents) > 1: raise Exception (f'Type (collection) only supports a single input file')
 
 			# Insert the file
-			insertFile(upload_args.yaml, upload_args.schema, zip_contents[0])
+			insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, zip_contents[0])
+
+		# Check if a storage zip archive has been specified
+		elif upload_args.schema == 'storage':
+
+			# Check if there are too many files for the Storage schema
+			if len(zip_contents) > 1: raise Exception (f'Type (storage) only supports a single input file')
+
+			# Insert the file
+			insertStorageFileUsingConfig(upload_args.yaml, zip_contents[0])
 
 		# Check if a sequencing zip archive has been specified
 		elif upload_args.schema == 'sequencing':
@@ -143,15 +133,19 @@ def main():
 			if len(zip_contents) not in [2, 3]: raise Exception (f'Type (sequencing) requires between two and three input files')
 
 			# Insert the sequencing files
-			insertBarcodeFiles(upload_args.yaml, upload_args.schema, zip_contents)
+			insertBarcodeFilesUsingConfig(upload_args.yaml, upload_args.schema, zip_contents)
+
+		#['storage']
 
 	# Check if an input file has been specified
 	elif upload_args.input_file:
 
 		if upload_args.schema == 'sequencing': raise Exception (f'Type (sequencing) must use --sequencing-files')
 
+		pass
+
 		# Insert the file into the database
-		insertFile(upload_args.yaml, upload_args.schema, upload_args.input_file)
+		#insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, upload_args.input_file)
 
 if __name__ == "__main__":
 	main()

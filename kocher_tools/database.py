@@ -16,8 +16,10 @@ import pandas as pd
 from sqlalchemy import inspect
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, insert
 from sqlalchemy.schema import CreateTable
+
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 
 def createEngineFromFilename (sql_filename, echo = False):
 
@@ -57,13 +59,13 @@ def foreignKeyPairs (sql_tables):
 				for foreign_key in column.foreign_keys:
 					yield foreign_key.column, column
 
-def prepDataFrameUsingConfig (config_data, table, dataframe, custom_labels = {}):
+def prepDataFrameUsingConfig (config_data, table, dataframe):
 
 	# Confirm the table is within the config file
 	if not table in config_data: raise Exception(f'{table} not found in database')
 
 	col_header_dict = config_data._table_col_to_label[table]
-	col_label_dict = custom_labels if custom_labels != {} else config_data._table_label_to_col[table]
+	col_label_dict = config_data._table_label_to_col[table]
 
 	# Check which header values were found
 	col_header_count = len(set(dataframe.columns) & set(list(col_header_dict)))
@@ -74,7 +76,7 @@ def prepDataFrameUsingConfig (config_data, table, dataframe, custom_labels = {})
 	if header_method == 'label': dataframe = dataframe.rename(columns = col_label_dict)
 
 	# Define the standard columns
-	std_cols = list(custom_labels.values()) if custom_labels != {} else list(col_header_dict)
+	std_cols = list(col_header_dict)
 
 	# Check if the file has non-standard columns
 	non_std_cols = list(set(dataframe.columns) - set(std_cols))
@@ -112,7 +114,13 @@ class SQLSelect ():
 				self._sql_where.addEQColWhere(parent_key, foreign_key)
 		self.select_results = list(self._sql_connection.execute(select(self.removeRepeatsInSelect(self._sql_select_tables, self._sql_select_columns)).where(self._sql_where.where_statement)))
 
-	def toFile (self, out_filename, sep):
+	def toFile (self, out_filename, sep, warn_if_nothing = True):
+
+		# Check if any data was returned, if not return nothing
+		if len(self.select_results) == 0:
+			if warn_if_nothing: logging.warning(f'Nothing to return. File ({out_filename}) not created')
+			else: logging.info(f'Nothing to return.')
+			return
 
 		# Create the output file, using DictWriter
 		header = self.select_results[0].keys()
@@ -125,7 +133,13 @@ class SQLSelect ():
 		# Update log
 		logging.info('Retrieved results written to file (%s)' % out_filename)
 
-	def toScreen (self, sep):
+	def toScreen (self, sep, warn_if_nothing = True):
+
+		# Check if any data was returned, if not return nothing
+		if len(self.select_results) == 0:
+			if warn_if_nothing: logging.warning(f'Nothing to return.')
+			else: logging.info(f'Nothing to return.')
+			return
 
 		# Print the header using sep
 		header = self.select_results[0].keys()
@@ -317,16 +331,25 @@ class SQLUpdate ():
 				self._tables_in_update[table_pos] = True
 
 class SQLInsert ():
-	def __init__ (self, sql_insert = None, sql_values = [], sql_tables = [], tables_in_insert = [], sql_connection = None):
+	def __init__ (self, sql_insert = None, sql_values = [], sql_tables = [], tables_in_insert = [], sql_ignore_constraint = '', sql_update_constraint = '', sql_connection = None, sql_type = ''):
 		self._sql_insert = sql_insert
 		self._sql_values = sql_values
 		self._sql_tables = sql_tables
 		self._tables_in_insert = tables_in_insert
+		self._sql_ignore_constraint = sql_ignore_constraint
 		self._sql_connection = sql_connection
+		self._sql_type = sql_type
 
 	def insert (self):
-		
-		self._sql_connection.execute(self._sql_insert.insert(),self._sql_values)
+
+		self._sql_connection.execute(insert(self._sql_insert).values(self._sql_values))
+
+	def insertIgnore (self):
+
+		if self._sql_type == 'postgresql': 
+			self._sql_connection.execute(postgresql_insert(self._sql_insert).values(self._sql_values).on_conflict_do_nothing(constraint = self._sql_ignore_constraint))
+		else: 
+			self._sql_connection.execute(insert(self._sql_insert).values(self._sql_values).prefix_with('OR IGNORE'))
 
 	@classmethod
 	def fromConfig (cls, config_data, sql_connection):
@@ -336,7 +359,19 @@ class SQLInsert ():
 				   sql_values = [], 
 				   sql_tables = config_data.sql_tables, 
 				   tables_in_insert = [False] * len(config_data.sql_tables),
-				   sql_connection = sql_connection)
+				   sql_connection = sql_connection,
+				   sql_type = config_data.type)
+
+	def addIgnore (self, col_name):
+
+		try: getattr(self._sql_insert.columns, col_name)
+		except: raise Exception(f'Unable to assign column ({col_name})')
+		if self._sql_ignore_constraint: raise Exception('Append string already defined')
+
+		# Assign the schema basename (no reference to database)
+		schema_basename = str(self._sql_insert)
+		schema_basename = schema_basename if '.' not in schema_basename else schema_basename.split('.')[-1]
+		self._sql_ignore_constraint = f'{schema_basename}_{col_name}_key'
 
 	def addTableToInsert (self, table):
 
@@ -389,7 +424,7 @@ class SQLWhere ():
 
 	@property
 	def where_statement(self):
-		if len(self._sql_where) == 1: return self._sql_where
+		if len(self._sql_where) == 1: return self._sql_where[0]
 		else: return operator.and_(*self._sql_where)
 
 	@property
