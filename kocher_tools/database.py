@@ -33,9 +33,16 @@ def createEngineFromConfig (config_data, echo = False):
 
 	if config_data.type == 'sqlite': return create_engine("sqlite:///%s" % config_data.filename, echo = echo)
 	else: return create_engine("postgresql://%s" % config_data.sql_address, echo = echo)
+
+def startSessionFromConfig (config_data, echo = False):
+
+	sql_engine = createEngineFromConfig(config_data, echo)
+	Session = sessionmaker(bind=sql_engine)
+	return Session()
 	
-def startSession (engine):
+def startSessionFromEngine (engine):
 	
+	# Start the session
 	Session = sessionmaker(bind=engine)
 	return Session()
 

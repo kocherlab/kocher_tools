@@ -1,8 +1,8 @@
 import os
 import sys
 import argparse
-import copy
 import json
+import shutil
 import logging
 
 from Bio import SeqIO
@@ -92,8 +92,17 @@ def main():
 	logArgs(upload_args)
 	'''
 
+	# Create a list to store input file
+	input_files = []
+
+	# Check if a single input file has been specified
+	if upload_args.input_file: input_files = [upload_args.input_file]
+
+	# Check if sequencing files have been specified
+	elif upload_args.sequencing_files: input_files = upload_args.sequencing_files
+
 	# Check if a zip archive has been specified
-	if upload_args.input_zip_file:
+	elif upload_args.input_zip_file:
 
 		# Create a temporary directory
 		zip_input_dir = tempfile.mkdtemp()
@@ -103,49 +112,40 @@ def main():
 			zip_ref.extractall(zip_input_dir)
 
 		# Assign the file(s) within the temporary directory
-		zip_contents = []
 		for root, dirs, files in os.walk(zip_input_dir): 
 			for file in files:
-				zip_contents.append(os.path.join(root, file))
+				input_files.append(os.path.join(root, file))
 
-		# Check if a collection  zip archive has been specified
-		if upload_args.schema == 'collection':
 
-			# Check if there are too many files for the Collection schema
-			if len(zip_contents) > 1: raise Exception (f'Type (collection) only supports a single input file')
+	# Check if a collection file has been specified
+	if upload_args.schema == 'collection':
 
-			# Insert the file
-			insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, zip_contents[0])
+		# Check if there are too many files for the Collection schema
+		if len(input_files) > 1: raise Exception (f'Type (collection) only supports a single input file')
 
-		# Check if a storage zip archive has been specified
-		elif upload_args.schema == 'storage':
+		# Insert the file
+		insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, input_files[0])
 
-			# Check if there are too many files for the Storage schema
-			if len(zip_contents) > 1: raise Exception (f'Type (storage) only supports a single input file')
+	# Check if a storage file has been specified
+	elif upload_args.schema == 'storage':
 
-			# Insert the file
-			insertStorageFileUsingConfig(upload_args.yaml, zip_contents[0])
+		# Check if there are too many files for the Storage schema
+		if len(input_files) > 1: raise Exception (f'Type (storage) only supports a single input file')
 
-		# Check if a sequencing zip archive has been specified
-		elif upload_args.schema == 'sequencing':
+		# Insert the file
+		insertStorageFileUsingConfig(upload_args.yaml, input_files[0])
 
-			# Check if there are too many files for the Collection and Storage schema
-			if len(zip_contents) not in [2, 3]: raise Exception (f'Type (sequencing) requires between two and three input files')
+	# Check if a sequencing files have been specified
+	elif upload_args.schema == 'sequencing':
 
-			# Insert the sequencing files
-			insertBarcodeFilesUsingConfig(upload_args.yaml, upload_args.schema, zip_contents)
+		# Check if there are too many files for the Collection and Storage schema
+		if len(input_files) not in [2, 3]: raise Exception (f'Type (sequencing) requires between two and three input files')
 
-		#['storage']
+		# Insert the sequencing files
+		insertBarcodeFilesUsingConfig(upload_args.yaml, upload_args.schema, input_files)
 
-	# Check if an input file has been specified
-	elif upload_args.input_file:
-
-		if upload_args.schema == 'sequencing': raise Exception (f'Type (sequencing) must use --sequencing-files')
-
-		pass
-
-		# Insert the file into the database
-		#insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, upload_args.input_file)
+	# Delete the zip contents temp dir, if created
+	if upload_args.input_zip_file: shutil.rmtree(zip_input_dir)
 
 if __name__ == "__main__":
 	main()
