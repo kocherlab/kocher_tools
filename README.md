@@ -1,12 +1,12 @@
 Kocher-Tools
 ============
 
-[![Build Status]( https://travis-ci.org/aewebb80/kocher_tools.svg?branch=master)](https://travis-ci.org/aewebb80/kocher_tools)
+[![Build Status]( https://travis-ci.org/kocherlab/kocher_tools.svg?branch=master)](https://travis-ci.org/kocherlab/kocher_tools)
 
 Installation
 ------------
 
-    git clone https://github.com/aewebb80/kocher_tools
+    git clone https://github.com/kocherlab/kocher_tools
     cd kocher_tools/
     python setup.py install
 
