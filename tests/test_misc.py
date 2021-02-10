@@ -33,12 +33,6 @@ class test_misc (unittest.TestCase):
 	# Check confirmExecutable from misc.py 
 	def test_01_confirmExecutable (self):
 
-		# Check that the package functions are executable
-		self.assertIsNotNone(confirmExecutable('retrieve_samples.py'))
-		self.assertIsNotNone(confirmExecutable('upload_samples.py'))
-		self.assertIsNotNone(confirmExecutable('barcode_pipeline.py'))
-		self.assertIsNotNone(confirmExecutable('barcode_filter.py'))
-
 		# Create list of executables
 		executable_list = ['vsearch', 'fastq-multx', 'blastn']
 
