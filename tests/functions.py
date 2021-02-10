@@ -9,6 +9,7 @@ import tempfile
 import io
 import string
 import random
+import fileinput
 
 def checkTable (database, table):
 	
@@ -321,3 +322,9 @@ def stdoutToStr (function_call, *args):
 	stdout_str = test_str_stdout.getvalue()
 
 	return stdout_str
+
+def updateConfigFilename (config_file, new_filename):
+	for line in fileinput.input(config_file, inplace = True):
+		if 'filename' in line:
+			line = f'  filename: {new_filename}\n'
+		sys.stdout.write(line)

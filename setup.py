@@ -9,22 +9,18 @@ with io.open("README.md", "rt", encoding="utf8") as f:
 requirements = ['pyyaml',
                 'pandas',
                 'Biopython',
-                'networkx',
+                'sqlalchemy',
+                'gffutils',
                 'tox']
 
 # Executable scripts in the package
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
                 'kocher_tools/barcode_filter.py',
                 'kocher_tools/create_database.py',
-                'kocher_tools/insert_file.py']
-
-'''
-tool_scripts = ['kocher_tools/barcode_pipeline.py',
-                'kocher_tools/barcode_filter.py',
-                'kocher_tools/create_database.py',
-                'kocher_tools/retrieve_samples.py',
-                'kocher_tools/upload_samples.py']
-'''
+                'kocher_tools/insert_file.py',
+                'kocher_tools/gff_position_stats.py',
+                'kocher_tools/gff_chrom_stats.py',
+                'kocher_tools/gff_add_features.py']
 
 setup(name=kocher_tools.__title__,
       version=kocher_tools.__version__,

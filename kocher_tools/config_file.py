@@ -5,7 +5,7 @@ import re
 from collections import OrderedDict, defaultdict
 from itertools import combinations
 
-from sqlalchemy import Table, Column, ForeignKey, CheckConstraint, MetaData, Integer, Numeric, String, Text, Binary, Date, DateTime, Boolean
+from sqlalchemy import Table, Column, ForeignKey, CheckConstraint, MetaData, Integer, Numeric, String, Text, LargeBinary, Date, DateTime, Boolean
 from sqlalchemy.sql import func
 
 class ConfigDB (list):
@@ -184,7 +184,7 @@ class ConfigDB (list):
 					# Assign a Integer-class arg, if found
 					elif 'Binary' in attribute_yaml['type']:
 						
-						col_arg_list.append(Binary)
+						col_arg_list.append(LargeBinary)
 
 					else:
 						if 'type' not in attribute_yaml: raise Exception('No type defined for column (%s)' % column)

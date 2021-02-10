@@ -1,213 +1,181 @@
 sql:
-  #host: localhost
-  #user: root
-  #passwd: 
-  file: testDB_large.sqlite
-
-backup:
-  out_dir: 'TestBackups'
-  limit: 5
-  update_freq: 4
+  filename: testDB_large.sqlite
+  type: sqlite
 
 database:
   
   tables:
-
-    Storage:
-
-      '"Storage ID"':
-        type: text
+    storage:
+      sample_id:
+        label: Storage ID
+        type: String
         primary_key: True
-        assign_key: True
-      '"Unique ID"':
-        type: text
-        join_by: True
+      unique_id:
+        label: Unique ID
+        type: String
+      sample_status:
+        label: Sample Status
+        type: String
+      sample_type:
+        label: Sample Type
+        type: String
+      sample_used:
+        label: Sample Used
+        type: String
+      plate:
+        label: Plate
+        type: String
         not_null: True
-      '"Sample Status"':
-        type: text
-        not_null: False
-      '"Sample Type"':
-        type: text
-        not_null: False
-      '"Sample Used"':
-        type: text
-        not_null: False
-      'Plate':
-        type: text
+      well:
+        label: Well
+        type: String
         not_null: True
-      'Well':
-        type: text
+      collection_box:
+        label: Collection Box
+        type: String
+      processed_by:
+        label: Processed By
+        type: String
+      date_processed:
+        label: Date Processed
+        type: Date
+      storage_file:
+        label: Storage File
+        type: String
+    boxes:
+      box_id:
+        label: Box ID
+        type: Integer
+        primary_key: True
+      box:
+        label: Box
+        type: String
         not_null: True
-      'Box':
-        type: text
-        not_null: False
-      'Rack':
-        type: text
-        not_null: False
-      'Freezer':
-        type: text
-        not_null: False
-      '"Processed By"':
-        type: text
-        not_null: False
-      '"Date Processed"':
-        type: text
-        not_null: False
-      '"Last Modified (Storage)"':
-        type: text
+        unique: True
+      rack:
+        label: Rack
+        type: String
+      freezer:
+        label: Freezer
+        type: String
+    plates:
+      plate_id:
+        label: Plate ID
+        type: Integer
+        primary_key: True
+      plate:
+        label: Plate
+        type: String
         not_null: True
-        db_specific: True
-      '"Entry Created (Storage)"':
-        type: text
+        unique: True
+      box:
+        label: Box
+        type: String
+    collection:
+      unique_id:
+        label: Unique ID
+        type: String
         not_null: True
-        db_specific: True
+        unique: True
+      site_code:
+        label: Site Code
+        type: String
+      collected_by:
+        label: Collected By
+        type: String
+      date_collected:
+        label: Date Collected
+        type: Date
+      time_entered:
+        label: Time Entered
+        type: String
+      sex:
+        label: Sex
+        type: String
+      life_stage: 
+        label: Life Stage
+        type: String
+      has_pollen:
+        label: Has Pollen?
+        type: String
+      species_guess:
+        label: Species Guess
+        type: String
+      sample_preserved:
+        label: Sample Preserved
+        type: String
+      preservation_method:
+        label: Sample Preservation Method
+        type: String
+      head_preserved:
+        label: Head Preserved
+        type: String
+      head_preservation_method:
+        label: Head Preservation Method
+        type: String
+      from_nest:  
+        label: From Nest?
+        type: String
+      nest_code:  
+        label: Nest Code
+        type: String
+      collected_notes:  
+        label: Notes
+        type: String
+      collection_file: 
+        label: Collection File
+        type: String
+    sequencing:
+      sequence_id:
+        label: Sequence ID
+        type: String
+        not_null: True
+        unique: True
+      sample_id:
+        label: Storage ID
+        type: String
+        not_null: True
+      sequence_status:
+        label: Status
+        type: String
+        not_null: True
+      species:
+        label: Species
+        type: String
+      reads:  
+        label: Reads
+        type: String
+        not_null: True
+      bold_id:
+        label: BOLD Identifier
+        type: String
+      seq_percent_ident:  
+        label: Percent Identity
+        type: String
+      seq_align_len:  
+        label: Alignment Length
+        type: String
+      seq_len:  
+        label: Sequence Length
+        type: String
+      sequence:  
+        label: Sequence
+        type: String
+      ambiguous_hits:  
+        label: Ambiguous Hits
+        type: String
+      bold_bins:  
+        label: BOLD Bins
+        type: String
     
-    Collection:
-
-      '"Unique ID"':
-        type: text
-        primary_key: True
-        join_by: True
-        assign_key: True
-      '"Site Code"':
-        type: text
+    locations:
+      site_code:
+        label: Site Code
+        type: String
         not_null: True
-        assign_key: True
-      '"Collected By"':
-        type: text
-        not_null: False
-      '"Date Collected"':
-        type: text
-        not_null: False
-      '"Time Entered"':
-        type: text
-        not_null: False
-      'Sex':
-        type: text
-        not_null: False
-      '"Life Stage"':
-        type: text
-        not_null: False
-      '"Has Pollen?"':
-        type: text
-        not_null: False
-      '"Species Guess"':
-        type: text
-        not_null: False
-      '"Sample Preservation Method"':
-        type: text
-        not_null: False
-      '"Head Preserved"':
-        type: text
-        not_null: False
-      '"Head Preservation Method"':
-        type: text
-        not_null: False
-      '"From Nest?"':
-        type: text
-        not_null: False
-      '"Nest Code"':
-        type: text
-        not_null: False
-      'Notes':
-        type: text
-        not_null: False
-      '"Collection File"':
-        type: text
-        not_null: False
-        db_specific: True
-      '"Last Modified (Collection)"':
-        type: text
-        not_null: True
-        db_specific: True
-      '"Entry Created (Collection)"':
-        type: text
-        not_null: True
-        db_specific: True
-    
-    Sequencing:
-
-      '"Sequence ID"':
-        type: text
-        primary_key: True
-      '"Storage ID"':
-        type: text
-        not_null: True
-        join_by: True
-      'Status':
-        type: text
-        not_null: True
-      'Species':
-        type: text
-        not_null: False
-      'Reads':
-        type: text
-        not_null: True
-      '"BOLD Identifier"':
-        type: text
-        not_null: False
-      '"Percent Identity"':
-        type: text
-        not_null: False
-      '"Alignment Length"':
-        type: text
-        not_null: False
-      '"Sequence Length"':
-        type: text
-        not_null: False
-      'Sequence':
-        type: blob
-        not_null: False
-      '"Ambiguous Hits"':
-        type: text
-        not_null: False
-      '"BOLD Bins"':
-        type: text
-        not_null: False
-      '"Last Modified (Sequencing)"':
-        type: text
-        not_null: True
-        db_specific: True
-      '"Entry Created (Sequencing)"':
-        type: text
-        not_null: True
-        db_specific: True
-
-    Locations:
-
-      '"Site Code"':
-        type: text
-        primary_key: True
-        join_by: True
-      'Location':
-        type: text
-        not_null: False
-      'GPS':
-        type: text
-        not_null: False
-      '"Last Modified (Locations)"':
-        type: text
-        not_null: True
-        db_specific: True
-      '"Entry Created (Locations)"':
-        type: text
-        not_null: True
-        db_specific: True
-
-    Imaging:
-
-      '"Storage ID"':
-        type: text
-        primary_key: True
-        join_by: True
-      'Wing':
-        type: blob
-        not_null: True
-      '"Last Modified (Imaging)"':
-        type: text
-        not_null: True
-        db_specific: True
-      '"Entry Created (Imaging)"':
-        type: text
-        not_null: True
-        db_specific: True
+        unique: True
+      location_name:
+        label: Location
+        type: String
+        label: GPS
+        type: String

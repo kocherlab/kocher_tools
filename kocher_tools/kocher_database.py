@@ -115,7 +115,8 @@ def insertBarcodeFilesUsingConfig (config_file, schema, filepaths):
 		input_dataframe[['Query ID', 'reads']] = input_dataframe['Query ID'].str.split(';size=', expand = True) 
 		input_dataframe['sample_id'] = input_dataframe['Query ID'].str.split('_', expand = True)[0]
 		input_dataframe[['bold_id', 'species']] = input_dataframe['Subject ID'].str.split('|', expand = True)[[0, 1]]
-		input_dataframe['bold_id'] = input_dataframe['bold_id'].replace('_', ' ')
+		input_dataframe['species'] = input_dataframe['species'].str.replace('_', ' ')
+		input_dataframe['bold_id'] = input_dataframe['bold_id'].str.replace('_', ' ')
 		input_dataframe['sequence_status'] = 'Species Identified'
 		input_dataframe = input_dataframe.rename(columns = sequence_label_dict)
 		input_dataframe = input_dataframe.replace(np.nan, None)
@@ -191,68 +192,71 @@ def insertStorageFileUsingConfig (config_file, filepath, schema = 'storage', pla
 		plate_insert.addIgnore('plate')
 		plate_insert.insertIgnore()
 
-		# Insert the boxes, if not already inserted
-		box_dataframe = input_dataframe[['Box']].copy()
-		box_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_dataframe)
-		box_dataframe = box_dataframe.drop_duplicates()
-		box_dataframe = box_dataframe.replace(np.nan, None)
-		box_insert = SQLInsert.fromConfig(config_data, sql_connection)
-		box_insert.addTableToInsert(config_data['boxes'])
-		box_insert.addDataFrameValues(box_dataframe)
-		box_insert.addIgnore('box')
-		box_insert.insertIgnore()
+		# Confirm the input has a Box column
+		if 'Box' in input_dataframe.columns:
+
+			# Insert the boxes, if not already inserted
+			box_dataframe = input_dataframe[['Box']].copy()
+			box_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_dataframe)
+			box_dataframe = box_dataframe.drop_duplicates()
+			box_dataframe = box_dataframe.replace(np.nan, None)
+			box_insert = SQLInsert.fromConfig(config_data, sql_connection)
+			box_insert.addTableToInsert(config_data['boxes'])
+			box_insert.addDataFrameValues(box_dataframe)
+			box_insert.addIgnore('box')
+			box_insert.insertIgnore()
 		
-		# Create a dataframe with just the plates and boxes
-		plate_update_dataframe = input_dataframe[['Plate', 'Box']].copy()
-		plate_update_dataframe = plate_update_dataframe.rename(columns = {'Plate':'plate', 'Box':'box'})
-		plate_update_dataframe = plate_update_dataframe.drop_duplicates()
-		plate_update_dataframe = plate_update_dataframe.replace('', None)
-		plate_update_dataframe = plate_update_dataframe.dropna(axis = 'index')
+			# Create a dataframe with just the plates and boxes
+			plate_update_dataframe = input_dataframe[['Plate', 'Box']].copy()
+			plate_update_dataframe = plate_update_dataframe.rename(columns = {'Plate':'plate', 'Box':'box'})
+			plate_update_dataframe = plate_update_dataframe.drop_duplicates()
+			plate_update_dataframe = plate_update_dataframe.replace('', None)
+			plate_update_dataframe = plate_update_dataframe.dropna(axis = 'index')
 
-		# Check for possible assignment errors
-		if plate_update_dataframe['plate'].duplicated().any(): raise Exception('Plate found in more than one box')
+			# Check for possible assignment errors
+			if plate_update_dataframe['plate'].duplicated().any(): raise Exception('Plate found in more than one box')
 
-		# Convert the dataframe into a list of dicts
-		for update_dict in plate_update_dataframe.to_dict('records'):
+			# Convert the dataframe into a list of dicts
+			for update_dict in plate_update_dataframe.to_dict('records'):
 
-			# Create the where and value dicts
-			where_dict = {'plate': update_dict['plate']}
-			value_dict = {key:value for key, value in update_dict.items() if key != 'plate'}
+				# Create the where and value dicts
+				where_dict = {'plate': update_dict['plate']}
+				value_dict = {key:value for key, value in update_dict.items() if key != 'plate'}
 
-			# Confirm there are values to add
-			if not value_dict: continue 
+				# Confirm there are values to add
+				if not value_dict: continue 
 
-			plate_update = SQLUpdate.fromConfig(config_data, sql_connection)
-			plate_update.addTableToUpdate(config_data['plates'])
-			plate_update.addDictValues(value_dict)
-			plate_update.addDictWhere(where_dict, dict_type = 'Column', include = True, cmp_type = 'EQ')
-			plate_update.update()
+				plate_update = SQLUpdate.fromConfig(config_data, sql_connection)
+				plate_update.addTableToUpdate(config_data['plates'])
+				plate_update.addDictValues(value_dict)
+				plate_update.addDictWhere(where_dict, dict_type = 'Column', include = True, cmp_type = 'EQ')
+				plate_update.update()
 
-		# Insert a boxes dataframe, for updating if possible
-		box_update_dataframe = input_dataframe.copy()
-		box_update_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_update_dataframe)
-		box_update_dataframe = box_dataframe.drop_duplicates()
-		box_update_dataframe = box_update_dataframe.replace('', None)
-		box_update_dataframe = box_update_dataframe.dropna(axis = 'index')
+			# Insert a boxes dataframe, for updating if possible
+			box_update_dataframe = input_dataframe.copy()
+			box_update_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_update_dataframe)
+			box_update_dataframe = box_dataframe.drop_duplicates()
+			box_update_dataframe = box_update_dataframe.replace('', None)
+			box_update_dataframe = box_update_dataframe.dropna(axis = 'index')
 
-		# Check for possible assignment errors
-		if box_update_dataframe['box'].duplicated().any(): raise Exception('Box found in multiple locations')
+			# Check for possible assignment errors
+			if box_update_dataframe['box'].duplicated().any(): raise Exception('Box found in multiple locations')
 
-		# Convert the dataframe into a list of dicts
-		for update_dict in box_update_dataframe.to_dict('records'):
+			# Convert the dataframe into a list of dicts
+			for update_dict in box_update_dataframe.to_dict('records'):
 
-			# Create the where and value dicts
-			where_dict = {'box': update_dict['box']}
-			value_dict = {key:value for key, value in update_dict.items() if key != 'box'}
+				# Create the where and value dicts
+				where_dict = {'box': update_dict['box']}
+				value_dict = {key:value for key, value in update_dict.items() if key != 'box'}
 
-			# Confirm there are values to add
-			if not value_dict: continue 
+				# Confirm there are values to add
+				if not value_dict: continue 
 
-			box_update = SQLUpdate.fromConfig(config_data, sql_connection)
-			box_update.addTableToUpdate(config_data['boxes'])
-			box_update.addDictValues(value_dict)
-			box_update.addDictWhere(where_dict, dict_type = 'Column', include = True, cmp_type = 'EQ')
-			box_update.update()
+				box_update = SQLUpdate.fromConfig(config_data, sql_connection)
+				box_update.addTableToUpdate(config_data['boxes'])
+				box_update.addDictValues(value_dict)
+				box_update.addDictWhere(where_dict, dict_type = 'Column', include = True, cmp_type = 'EQ')
+				box_update.update()
 
 		storage_insert = SQLInsert.fromConfig(config_data, sql_connection)
 		storage_insert.addTableToInsert(config_data[schema])
