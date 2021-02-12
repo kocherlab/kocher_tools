@@ -2,7 +2,7 @@ import io
 import kocher_tools
 from setuptools import setup
 
-with io.open("README.md", "rt", encoding="utf8") as f:
+with io.open("README.rst", "rt", encoding="utf8") as f:
     readme = f.read()
 
 # List of required non-standard python libraries
@@ -24,9 +24,9 @@ tool_scripts = ['kocher_tools/barcode_pipeline.py',
 
 setup(name=kocher_tools.__title__,
       version=kocher_tools.__version__,
-      project_urls={"Documentation": "https://ppp.readthedocs.io",
-                    "Code": "https://github.com/jaredgk/PPP",
-                    "Issue tracker": "https://github.com/jaredgk/PPP/issues"},
+      project_urls={"Documentation": "https://kocher-guides.readthedocs.io/",
+                    "Code": "https://github.com/kocherlab/kocher_tools",
+                    "Issue tracker": "https://github.com/kocherlab/kocher_tools/issues"},
       license=kocher_tools.__license__,
       url=kocher_tools.__url__,
       author=kocher_tools.__author__,
