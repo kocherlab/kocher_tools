@@ -40,4 +40,4 @@ setup(name=kocher_tools.__title__,
       package_data={'kocher_tools': ['data/*.txt']},
       install_requires=requirements,
       scripts=tool_scripts,
-      python_requires=">=3.7.*")
+      python_requires=">=3.6")
