@@ -651,7 +651,7 @@ def chromCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, feature_se
 		feature_count_dict = countItervals(intergenic_interval, 'intergenic', feature_count_dict)
 
 	# Bulk count the intergenic sites at the 3', if needed
-	if chromosome_pos < chrom_limit: feature_count_dict['intergenic'] += ((chrom_limit + 1) - chromosome_pos)
+	if chromosome_pos <= chrom_limit: feature_count_dict['intergenic'] += ((chrom_limit + 1) - chromosome_pos)
 
 	return feature_count_dict
 

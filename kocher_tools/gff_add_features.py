@@ -28,9 +28,9 @@ def gffArgs ():
 	gff_parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
 	# Assign I/O arguments
-	gff_parser.add_argument('--gff-file', help = "Defines the GFF filename", type = str, action = confirmFile())
+	gff_parser.add_argument('--gff-file', help = "Defines the GFF filename", type = str, action = confirmFile(), required = True)
 	gff_parser.add_argument('--chrom-size-file', help = "Defines the chromosome size filename (as tsv)", type = str, action = confirmFile(), required = True)
-	gff_parser.add_argument('--out-file', help = "Defines the output filename (as tsv). Defaults to out.tsv", type = str, default = 'out.gff3')
+	gff_parser.add_argument('--out-file', help = "Defines the output filename (as gff3). Defaults to out.gff3", type = str, default = 'out.gff3')
 
 	# Assign Add/Skip arguments
 	gff_parser.add_argument('--add-utrs', help = 'Defines the option to add UTRs', action = 'store_true')

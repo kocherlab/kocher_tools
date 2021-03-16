@@ -33,6 +33,7 @@ def gffArgs ():
 	gff_parser.add_argument('--gff-file', help = "Defines the GFF filename", type = str, action = confirmFile(), required = True)
 	gff_parser.add_argument('--chrom-size-file', help = "Defines the chromosome size filename (as tsv)", type = str, action = confirmFile(), required = True)
 	gff_parser.add_argument('--out-file', help = "Defines the output filename (as tsv). Defaults to out.tsv", type = str, default = 'out.tsv')
+	gff_parser.add_argument('--delete-db', help = "Defines if the database should be deleted when finished", action = 'store_true')
 
 	# Assign the bp values for added features
 	gff_parser.add_argument('--promoter-bp', help = "Defines the promoter length", type = int, default = 5000)
@@ -44,9 +45,9 @@ def gffArgs ():
 	feature names - i.e. ['five_prime_UTR', 'five_utr']. This will not cause an error
 	as features not found within the file will be ignored.
 	'''
-	feature_set = ['five_prime_UTR', 'five_utr', 'exon', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
+	feature_set = ['tss_upstream', 'tss_flanks', 'five_prime_UTR', 'five_utr', 'exon', 'CDS', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
 	gff_parser.add_argument('--feature-set', help = "Defines the feature set. Feature not it list will be ignored", type = str, nargs = '+', default = feature_set)
-	priority_list = ['promoter', 'upstream', 'downstream', 'five_prime_UTR', 'five_utr', 'exon', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
+	priority_list = ['promoter', 'upstream', 'downstream', 'five_prime_UTR', 'five_utr', 'exon', 'CDS', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
 	gff_parser.add_argument('--priority-order', help = "Defines the priority of features", type = str, nargs = '+', default = priority_list)
 
 	# Return arguments
@@ -80,6 +81,7 @@ try:
 	for chrom_name, chrom_size in chrom_sizes.values:
 		chrom_feature_counts_w_priority = defaultdict(int)
 		chrom_feature_counts_w_priority = chromCounts(gff_db, chrom_name, chrom_size, chrom_feature_counts_w_priority, prioritize = True, **vars(gff_args))
+		#print(sum(chrom_feature_counts_w_priority.values()), chrom_size)
 		if sum(chrom_feature_counts_w_priority.values()) != chrom_size: raise Exception(f'Unable to parse, likely contains additional GFF entries: {chrom_name}')
 		for _f, _c in chrom_feature_counts_w_priority.items(): feature_counts_w_priority[_f] += _c
 		feature_counts_no_priority = chromCounts(gff_db, chrom_name, chrom_size, feature_counts_no_priority, **vars(gff_args))
@@ -93,12 +95,15 @@ try:
 	# Save the counts into a dataframe, write the dataframe to a tsv
 	output_file = open(gff_args.out_file, 'w')
 	output_file.write('#%s\n' % ' '.join(sys.argv))
-	output_file.write('#%s\n' % missing_features_str)
+	if missing_features: output_file.write('#%s\n' % missing_features_str)
 	output_dataframe = pd.DataFrame.from_dict({'Total Feature Counts': feature_counts_no_priority, 'Feature Counts w/ Priority': feature_counts_w_priority}, orient='index')
 	output_dataframe = output_dataframe.fillna(0)
 	output_dataframe = output_dataframe[[_pc for _pc in gff_args.priority_order if _pc in output_dataframe.columns]]
 	output_dataframe = output_dataframe.astype(int)
 	output_dataframe.to_csv(output_file, sep = '\t')
 	output_file.close()
+
+	# Delete the database, if specified
+	if gff_args.delete_db: os.remove(f'{gff_args.gff_file}.db')
 
 except:	raise
