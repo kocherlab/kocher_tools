@@ -542,8 +542,8 @@ def createTSSElements (gff_db, gene, chrom_size, tss_upstream_bp, tss_flanks_bp)
 		GFF entires before assignment.
 		'''
 		tss_str_list = []
-		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_upstream\t{tss5_start}\t{tss5_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_upstream;')
-		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_flanks\t{tssFlank_start}\t{tssFlank_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_flanks;')
+		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_upstream\t{tss5_start}\t{tss5_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_upstream;Parent={mRNA.id};')
+		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_flanks\t{tssFlank_start}\t{tssFlank_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_flanks;Parent={mRNA.id};')
 		if tss_str_list: tss_str_dict[mRNA.id] = '\n'.join(tss_str_list)
 
 	# Return the dict
@@ -764,7 +764,7 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 		feature_dict['intergenic'] = intergenic_interval
 
 		'''
-		Assign the features  and genes for each relevant 
+		Assign the features and genes for each relevant 
 		position
 		'''
 		for feature_type, feature_intervals in feature_dict.items():
@@ -780,7 +780,11 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 							for feature in features:
 								if feature.featuretype != feature_type: continue
 								if (feature.start <= relevant_position and relevant_position <= feature.end):
-									position_feature_dict[relevant_position].append([feature_type, feature.attributes['transcript_id'][0]])
+									if 'transcript_id' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, feature.attributes['transcript_id'][0]])
+									elif 'Parent' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, feature.attributes['Parent'][0]])
+									elif feature_type in ['tss_flanks', 'tss_upstream']:
+										position_feature_dict[relevant_position].append([feature_type, feature.attributes['ID'][0].split(':')[0]])
+									else: raise Exception(f'Unable to assign {feature_type} with attributes {feature.attributes}')
 
 	'''
 	Lastly, assign the intergenic feature for all positions 
