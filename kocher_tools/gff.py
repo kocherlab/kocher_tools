@@ -39,132 +39,102 @@ def outputGff (gff_input, gff_output, new_feature_dict, add_tss_elements = False
 
 	# Assign the ID for the gene/mRNA
 	def assignGffID (gff_attributes):
-		gff_ID = [gff_entry.split('ID=')[1] for gff_entry in gff_attributes.split(';') if 'ID' in gff_entry]
+		gff_ID = [gff_entry.split('ID=')[1] for gff_entry in gff_attributes.split(';') if gff_entry.startswith('ID=')]
 		if len(gff_ID) == 1: gff_ID = gff_ID[0]
 		else: raise Exception(f'Cannot bind ID: {gff_attributes}')
 		if ':' in gff_ID: gff_ID = gff_ID.split(':')[0]
 		return gff_ID
 
-	# Open the output gff
-	gff_output_file = open(gff_output, 'w') 
+	# Assign the Parent ID
+	def assignGffParent (gff_attributes):
+		gff_ID = [gff_entry.split('Parent=')[1] for gff_entry in gff_attributes.split(';') if gff_entry.startswith('Parent=')]
+		if len(gff_ID) == 1: gff_ID = gff_ID[0]
+		else: raise Exception(f'Cannot bind ID: {gff_attributes}')
+		if ':' in gff_ID: gff_ID = gff_ID.split(':')[0]
+		return gff_ID
 
-	'''
-	Create groups from the gff, then loop the input by 
-	the gff groups.
-	'''
-	gff_groups = (entry[1] for entry in itertools.groupby(open(gff_input, 'r'), lambda line: line.split('\t')[2] == 'gene'))
-	for gff_group in gff_groups:
-
-		'''
-		Read in the gff gene entry and confirm there is
-		only a single object to iterate
-		'''
-		gff_gene_line = next(gff_group)
-		try: 
-			next(gff_group)
-			raise Exception('GFF malformed. Error parsing genes')
-		except: pass
-
-		'''
-		Assign the gene and create an empty list to 
-		store the relevant mRNAs
-		'''
-		gff_gene_list = gff_gene_line.split('\t')
-		gff_mRNAs = []
-
-		'''
-		Create bools to indicate which blocks have been
-		written to the output
-		'''
-		gff_tss_block_created = False
-		gff_exon_block_created = False
-		gff_intron_block_created = False
-		gff_utr5_block_created = False
-		gff_cds_block_created = False
-		gff_utr3_block_created = False
-
-		# Write the gene line to the output file
-		gff_output_file.write(gff_gene_line)
-
-		# Loop the non-gene entries for the current gene
-		for gff_entry in next(gff_groups):
-
-			'''
-			Split the gff entry into a list and assign
-			the feature type
-			'''
-			gff_entry_list = gff_entry.split('\t')
+	# Assign the Parent ID for the exon/CDS
+	def assignGffParents (gff_attributes):
+		for parent in assignGffParent(gff_attributes).split(','): yield parent
+	
+	# Check if the gene elements are merged
+	merged_gff = None
+	with open(gff_input, 'r') as gff_data:
+		for gff_pos, gff_line in enumerate(gff_data):
+			if gff_line.startswith('#'): continue
+			gff_entry_list = gff_line.split('\t')
 			gff_feature_type = gff_entry_list[2]
 
-			'''
-			Record if the exon or CDS blocks have been 
-			created
-			'''
-			if gff_feature_type == 'exon': gff_exon_block_created = True
-			if gff_feature_type == 'CDS': gff_cds_block_created = True
+			# Assign the current gene
+			if gff_feature_type == 'gene':
+				gff_gene = assignGffID(gff_entry_list[8])
+				children_last_pos = None
 
-			# Record the relevant mRNAs
-			if gff_feature_type == 'mRNA':
-				mRNA_id = assignGffID(gff_entry_list[8])
-				if mRNA_id not in gff_mRNAs: gff_mRNAs.append(mRNA_id)
+			elif gff_feature_type not in ['exon', 'CDS']:
+				if 'Parent' not in gff_entry_list[8]: continue
+				if assignGffParent(gff_entry_list[8]) == gff_gene:
+					if children_last_pos == None:
+						children_last_pos = gff_pos
+						continue
+					if gff_pos - children_last_pos > 1: merged_gff = False
+					else: merged_gff = True
+					break
 
-			# Write the TSS elements to the GFF
-			if add_tss_elements and gff_tss_block_created == False:
-				if gff_feature_type in ['tss_upstream', 'tss_flanks']: continue
-				elif gff_feature_type == 'exon':
-					#if not tss_str_dict: raise Exception('Unable to load TSS elements')
-					if not new_feature_dict['TSS']: raise Exception('Unable to load TSS elements')
-					for gff_mRNA in gff_mRNAs:
-						#if gff_mRNA in tss_str_dict: gff_output_file.write(tss_str_dict[gff_mRNA] + '\n')
-						if gff_mRNA in new_feature_dict['TSS']: gff_output_file.write(new_feature_dict['TSS'][gff_mRNA] + '\n')
-					gff_tss_block_created = True
+	'''
+	Scan the exons and CDSs to assign the elements at the
+	correct file positions.
+	'''
+	feature_pos_dict = defaultdict(lambda: defaultdict(int))
+	with open(gff_input, 'r') as gff_data:
+		for gff_pos, gff_line in enumerate(gff_data):
+			if gff_line.startswith('#'): continue
+			gff_entry_list = gff_line.split('\t')
+			gff_feature_type = gff_entry_list[2]
 
-			# Write the intron elements to the GFF
-			if add_introns and gff_intron_block_created == False:
-				if gff_feature_type in ['first_intron', 'intron']: continue
-				elif gff_feature_type != 'exon' and gff_exon_block_created:
-					#if not intron_str_dict: raise Exception('Unable to load introns')
-					if not new_feature_dict['intron']: raise Exception('Unable to load introns')
-					for gff_mRNA in gff_mRNAs:
-						#if gff_mRNA in intron_str_dict: gff_output_file.write(intron_str_dict[gff_mRNA] + '\n')
-						if gff_mRNA in new_feature_dict['intron']: gff_output_file.write(new_feature_dict['intron'][gff_mRNA] + '\n')
-					gff_intron_block_created = True
+			# Assign the current gene
+			if gff_feature_type == 'gene':
+				gff_gene = assignGffID(gff_entry_list[8])
+				if add_tss_elements and gff_gene in new_feature_dict['TSS']:
+					feature_pos_dict[gff_gene]['TSS'] = gff_pos
+				gene_children = []
+			
+			# Add the exon related elements
+			elif gff_feature_type == 'exon':
+				for parent_id in assignGffParents(gff_entry_list[8]):
+					#parent_id = assignGffParent(gff_entry_list[8])
+					if add_introns and parent_id in new_feature_dict['intron']:
+						feature_pos_dict[parent_id]['intron'] = gff_pos
+						if not merged_gff: continue
+						for sibling_id in gene_children:
+							if sibling_id == parent_id: continue
+							if sibling_id not in new_feature_dict['intron']: continue
+							feature_pos_dict[sibling_id]['intron'] = gff_pos
 
-			# Write the 5prime UTRs to the GFF
-			if add_utrs and gff_utr5_block_created == False:
-				if gff_feature_type == 'five_prime_UTR': continue
-				elif gff_feature_type == 'CDS':
-					#if not utr_5_str_dict: raise Exception('Unable to load 5prime UTRs')
-					if not new_feature_dict['5prime_UTR']: raise Exception('Unable to load 5prime UTRs')
-					for gff_mRNA in gff_mRNAs:
-						#if gff_mRNA in utr_5_str_dict: gff_output_file.write(utr_5_str_dict[gff_mRNA] + '\n')
-						if gff_mRNA in new_feature_dict['5prime_UTR']: gff_output_file.write(new_feature_dict['5prime_UTR'][gff_mRNA] + '\n')
-					gff_utr5_block_created = True
+			# Add the CDS related elements
+			elif gff_feature_type == 'CDS':
+				for parent_id in assignGffParents(gff_entry_list[8]):
+					#parent_id = assignGffParent(gff_entry_list[8])
+					if add_utrs and parent_id in new_feature_dict['5prime_UTR'] and not feature_pos_dict[parent_id]['5prime_UTR']: 
+						feature_pos_dict[parent_id]['5prime_UTR'] = gff_pos - 1
+					if add_utrs and parent_id in new_feature_dict['3prime_UTR']:
+						feature_pos_dict[parent_id]['3prime_UTR'] = gff_pos
 
-			# Write the 3prime UTRs to the GFF
-			if add_utrs and gff_utr3_block_created == False:
-				if gff_feature_type == 'three_prime_UTR': continue
-				elif gff_feature_type != 'CDS' and gff_cds_block_created:
-					#if not utr_3_str_dict: raise Exception('Unable to load 3prime UTRs')
-					if not new_feature_dict['3prime_UTR']: raise Exception('Unable to load 3prime UTRs')
-					for gff_mRNA in gff_mRNAs:
-						#if gff_mRNA in utr_3_str_dict: gff_output_file.write(utr_3_str_dict[gff_mRNA] + '\n')
-						if gff_mRNA in new_feature_dict['3prime_UTR']: gff_output_file.write(new_feature_dict['3prime_UTR'][gff_mRNA] + '\n')
-					gff_utr3_block_created = True
+			elif 'Parent' in gff_entry_list[8] and assignGffParent(gff_entry_list[8]) == gff_gene: gene_children.append(assignGffID(gff_entry_list[8]))
 
-			# Write the current line to the output
-			gff_output_file.write(gff_entry)
+	# Convert the feature dict to a position-based dict
+	pos_feature_dict = defaultdict(str)
+	for parent_id, feature_dict in feature_pos_dict.items():
+		for feature_type, feature_pos in feature_dict.items():
+			if pos_feature_dict[feature_pos]: pos_feature_dict[feature_pos] += '\n'
+			pos_feature_dict[feature_pos] += new_feature_dict[feature_type][parent_id]
 
-		# Write the 3prime UTRs to the GFF
-		if add_utrs and gff_utr3_block_created == False and gff_cds_block_created:
-			#if not utr_3_str_dict: raise Exception('Unable to load 3prime UTRs')
-			if not new_feature_dict['3prime_UTR']: raise Exception('Unable to load 3prime UTRs')
-			for gff_mRNA in gff_mRNAs:
-				#if gff_mRNA in utr_3_str_dict: gff_output_file.write(utr_3_str_dict[gff_mRNA] + '\n')
-				if gff_mRNA in new_feature_dict['3prime_UTR']: gff_output_file.write(new_feature_dict['3prime_UTR'][gff_mRNA] + '\n')
-			gff_utr3_block_created = True
-
-	# Close the output file
+	# Create the output gff
+	gff_output_file = open(gff_output, 'w') 
+	with open(gff_input, 'r') as gff_data:
+		for gff_pos, gff_line in enumerate(gff_data):
+			gff_output_file.write(gff_line)
+			if gff_pos in pos_feature_dict: 
+				gff_output_file.write(pos_feature_dict[gff_pos] + '\n')
 	gff_output_file.close()
 
 def mergeItervals (intervals_to_merge):
@@ -301,7 +271,7 @@ def createIntrons (gff_db, gene, label_first_intron):
 
 	# Create a list of the exon features, if there is more than
 	# exon, assign the exon intervals.
-	mRNA_features = gff_db.children(gene, featuretype = 'mRNA')
+	mRNA_features = gff_db.children(gene, featuretype = ['mRNA', 'transcript'])
 	for mRNA in mRNA_features:
 		exon_features = list(gff_db.children(mRNA, featuretype = 'exon'))
 
@@ -314,6 +284,9 @@ def createIntrons (gff_db, gene, label_first_intron):
 		# interval to create the intron intervals.
 		intron_intervals = [(mRNA.start, mRNA.end)]
 		intron_intervals = subtractItervals(intron_intervals, exon_intervals)
+
+		# Confirm the order of the intervals
+		if mRNA.strand == '-': intron_intervals = sorted(intron_intervals, key=lambda x: x[0], reverse = True)
 
 		# Create the intron GFF entires for the mRNA, if the
 		# mRNA is on the reverse strand. Reverse the intron
@@ -437,7 +410,7 @@ def createUTRs (gff_db, gene):
 	Create a list of the exon and cds features, then assign
 	their intervals.
 	'''
-	mRNA_features = gff_db.children(gene, featuretype = 'mRNA')
+	mRNA_features = gff_db.children(gene, featuretype = ['mRNA', 'transcript'])
 	for mRNA in mRNA_features:
 		exon_features = list(gff_db.children(mRNA, featuretype = 'exon'))
 		cds_features = list(gff_db.children(mRNA, featuretype = 'CDS'))
@@ -481,10 +454,8 @@ def createUTRs (gff_db, gene):
 
 def createTSSElements (gff_db, gene, chrom_size, tss_upstream_bp, tss_flanks_bp):
 	'''
-	Iterate the mRNA by gene. For each mRNA, read in the exon
-	and cds features. Generate the 5'/3' UTR intervals by 
-	subtracting the cds intervals from the exon intervals. Once 
-	the UTR	intervals are created, generate the UTR GFF entires.
+	Assign the TSS for the current gene using the start, stop
+	and strand of the gene.
 	'''
 
 	def createTSSPrime5 (size, tss_pos, strand, prime3_limit):
@@ -512,39 +483,29 @@ def createTSSElements (gff_db, gene, chrom_size, tss_upstream_bp, tss_flanks_bp)
 		flank_interval[1] = min(prime3_limit,  (tss_pos + size))
 		return tuple(flank_interval)
 
-	# Create a dict to store the intron gff entires by mRNA
+	# Create a dict to store the tss gff entires by mRNA
 	tss_str_dict = {}
 
+	# Assign the TSS using the strand
+	try:
+		if gene.strand == '+': tss_start_pos = gene.start
+		elif gene.strand == '-': tss_start_pos = gene.stop
+		else: raise Exception('Unable to assign TSS using the strand')
+	except: raise Exception('Unable to assign TSS')
+
+	# Assign the TSS elements
+	tss5_start, tss5_end = createTSSPrime5(tss_upstream_bp, tss_start_pos, gene.strand, chrom_size)
+	tssFlank_start, tssFlank_end = createTSSFlanks(tss_flanks_bp, tss_start_pos, chrom_size)
+
 	'''
-	Create a list of the exon and cds features, then assign
-	their intervals.
+	Create the intron GFF entires for the mRNA, if the
+	mRNA is on the reverse strand. Reverse the intron
+	GFF entires before assignment.
 	'''
-	mRNA_features = gff_db.children(gene, featuretype = 'mRNA')
-	for mRNA in mRNA_features:
-		cds_intervals = []
-		cds_features = list(gff_db.children(mRNA, featuretype = 'CDS'))
-		for cds_feature in cds_features: cds_intervals.append((cds_feature.start, cds_feature.end))
-
-		# Assign the TSS using the strand
-		try:
-			if mRNA.strand == '+': tss_start_pos = cds_intervals[0][0]
-			elif mRNA.strand == '-': tss_start_pos = cds_intervals[0][1]
-			else: raise Exception('Unable to assign TSS using the strand')
-		except: raise Exception('Unable to assign TSS')
-
-		# Assign the TSS elements
-		tss5_start, tss5_end = createTSSPrime5(tss_upstream_bp, tss_start_pos, mRNA.strand, chrom_size)
-		tssFlank_start, tssFlank_end = createTSSFlanks(tss_flanks_bp, tss_start_pos, chrom_size)
-
-		'''
-		Create the intron GFF entires for the mRNA, if the
-		mRNA is on the reverse strand. Reverse the intron
-		GFF entires before assignment.
-		'''
-		tss_str_list = []
-		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_upstream\t{tss5_start}\t{tss5_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_upstream;Parent={mRNA.id};')
-		tss_str_list.append(f'{mRNA.seqid}\tgffADD\ttss_flanks\t{tssFlank_start}\t{tssFlank_end}\t.\t{mRNA.strand}\t.\tID={mRNA.id}:tss_flanks;Parent={mRNA.id};')
-		if tss_str_list: tss_str_dict[mRNA.id] = '\n'.join(tss_str_list)
+	tss_str_list = []
+	tss_str_list.append(f'{gene.seqid}\tgffADD\ttss_upstream\t{tss5_start}\t{tss5_end}\t.\t{gene.strand}\t.\tID={gene.id}:tss_upstream;Parent={gene.id};')
+	tss_str_list.append(f'{gene.seqid}\tgffADD\ttss_flanks\t{tssFlank_start}\t{tssFlank_end}\t.\t{gene.strand}\t.\tID={gene.id}:tss_flanks;Parent={gene.id};')
+	if tss_str_list: tss_str_dict[gene.id] = '\n'.join(tss_str_list)
 
 	# Return the dict
 	return tss_str_dict
