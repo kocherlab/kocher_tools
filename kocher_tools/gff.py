@@ -101,7 +101,6 @@ def outputGff (gff_input, gff_output, new_feature_dict, add_tss_elements = False
 			# Add the exon related elements
 			elif gff_feature_type == 'exon':
 				for parent_id in assignGffParents(gff_entry_list[8]):
-					#parent_id = assignGffParent(gff_entry_list[8])
 					if add_introns and parent_id in new_feature_dict['intron']:
 						feature_pos_dict[parent_id]['intron'] = gff_pos
 						if not merged_gff: continue
@@ -113,7 +112,6 @@ def outputGff (gff_input, gff_output, new_feature_dict, add_tss_elements = False
 			# Add the CDS related elements
 			elif gff_feature_type == 'CDS':
 				for parent_id in assignGffParents(gff_entry_list[8]):
-					#parent_id = assignGffParent(gff_entry_list[8])
 					if add_utrs and parent_id in new_feature_dict['5prime_UTR'] and not feature_pos_dict[parent_id]['5prime_UTR']: 
 						feature_pos_dict[parent_id]['5prime_UTR'] = gff_pos - 1
 					if add_utrs and parent_id in new_feature_dict['3prime_UTR']:
@@ -132,7 +130,17 @@ def outputGff (gff_input, gff_output, new_feature_dict, add_tss_elements = False
 	gff_output_file = open(gff_output, 'w') 
 	with open(gff_input, 'r') as gff_data:
 		for gff_pos, gff_line in enumerate(gff_data):
-			gff_output_file.write(gff_line)
+			if gff_line.startswith('#'): gff_output_file.write(gff_line)
+			else:
+				gff_entry_list = gff_line.split('\t')
+				gff_feature_type = gff_entry_list[2]
+				if gff_feature_type in ['intron', 'first_intron']: 
+					if not add_introns: gff_output_file.write(gff_line)
+				elif gff_feature_type in ['tss_upstream', 'tss_flanks']: 
+					if not add_tss_elements: gff_output_file.write(gff_line)
+				elif gff_feature_type in ['five_prime_UTR', 'three_prime_UTR']:
+					if not add_utrs: gff_output_file.write(gff_line)
+				else: gff_output_file.write(gff_line)
 			if gff_pos in pos_feature_dict: 
 				gff_output_file.write(pos_feature_dict[gff_pos] + '\n')
 	gff_output_file.close()
