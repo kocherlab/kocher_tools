@@ -45,9 +45,9 @@ def gffArgs ():
 	feature names - i.e. ['five_prime_UTR', 'five_utr']. This will not cause an error
 	as features not found within the file will be ignored.
 	'''
-	feature_set = ['tss_upstream', 'tss_flanks', 'five_prime_UTR', 'five_utr', 'exon', 'CDS', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
+	feature_set = ['tss_upstream', 'tss_flanks', 'five_prime_UTR', 'five_utr', 'exon', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
 	gff_parser.add_argument('--feature-set', help = "Defines the feature set. Feature not it list will be ignored", type = str, nargs = '+', default = feature_set)
-	priority_list = ['promoter', 'upstream', 'downstream', 'five_prime_UTR', 'five_utr', 'exon', 'CDS', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
+	priority_list = ['tss_upstream', 'tss_flanks', 'promoter', 'upstream', 'downstream', 'five_prime_UTR', 'five_utr', 'exon', 'first_intron', 'intron', 'three_prime_UTR', 'three_utr', 'intergenic']
 	gff_parser.add_argument('--priority-order', help = "Defines the priority of features", type = str, nargs = '+', default = priority_list)
 
 	# Return arguments
@@ -81,7 +81,6 @@ try:
 	for chrom_name, chrom_size in chrom_sizes.values:
 		chrom_feature_counts_w_priority = defaultdict(int)
 		chrom_feature_counts_w_priority = chromCounts(gff_db, chrom_name, chrom_size, chrom_feature_counts_w_priority, prioritize = True, **vars(gff_args))
-		#print(sum(chrom_feature_counts_w_priority.values()), chrom_size)
 		if sum(chrom_feature_counts_w_priority.values()) != chrom_size: raise Exception(f'Unable to parse, likely contains additional GFF entries: {chrom_name}')
 		for _f, _c in chrom_feature_counts_w_priority.items(): feature_counts_w_priority[_f] += _c
 		feature_counts_no_priority = chromCounts(gff_db, chrom_name, chrom_size, feature_counts_no_priority, **vars(gff_args))
