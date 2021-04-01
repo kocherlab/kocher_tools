@@ -145,7 +145,7 @@ class test_blast (unittest.TestCase):
 		expected_blast_file = os.path.join(self.expected_path, 'test_blast_BLAST_header.out')
 
 		# Call the function
-		blastTopHit(test_common_file, test_blast_file, self.blast_database, multiprocessing.cpu_count())
+		blastTopHits(test_common_file, test_blast_file, self.blast_database, multiprocessing.cpu_count())
 
 		# Check the file was created
 		self.assertTrue(os.path.isfile(test_blast_file))
