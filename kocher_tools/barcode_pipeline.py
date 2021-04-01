@@ -8,7 +8,7 @@ import multiprocessing
 import pkg_resources
 
 from kocher_tools.multiplex import Multiplex
-from kocher_tools.blast import blastTopHit
+from kocher_tools.blast import blastTopHits
 from kocher_tools.logger import startLogger, logArgs
 
 def barcodePipelineParser ():
@@ -184,8 +184,8 @@ def main():
 
 	logging.info('Starting BLAST')
 
-	# Get the top BLAST hit for each sequence in the compiled file
-	blastTopHit(compiled_file_path, blast_file_path, barcode_args.blast_database, barcode_args.threads)
+	# Get the top BLAST hits for each sequence in the compiled file
+	blastTopHits(compiled_file_path, blast_file_path, barcode_args.blast_database, barcode_args.threads)
 
 	logging.info('Finished BLAST')
 

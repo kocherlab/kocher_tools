@@ -77,7 +77,7 @@ def pipeBlast (blast_call_args, blast_output, header = None):
 	# Close the file
 	blast_output_file.close()
 
-def blastTopHit (query_file, blast_output, database_file, num_threads):
+def blastTopHits (query_file, blast_output, database_file, num_threads):
 
 	# Define the header list
 	header_list = ['Query ID', 'Query Length', 'Subject ID', 'Subject Length', 'Percent Identity', 'Alignment Length', 'Mismatches', 'Gaps', 
@@ -91,3 +91,14 @@ def blastTopHit (query_file, blast_output, database_file, num_threads):
 
 	# Call BLAST
 	pipeBlast(blast_call_args, blast_output, header = '\t'.join(header_list))
+
+def primerBLAST (query_file, blast_output, database_file, num_threads):
+
+	# Define the output format
+	output_format = '6'
+
+	# Create the blast argument list
+	blast_call_args = ['-query', query_file, '-db', database_file, '-max_target_seqs', '1', '-outfmt', output_format, '-num_threads', str(num_threads), '-out', blast_output]
+
+	# Call BLAST
+	callBlast(blast_call_args)
