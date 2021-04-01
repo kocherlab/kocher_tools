@@ -15,12 +15,13 @@ def createDatabase (gff_file, remove_pseudogenes = True):
 
 		# Delete any pseudogenes, if specified
 		if remove_pseudogenes:
+			pseudogene_gene_features = [feature for feature in gff_db.features_of_type('pseudogene')]
+			pseudogenes_children_features = list(itertools.chain.from_iterable(gff_db.children(_pgf) for _pgf in pseudogene_gene_features))
 			try:
-				pseudogenes = [feature.attributes['gene'][0] for feature in gff_db.features_of_type('pseudogene')]
-				pseudogenes_intron_features = [feature for feature in gff_db.features_of_type('intron') if feature.attributes['transcript_id'][0] in pseudogenes]
-				pseudogenes_w_exons_features = list(itertools.chain.from_iterable(gff_db.iter_by_parent_childs(featuretype='pseudogene')))
-				gff_db.delete(pseudogenes_w_exons_features + pseudogenes_intron_features, make_backup = False)
-			except: pass
+				pseudogene_tids = [_pgf.attributes['gene'][0] for _pgf in pseudogene_gene_features]
+				pseudogenes_tid_features = [feature for feature in gff_db.features_of_type('intron') if feature.attributes['transcript_id'][0] in pseudogene_tids]
+			except: pseudogenes_tid_features = []
+			gff_db.delete(pseudogene_gene_features + pseudogenes_children_features + pseudogenes_tid_features, make_backup = False)
 
 	# Read the database, if already found
 	else: gff_db = gffutils.FeatureDB(gff_db_filename)
@@ -294,7 +295,7 @@ def createIntrons (gff_db, gene, label_first_intron):
 		intron_intervals = subtractItervals(intron_intervals, exon_intervals)
 
 		# Confirm the order of the intervals
-		if mRNA.strand == '-': intron_intervals = sorted(intron_intervals, key=lambda x: x[0], reverse = True)
+		if mRNA.strand == '-': intron_intervals = sorted(intron_intervals, key = lambda x: x[0], reverse = True)
 
 		# Create the intron GFF entires for the mRNA, if the
 		# mRNA is on the reverse strand. Reverse the intron
@@ -557,7 +558,7 @@ def chromCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, feature_se
 	the relevant size is specified by the user. Update the gene
 	intervals to include the additional features.
 	'''
-	for gene in gff_db.features_of_type(['gene', 'rRNA', 'tRNA'], limit=f'{chrom_name}:1-{chrom_limit}'):
+	for gene in gff_db.features_of_type('gene', limit=f'{chrom_name}:1-{chrom_limit}'):
 		gene_interval = [copy.deepcopy(gene.start), copy.deepcopy(gene.end)]
 		if promoter_bp:
 			gene_interval, prime5_interval = assignPrime5(promoter_bp, gene, gene_interval, chrom_limit)
@@ -592,7 +593,7 @@ def chromCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, feature_se
 		if downstream_bp: feature_dict['downstream'] = returnItervalOverlaps(added_feature_dict['downstream'], (merged_interval_start, merged_interval_end))
 		for feature in features: feature_dict[feature.featuretype].append((feature.start, feature.end))
 		for feature in feature_dict.keys(): feature_dict[feature] = mergeItervals(feature_dict[feature])
-		
+
 		# Check if the intervals should be prioritized
 		if prioritize:
 
@@ -614,14 +615,12 @@ def chromCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, feature_se
 		'''
 		for feature in feature_dict.keys(): feature_count_dict = countItervals(feature_dict[feature], feature, feature_count_dict)
 		for feature in feature_dict.keys():
-			if feature in ['promoter', 'upstream', 'downstream'] and not prioritize: continue
-			#print(intergenic_interval)
+			if feature in ['promoter', 'upstream', 'downstream', 'tss_flanks', 'tss_upstream'] and not prioritize: continue
 			intergenic_interval = subtractItervals(intergenic_interval, feature_dict[feature])
 		feature_count_dict = countItervals(intergenic_interval, 'intergenic', feature_count_dict)
 
 	# Bulk count the intergenic sites at the 3', if needed
 	if chromosome_pos <= chrom_limit: feature_count_dict['intergenic'] += ((chrom_limit + 1) - chromosome_pos)
-
 	return feature_count_dict
 
 def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set, prioritize = False, priority_order = None, promoter_bp = None, upstream_bp = None, downstream_bp = None, **kwargs):
