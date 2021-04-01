@@ -646,6 +646,23 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 	the genes associated with each position/feature are recorded. 
 	'''
 
+	def returnParents (feature):
+		
+		# Assign parent(s) of the feature
+		parent_gene = ''
+		parent_other = []
+		for parent_feature in gff_db.parents(feature):
+			if parent_feature.featuretype == 'gene':
+				if 'Name' in parent_feature.attributes: parent_gene = parent_feature.attributes['Name'][0]
+				else: parent_gene = parent_feature.id
+			else:
+				if 'Name' in parent_feature.attributes: parent_other.append(parent_feature.attributes['Name'][0])
+				else: parent_other.append(parent_feature.id)
+
+		# Return gene and sub-parent (if found)
+		if parent_other: return f'{parent_gene}({",".join(parent_other)})'
+		else: return parent_gene
+
 	'''
 	Assign a dict to store the features and genes for each 
 	position
@@ -749,8 +766,8 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 							for feature in features:
 								if feature.featuretype != feature_type: continue
 								if (feature.start <= relevant_position and relevant_position <= feature.end):
-									if 'transcript_id' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, feature.attributes['transcript_id'][0]])
-									elif 'Parent' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, feature.attributes['Parent'][0]])
+									if 'transcript_id' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, returnParents(feature)])
+									elif 'Parent' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, returnParents(feature)])
 									elif feature_type in ['tss_flanks', 'tss_upstream']:
 										position_feature_dict[relevant_position].append([feature_type, feature.attributes['ID'][0].split(':')[0]])
 									else: raise Exception(f'Unable to assign {feature_type} with attributes {feature.attributes}')
