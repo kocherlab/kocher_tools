@@ -3,6 +3,8 @@ import copy
 import gffutils
 import itertools
 
+import numpy as np
+
 from collections import defaultdict
 from functools import reduce
 
@@ -662,6 +664,12 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 		if parent_other: return f'{parent_gene}({",".join(parent_other)})'
 		else: return parent_gene
 
+	def yieldPositions (position_list):
+		for _cpos in position_list:
+			if isinstance(_cpos, np.int64): yield (_cpos, _cpos)
+			elif isinstance(_cpos, np.ndarray): yield (_cpos[0], _cpos[1])
+			else: raise Exception(f'Unable to yield from type({type(_cpos)}) with value: {_cpos}')
+
 	'''
 	Assign a dict to store the features and genes for each 
 	position
@@ -712,7 +720,11 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 		Assign the relevant positions - i.e. positions within the
 		merged interval.
 		'''
-		relevant_positions = [_cpos for _cpos in chrom_position_list if (merged_interval_start <= _cpos and _cpos <= merged_interval_end)]
+		relevant_positions = []
+		for chrom_position_start, chrom_position_stop in yieldPositions(chrom_position_list):
+			if chrom_position_start <= merged_interval_end and merged_interval_start <= chrom_position_stop: relevant_positions.append((chrom_position_start, chrom_position_stop))
+
+		# Assign the starting intergenic interval
 		intergenic_interval = [(merged_interval_start, merged_interval_end)]
 
 		'''
@@ -754,28 +766,28 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 		'''
 		for feature_type, feature_intervals in feature_dict.items():
 			for feature_interval_start, feature_interval_end in feature_intervals:
-				for relevant_position in relevant_positions:
-					if (feature_interval_start <= relevant_position and relevant_position <= feature_interval_end):
+				for relevant_position_start, relevant_position_stop in relevant_positions:
+					if relevant_position_start <= feature_interval_end and feature_interval_start <= relevant_position_stop:
 						if feature_type in list(added_feature_dict):
 							for gene_id, added_feature_intervals, in added_feature_dict[feature_type].items():
 								for added_feature_start, added_feature_end in added_feature_intervals:
-									if (added_feature_start <= relevant_position and relevant_position <= added_feature_end):
-										position_feature_dict[relevant_position].append([feature_type, gene_id])
+									if relevant_position_start <= added_feature_end and added_feature_start <= relevant_position_stop:
+										position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, gene_id])
 						else:
 							for feature in features:
 								if feature.featuretype != feature_type: continue
-								if (feature.start <= relevant_position and relevant_position <= feature.end):
-									if 'transcript_id' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, returnParents(feature)])
-									elif 'Parent' in feature.attributes: position_feature_dict[relevant_position].append([feature_type, returnParents(feature)])
+								if relevant_position_start <= feature.end and feature.start <= relevant_position_stop:
+									if 'transcript_id' in feature.attributes: position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, returnParents(feature)])
+									elif 'Parent' in feature.attributes: position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, returnParents(feature)])
 									elif feature_type in ['tss_flanks', 'tss_upstream']:
-										position_feature_dict[relevant_position].append([feature_type, feature.attributes['ID'][0].split(':')[0]])
+										position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, feature.attributes['ID'][0].split(':')[0]])
 									else: raise Exception(f'Unable to assign {feature_type} with attributes {feature.attributes}')
 
 	'''
 	Lastly, assign the intergenic feature for all positions 
 	outside the merged intervals and return the feature dict
 	'''
-	for chrom_position in chrom_position_list:
+	for chrom_position in yieldPositions(chrom_position_list):
 		if chrom_position not in position_feature_dict:
 			position_feature_dict[chrom_position].append(['intergenic', ''])
 	return position_feature_dict

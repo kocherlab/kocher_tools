@@ -71,14 +71,25 @@ Read in the chromosome sizes file and confirm the sizes are ints
 then read in the chromosome positions file and group the positions
 '''
 chrom_sizes = pd.read_csv(gff_args.chrom_size_file, sep = '\t', header = None, usecols=[0, 1], dtype = {0: str, 1: int})
-chrom_positions = pd.read_csv(gff_args.position_file, sep = '\t', header = None, usecols=[0, 1], dtype = {0: str, 1: int})
-grouped_chrom_positions = {_cnname:_cpos[1].values for _cnname, _cpos in chrom_positions.groupby(by=[0])}
+try: 
+	chrom_positions = pd.read_csv(gff_args.position_file, sep = '\t', header = None, usecols=[0, 1, 2], dtype = {0: str, 1: int, 2: int})
+	grouped_chrom_positions = {_cnname:_cpos[[1,2]].values for _cnname, _cpos in chrom_positions.groupby(by=[0])}
+except: 
+	chrom_positions = pd.read_csv(gff_args.position_file, sep = '\t', header = None, usecols=[0, 1], dtype = {0: str, 1: int})
+	grouped_chrom_positions = {_cnname:_cpos[1].values for _cnname, _cpos in chrom_positions.groupby(by=[0])}
 
 try:	
 	# Create the output file, and write the header
 	output_file = open(gff_args.out_file, 'w')
 	output_file.write('#%s\n' % ' '.join(sys.argv))
-	headers = ['Chromosome', 'Position', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
+
+	position_range = True if 2 in chrom_positions.columns else False
+
+	# Assign the headers
+	if not position_range: headers = ['Chromosome', 'Position', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
+	else: headers = ['Chromosome', 'Position Start', 'Position End', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
+
+	# Create the tsv writer
 	output_writer = csv.DictWriter(output_file, fieldnames = headers, delimiter = '\t')
 	output_writer.writeheader()
 
@@ -95,12 +106,21 @@ try:
 		for position in feature_dict_w_priority.keys():
 			if position not in feature_dict_w_priority: raise Exception('Unable to merge position data')
 
-			output_writer.writerow({'Chromosome':chrom_name, 
-									'Position':position, 
-									'All Features':', '.join([_fd[0] for _fd in feature_dict_no_priority[position]]),
-									'All Features Genes':', '.join([_fd[1] for _fd in feature_dict_no_priority[position]]),
-									'Features w/ Priority':', '.join([_fd[0] for _fd in feature_dict_w_priority[position]]),
-									'Features w/ Priority Genes':', '.join([_fd[1] for _fd in feature_dict_w_priority[position]])})
+			# Create the output dict
+			out_dict = {'Chromosome':chrom_name}
+
+			# Add the position/positions
+			if not position_range: out_dict['Position'] = position[0]
+			else: out_dict.update({'Position Start':position[0], 'Position End':position[1]})
+
+			# Add the Features
+			out_dict['All Features'] = ', '.join([_fd[0] for _fd in feature_dict_no_priority[position]])
+			out_dict['All Features Genes'] = ', '.join([_fd[1] for _fd in feature_dict_no_priority[position]])
+			out_dict['Features w/ Priority'] = ', '.join([_fd[0] for _fd in feature_dict_w_priority[position]])
+			out_dict['Features w/ Priority Genes'] = ', '.join([_fd[1] for _fd in feature_dict_w_priority[position]])
+
+			# Write the row
+			output_writer.writerow(out_dict)
 	
 	# Close the output file
 	output_file.close()
