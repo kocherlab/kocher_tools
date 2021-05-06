@@ -113,13 +113,17 @@ class SQLSelect ():
 		return [sql_table for table_bool, sql_table in zip(self._tables_in_select, self._sql_tables) if table_bool]
 
 	def select (self):
-
 		if self._total_tables_in_select > 1:
 			for parent_key, foreign_key in foreignKeyPairs(self._sql_tables_in_select):
 				if not self._sql_where:
 					self._sql_where = SQLWhere.fromQuery(self._sql_tables)
 				self._sql_where.addEQColWhere(parent_key, foreign_key)
 		self.select_results = list(self._sql_connection.execute(select(self.removeRepeatsInSelect(self._sql_select_tables, self._sql_select_columns)).where(self._sql_where.where_statement)))
+
+	def toDataFrame (self):
+
+		# Return as dataframe
+		return(pd.DataFrame([dict(_r) for _r in self.select_results]))
 
 	def toFile (self, out_filename, sep, warn_if_nothing = True):
 
@@ -390,15 +394,23 @@ class SQLInsert ():
 
 		self._sql_insert = table
 
-	def addDictValues (self, col_dict_list):
+	def addDictValues (self, col_dict):
+		
+		# Confirm the data is within a list
+		if not isinstance(col_dict, dict): raise Exception('Values must be stored within a dict')
+
+		# Add the insert from a dict
+		sql_values = SQLValues.fromColDictValues(self._sql_insert, col_dict)
+		self._sql_values.append(sql_values)
+
+	def addListValues (self, col_dict_list):
 		
 		# Confirm the data is within a list
 		if not isinstance(col_dict_list, list): raise Exception('Values must be stored within a List')
 
 		# Add the insert from a list of dict
 		for col_dict in col_dict_list:
-			sql_values = SQLValues.fromColDictValues(self._sql_insert, col_dict)
-			self._sql_values.append(sql_values)
+			self.addDictValues(col_dict)
 
 	def addDataFrameValues (self, dataframe):
 
@@ -406,7 +418,7 @@ class SQLInsert ():
 		col_dict_list = dataframe.to_dict('records')
 
 		# Add the values
-		self.addDictValues(col_dict_list)
+		self.addListValues(col_dict_list)
 		
 class SQLValues (dict):
 	def __init__(self, *arg, **kw):
@@ -517,6 +529,7 @@ class SQLWhere ():
 		elif cmp_type == 'IN': self.addINColDictWhere(col_dict, include)
 		elif cmp_type == 'LIKE': self.addLIKEColDictWhere(col_dict, include)
 
+
 	def addEQColDictWhere (self, col_dict, include):
 
 		# Add the column-based dict where
@@ -528,10 +541,10 @@ class SQLWhere ():
 					if len(test_arg.foreign_keys) >= 1:
 						continue
 					where_arg = test_arg
-					where_pos = table_pos	
+					where_pos = table_pos
 				except: pass
 			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
-			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if not self._tables_in_where[where_pos]: self._tables_in_where[where_pos] = True
 			if include: self._sql_where.append(where_arg == col_value)
 			else: self._sql_where.append(where_arg != col_value)
 
@@ -546,10 +559,10 @@ class SQLWhere ():
 					if len(test_arg.foreign_keys) >= 1:
 						continue
 					where_arg = test_arg
-					where_pos = table_pos	
+					where_pos = table_pos
 				except: pass
 			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_value))
-			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if not self._tables_in_where[where_pos]: self._tables_in_where[where_pos] = True
 			if include: self._sql_where.append(where_arg.like(col_value))
 			else: self._sql_where.append(where_arg.notilike(col_value))
 
@@ -565,10 +578,11 @@ class SQLWhere ():
 					if len(test_arg.foreign_keys) >= 1:
 						continue
 					where_arg = test_arg
-					where_pos = table_pos	
+					where_pos = table_pos
 				except: pass
+
 			if where_pos == None: raise Exception('Unable to assign where: %s: %s' % (col_name, col_values))
-			if not self._tables_in_where[where_pos]: self._tables_in_where[table_pos] = True
+			if not self._tables_in_where[where_pos]: self._tables_in_where[where_pos] = True
 			if include: self._sql_where.append(where_arg.in_(col_values))
 			else: self._sql_where.append(where_arg.notin_(col_values))
 			

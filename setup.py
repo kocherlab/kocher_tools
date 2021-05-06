@@ -11,6 +11,7 @@ requirements = ['pyyaml',
                 'Biopython',
                 'sqlalchemy',
                 'gffutils',
+                'openpyxl',
                 'tox']
 
 # Executable scripts in the package

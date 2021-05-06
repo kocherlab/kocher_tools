@@ -75,6 +75,15 @@ class ConfigDB (list):
 			tables_to_return.append(self[table_str])
 		return tables_to_return
 
+	@staticmethod
+	def getSQLColumn (table, column_str):
+
+		try: sql_column = getattr(table, 'unique_id')
+		except: raise Exception('Unable to assign column: %s' % column_str)
+
+		return sql_column
+
+	'''
 	def getSQLColumns (self, column_strs):
 
 		# Confirm the columns exists, and if so, return the SQL columns
@@ -93,6 +102,7 @@ class ConfigDB (list):
 			if not column_assigned: raise Exception('Unable to assign column: %s' % column_str)
 			columns_to_return.append(column_arg)
 		return columns_to_return
+	'''
 
 	def assignFromYaml (self):
 
@@ -395,16 +405,8 @@ class ConfigDB (list):
 					if 'constraint' in attribute_yaml:
 						if 'value' in attribute_yaml['constraint']:
 
-
-
 							constraint_type = attribute_yaml['constraint']['check']
 							value_list = attribute_yaml['constraint']['value']
-
-							temp_values = ', '.join(value_list)
-
-							if value_list in valuelist_list:
-								#break
-								pass
 
 							# Create and populate the constraint options dict
 							constraint_options_dict = {}
@@ -423,12 +425,6 @@ class ConfigDB (list):
 
 						else:
 							constraint_type = attribute_yaml['constraint']['check']
-
-							temp_cols += f'{table}, {column}, {constraint_type}\n'
-
-							if constraint_type in valuelist_list:
-								#break
-								pass
 							
 							# Create and populate the constraint options dict
 							constraint_options_dict = {}

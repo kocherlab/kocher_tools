@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 
@@ -9,8 +10,9 @@ from Bio import SeqIO
 
 from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
+from kocher_tools.assignment import readInputFile
 
-def insertCollectionFileUsingConfig (config_file, schema, filepath):
+def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ignore_previously_entered = True):
 
 	def check_date (data, date = False):
 		try:
@@ -25,16 +27,51 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath):
 	sql_connection = startSessionFromConfig(config_data)
 
 	try:
-		# Read in the file as a pandas dataframe, prep for database
-		input_dataframe = pd.read_csv(filepath, dtype = str, sep = '\t')
+
+		# Read in the file as a pandas dataframe and convert labels, if needed
+		input_dataframe = readInputFile(filepath)
+		colleciton_label_dict = {'Barcode': 'Unique ID',
+								 'Date': 'Date Collected',
+								 'Time': 'Time Entered',
+								 'Has Pollen': 'Has Pollen?',
+								 'Preservation Method': 'Sample Preservation Method',
+								 'Head in PFA?': 'Head Preserved',
+								 'From Nest': 'From Nest?',
+								 'Field_ID': 'field_id'}
+		input_dataframe = input_dataframe.rename(columns=colleciton_label_dict)
+
+		# Prep the dataframe
 		input_dataframe = prepDataFrameUsingConfig(config_data, schema, input_dataframe)
+		input_dataframe['collection_file'] = os.path.basename(filepath)
+		if uploader: input_dataframe['collected_by'] = ' '.join(uploader)
 
 		# Update the dates
 		input_dataframe['date_collected'] = input_dataframe['date_collected'].apply(check_date, date = True)
 		input_dataframe['date_collected'] = pd.to_datetime(input_dataframe['date_collected']).dt.date
-		
+
 		# Clean up the data, with dates
 		input_dataframe = input_dataframe.replace(np.nan, None)
+
+		# Assign the table
+		sql_table_assign = config_data[schema]
+
+		# Ignore - i.e. don't raise an exception - if previously entered data is found
+		if ignore_previously_entered:
+
+			# Check for previously entered data, and filter out
+			sql_column_assign = config_data.getSQLColumn(sql_table_assign.columns, 'unique_id')
+			sql_select = SQLSelect.fromConfig(config_data, sql_connection)
+			sql_select.addColumnToSelect(sql_column_assign)
+			sql_select.addDictWhere({'unique_id':input_dataframe['unique_id'].values}, include = True, cmp_type = 'IN', dict_type = 'Column')
+			sql_select.select()
+			select_dataframe = sql_select.toDataFrame()
+			input_dataframe = input_dataframe[~input_dataframe['unique_id'].isin(select_dataframe['unique_id'].values)]
+
+			# Check if all the data was removed
+			if input_dataframe.empty: 
+				logging.warning(f'No new collection samples.')
+				sql_connection.close()
+				return
 
 		# Insert the dataframe into the database
 		sql_table_assign = config_data[schema]

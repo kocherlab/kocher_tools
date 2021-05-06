@@ -56,12 +56,13 @@ def uploadSampleParser ():
 	# Input arguments
 	schema_list = ('collection', 'storage', 'sequencing')
 	upload_parser.add_argument('--schema', metavar = metavarList(schema_list), help = 'Schema (for upload)', choices = schema_list, required = True)
+	upload_parser.add_argument('--uploader', help = 'Name of the uploader', type = str, nargs = '+')
 
 	input_method = upload_parser.add_mutually_exclusive_group(required = True)
 	input_method.add_argument('--input-zip-file', help = 'Input ZIP Archive', type = str, action = confirmFile())
 	input_method.add_argument('--input-file', help = 'Input file - for all schema except sequencing', type = str, action = confirmFile())
 	input_method.add_argument('--sequencing-files', help = 'Sequencing input files', type = str, nargs = '+', action = confirmFileList())
-	
+
 	# Output arguments
 	upload_parser.add_argument('--out-log', help = 'Filename of the log file', type = str, default = 'upload_samples.log')
 	upload_parser.add_argument('--log-stdout', help = 'Direct logging to stdout', action = 'store_true')
@@ -125,7 +126,7 @@ def main():
 		if len(input_files) > 1: raise Exception (f'Type (collection) only supports a single input file')
 
 		# Insert the file
-		insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, input_files[0])
+		insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, input_files[0], upload_args.uploader)
 
 	# Check if a storage file has been specified
 	elif upload_args.schema == 'storage':

@@ -1,12 +1,35 @@
 import logging
 
-from collections import defaultdict
+import pandas as pd
+#from collections import defaultdict
 
-def assignTables (config_data, include = None, exclude = None, 
-	                           include_ID = None, exclude_ID = None, 
-	                           include_species = None, exclude_species = None, 
-	                           include_genus = None, exclude_genus = None, 
-	                           include_nests = None, exclude_nests = None, **kwargs):
+def readInputFile (input_file):
+
+	# Create an empty dataframe
+	input_datafreame = pd.DataFrame()
+
+	# Try to read an excel input file
+	try: input_datafreame = pd.read_excel(input_file, dtype = str)
+	except:
+
+		# Try to read a tsv input file
+		try: input_datafreame = pd.read_csv(input_file, dtype = str, sep = '\t')
+		except:
+
+			# Try to read a csv input file
+			try: input_datafreame = pd.read_csv(input_file, dtype = str)
+			except: pass
+
+	# Return an exception if the input is empty
+	if input_datafreame.empty: raise Exception(f'Unable to parse input file: {input_file}')
+
+	# Return the dataframe if not empty
+	logging.info(f'Successfully assigned input file: {input_file}')
+	return input_datafreame
+
+
+'''
+def assignTables (config_data, include = None, exclude = None, include_ID = None, exclude_ID = None, include_species = None, exclude_species = None, include_genus = None, exclude_genus = None, include_nests = None, exclude_nests = None, **kwargs):
 
 	# Create a list to hold the columns
 	columns = []
@@ -81,11 +104,7 @@ def assignTables (config_data, include = None, exclude = None,
 	# Return the tables
 	return assigned_tables
 	
-def assignSelectionDict (config_data, include = None, exclude = None, 
-									  include_ID = None, exclude_ID = None, 
-									  include_species = None, exclude_species = None, 
-									  include_genus = None, exclude_genus = None,
-									  include_nests = None, exclude_nests = None,  **kwargs):
+def assignSelectionDict (config_data, include = None, exclude = None, include_ID = None, exclude_ID = None, include_species = None, exclude_species = None, include_genus = None, exclude_genus = None,include_nests = None, exclude_nests = None,  **kwargs):
 
 	# Create a defaultdict to hold all the selection information
 	selection_dict = defaultdict(lambda: defaultdict(list))
@@ -154,3 +173,5 @@ def assignSelectionDict (config_data, include = None, exclude = None,
 	logging.info('Successfully assigned selection statement dict(s)')
 
 	return selection_dict
+
+'''
