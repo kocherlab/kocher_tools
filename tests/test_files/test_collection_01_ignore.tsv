@@ -1,0 +1,6 @@
+Unique ID	Site Code	Date Collected	Time Entered	GPS	Sex	Life Stage	Has Pollen?	Sample Preservation Method	Head Preserved	Head Preservation Method	From Nest?	Nest Code	Notes
+DBtest-0001	RIM	11/6/2019	1:48:14 PM	"40.345576285427555, -74.65398915528671"	Female	Adult	No	EtoH	Yes	PFA	No	N/A	These are notes
+DBtest-0002	WIM	11/6/2019	2:17:47 PM	"40.345576285427555, -74.65398915528671"	Male	Adult	No	EtoH	No	N/A	No	N/A	Also notes 
+DBtest-0003	VEN	11/6/2019	2:18:47 PM	"40.34555268323508, -74.65406448370945"	Unknown	Big larva	No	RNAlater	No	N/A	Yes	N-1	From nest on Mars
+DBtest-0004	TOM	11/6/2019	2:19:57 PM	"40.345575692332645, -74.65398227932042"	Multiple	Small larva	No	RNAlater	No	N/A	Yes	Nest 21	All the larvae from this nest
+DBtest-0005	TOM	11/6/2019	2:19:57 PM	"40.345575692332645, -74.65398227932042"	Multiple	Small larva	No	RNAlater	No	N/A	Yes	Nest 21	All the larvae from this nest

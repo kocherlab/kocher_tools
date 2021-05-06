@@ -57,6 +57,7 @@ def uploadSampleParser ():
 	schema_list = ('collection', 'storage', 'sequencing')
 	upload_parser.add_argument('--schema', metavar = metavarList(schema_list), help = 'Schema (for upload)', choices = schema_list, required = True)
 	upload_parser.add_argument('--uploader', help = 'Name of the uploader', type = str, nargs = '+')
+	upload_parser.add_argument('--error-if-found', dest = 'ignore_previously_entered', help = 'Do not ignore previously entered data' , action = 'store_false')
 
 	input_method = upload_parser.add_mutually_exclusive_group(required = True)
 	input_method.add_argument('--input-zip-file', help = 'Input ZIP Archive', type = str, action = confirmFile())
@@ -68,7 +69,7 @@ def uploadSampleParser ():
 	upload_parser.add_argument('--log-stdout', help = 'Direct logging to stdout', action = 'store_true')
 
 	# Database arguments
-	upload_parser.add_argument('--yaml', help = 'Database YAML config file', type = str, required = True, action = confirmFile())
+	upload_parser.add_argument('--yaml', dest = 'config_file', help = 'Database YAML config file', type = str, required = True, action = confirmFile())
 
 
 	return upload_parser.parse_args()
@@ -126,7 +127,7 @@ def main():
 		if len(input_files) > 1: raise Exception (f'Type (collection) only supports a single input file')
 
 		# Insert the file
-		insertCollectionFileUsingConfig(upload_args.yaml, upload_args.schema, input_files[0], upload_args.uploader)
+		insertCollectionFileUsingConfig(upload_args.config_file, upload_args.schema, input_files[0], upload_args.uploader, upload_args.ignore_previously_entered)
 
 	# Check if a storage file has been specified
 	elif upload_args.schema == 'storage':
@@ -135,7 +136,7 @@ def main():
 		if len(input_files) > 1: raise Exception (f'Type (storage) only supports a single input file')
 
 		# Insert the file
-		insertStorageFileUsingConfig(upload_args.yaml, input_files[0])
+		insertStorageFileUsingConfig(upload_args.config_file, input_files[0])
 
 	# Check if a sequencing files have been specified
 	elif upload_args.schema == 'sequencing':
@@ -144,7 +145,7 @@ def main():
 		if len(input_files) not in [2, 3]: raise Exception (f'Type (sequencing) requires between two and three input files')
 
 		# Insert the sequencing files
-		insertBarcodeFilesUsingConfig(upload_args.yaml, upload_args.schema, input_files)
+		insertBarcodeFilesUsingConfig(upload_args.config_file, upload_args.schema, input_files)
 
 	# Delete the zip contents temp dir, if created
 	if upload_args.input_zip_file: shutil.rmtree(zip_input_dir)

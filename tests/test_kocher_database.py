@@ -74,13 +74,20 @@ class test_kocher_database (unittest.TestCase):
 
 		# Assign the collection filename and insert
 		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.tsv')
-		insertCollectionFileUsingConfig(self.config_filename, 'collection', collection_filename)
+		insertCollectionFileUsingConfig(self.config_filename, 'collection', collection_filename, None, False)
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'unique_id', 'DBtest-0001'))
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'site_code', 'WIM'))
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'nest_code', 'N-1'))
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'sex', 'Multiple'))
+
+		# Assign the collection filename and insert
+		collection_ignore_filename = os.path.join(self.expected_path, 'test_collection_01_ignore.tsv')
+		insertCollectionFileUsingConfig(self.config_filename, 'collection', collection_ignore_filename, None, True)
+
+		# Check that the values were correctly inserted 
+		self.assertTrue(checkValue(self.database_filename, 'collection', 'unique_id', 'DBtest-0004'))
 
 	# Check addStorageFileToDatabase
 	def test_02_insertStorageFileUsingConfig (self):

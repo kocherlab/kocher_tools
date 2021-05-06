@@ -12,7 +12,7 @@ from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
 from kocher_tools.assignment import readInputFile
 
-def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ignore_previously_entered = True):
+def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ignore_previously_entered):
 
 	def check_date (data, date = False):
 		try:
@@ -33,17 +33,20 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 		colleciton_label_dict = {'Barcode': 'Unique ID',
 								 'Date': 'Date Collected',
 								 'Time': 'Time Entered',
-								 'Has Pollen': 'Has Pollen?',
+								 'Has Pollen': 'Has Pollen',
 								 'Preservation Method': 'Sample Preservation Method',
 								 'Head in PFA?': 'Head Preserved',
-								 'From Nest': 'From Nest?',
-								 'Field_ID': 'field_id'}
+								 'From Nest': 'From Nest',
+								 'Field_ID': 'Species Guess'}
 		input_dataframe = input_dataframe.rename(columns=colleciton_label_dict)
 
 		# Prep the dataframe
 		input_dataframe = prepDataFrameUsingConfig(config_data, schema, input_dataframe)
 		input_dataframe['collection_file'] = os.path.basename(filepath)
 		if uploader: input_dataframe['collected_by'] = ' '.join(uploader)
+
+		# Check for the unique ID column
+		if 'unique_id' not in input_dataframe.columns: raise Exception(f'Unable to assign IDs, cannot locate the assignment column')
 
 		# Update the dates
 		input_dataframe['date_collected'] = input_dataframe['date_collected'].apply(check_date, date = True)
