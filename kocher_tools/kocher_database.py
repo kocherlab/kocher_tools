@@ -30,6 +30,7 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 
 		# Read in the file as a pandas dataframe and convert labels, if needed
 		input_dataframe = readInputFile(filepath)
+
 		colleciton_label_dict = {'Barcode': 'Unique ID',
 								 'Date': 'Date Collected',
 								 'Time': 'Time Entered',
@@ -46,7 +47,7 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 		if uploader: input_dataframe['collected_by'] = ' '.join(uploader)
 
 		# Check for the unique ID column
-		if 'unique_id' not in input_dataframe.columns: raise Exception(f'Unable to assign IDs, cannot locate the assignment column')
+		#if 'unique_id' not in input_dataframe.columns: raise Exception(f'Unable to assign IDs, cannot locate the assignment column')
 
 		# Update the dates
 		input_dataframe['date_collected'] = input_dataframe['date_collected'].apply(check_date, date = True)
@@ -68,13 +69,17 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 			sql_select.addDictWhere({'unique_id':input_dataframe['unique_id'].values}, include = True, cmp_type = 'IN', dict_type = 'Column')
 			sql_select.select()
 			select_dataframe = sql_select.toDataFrame()
-			input_dataframe = input_dataframe[~input_dataframe['unique_id'].isin(select_dataframe['unique_id'].values)]
+			if not select_dataframe.empty: input_dataframe = input_dataframe[~input_dataframe['unique_id'].isin(select_dataframe['unique_id'].values)]
 
 			# Check if all the data was removed
 			if input_dataframe.empty: 
 				logging.warning(f'No new collection samples.')
 				sql_connection.close()
 				return
+
+			# Check if any data was removed
+			if not select_dataframe.empty:
+				logging.warning(f'{select_dataframe.shape[0]} collection samples already in database.')
 
 		# Insert the dataframe into the database
 		sql_table_assign = config_data[schema]
