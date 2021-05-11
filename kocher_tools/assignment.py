@@ -23,6 +23,9 @@ def readInputFile (input_file):
 	# Return an exception if the input is empty
 	if input_dataframe.empty: raise Exception(f'Unable to parse input file: {input_file}')
 
+	# Remove any empty rows
+	input_dataframe = input_dataframe.dropna(axis = 0, how = 'all')
+
 	# Return the dataframe if not empty
 	logging.info(f'Successfully assigned input file: {input_file}')
 	return input_dataframe
