@@ -6,26 +6,26 @@ import pandas as pd
 def readInputFile (input_file):
 
 	# Create an empty dataframe
-	input_datafreame = pd.DataFrame()
+	input_dataframe = pd.DataFrame()
 
 	# Try to read an excel input file
-	try: input_datafreame = pd.read_excel(input_file, dtype = str)
+	try: input_dataframe = pd.read_excel(input_file, dtype = str, engine = 'openpyxl')
 	except:
 
 		# Try to read a tsv input file
-		try: input_datafreame = pd.read_csv(input_file, dtype = str, sep = '\t')
+		try: input_dataframe = pd.read_csv(input_file, dtype = str, sep = '\t')
 		except:
 
 			# Try to read a csv input file
-			try: input_datafreame = pd.read_csv(input_file, dtype = str)
+			try: input_dataframe = pd.read_csv(input_file, dtype = str)
 			except: pass
 
 	# Return an exception if the input is empty
-	if input_datafreame.empty: raise Exception(f'Unable to parse input file: {input_file}')
+	if input_dataframe.empty: raise Exception(f'Unable to parse input file: {input_file}')
 
 	# Return the dataframe if not empty
 	logging.info(f'Successfully assigned input file: {input_file}')
-	return input_datafreame
+	return input_dataframe
 
 
 '''
