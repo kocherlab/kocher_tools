@@ -16,6 +16,7 @@ requirements = ['pyyaml',
 
 # Executable scripts in the package
 tool_scripts = ['kocher_tools/barcode_pipeline.py',
+                'kocher_tools/demultiplex_pipeline.py',
                 'kocher_tools/barcode_filter.py',
                 'kocher_tools/create_database.py',
                 'kocher_tools/insert_file.py',
