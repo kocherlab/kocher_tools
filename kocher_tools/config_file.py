@@ -59,6 +59,10 @@ class ConfigDB (list):
 		if self.type == 'sqlite': return False
 		else: return True
 
+	@property
+	def can_backup (self):
+		return self.backup_dir != None
+
 	def __contains__ (self, table_str):
 		if table_str in self._sql_tables:
 			return True
