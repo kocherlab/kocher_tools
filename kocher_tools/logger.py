@@ -3,15 +3,12 @@ import sys
 
 def startLogger (log_filename = None, filemode = 'w'):
 
-	if log_filename:
+	# Close any old loggers
+	for handler in logging.root.handlers[:]: logging.root.removeHandler(handler)
 
-		# Config the log file
-		logging.basicConfig(filename = log_filename, filemode = filemode, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
-
-	else:
-
-		# Config the log file
-		logging.basicConfig(stream = sys.stdout, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
+	# Star the logger
+	if log_filename: logging.basicConfig(filename = log_filename, filemode = filemode, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
+	else: logging.basicConfig(stream = sys.stdout, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
 
 	# Start logging to stdout
 	stdout_log = logging.StreamHandler()

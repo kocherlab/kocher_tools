@@ -79,21 +79,17 @@ def main():
 	# Assign arguments
 	upload_args = uploadSampleParser()
 
-	'''
-	# Check if log should be sent to stdout
-	if upload_args.log_stdout:
+	# Open the config and start the SQL session
+	config_data = ConfigDB.readConfig(config_file)
 
-		# Start logging to stdout for this run
-		startLogger()
+	# Backup the data prior to any changes
+	backup_data = Backups.fromConfig(config_data, backup_subdir = 'UpdateBackups')
+	backup_data.backupfromConfig(config_data)
 
-	else:
-
-		# Start a log file for this run
-		startLogger(log_filename = upload_args.out_log)
-
-	# Log the arguments used
+	# Start a log for this run
+	if upload_args.log_stdout: startLogger()
+	else: startLogger(log_filename = upload_args.out_log)
 	logArgs(upload_args)
-	'''
 
 	# Create a list to store input file
 	input_files = []
@@ -127,7 +123,7 @@ def main():
 		if len(input_files) > 1: raise Exception (f'Type (collection) only supports a single input file')
 
 		# Insert the file
-		insertCollectionFileUsingConfig(upload_args.config_file, upload_args.schema, input_files[0], upload_args.uploader, upload_args.ignore_previously_entered)
+		insertCollectionFileUsingConfig(config_data, upload_args.schema, input_files[0], upload_args.uploader, upload_args.ignore_previously_entered)
 
 	# Check if a storage file has been specified
 	elif upload_args.schema == 'storage':
@@ -136,7 +132,7 @@ def main():
 		if len(input_files) > 1: raise Exception (f'Type (storage) only supports a single input file')
 
 		# Insert the file
-		insertStorageFileUsingConfig(upload_args.config_file, input_files[0])
+		insertStorageFileUsingConfig(config_data, input_files[0])
 
 	# Check if a sequencing files have been specified
 	elif upload_args.schema == 'sequencing':
@@ -145,7 +141,7 @@ def main():
 		if len(input_files) not in [2, 3]: raise Exception (f'Type (sequencing) requires between two and three input files')
 
 		# Insert the sequencing files
-		insertBarcodeFilesUsingConfig(upload_args.config_file, upload_args.schema, input_files)
+		insertBarcodeFilesUsingConfig(config_data, upload_args.schema, input_files)
 
 	# Delete the zip contents temp dir, if created
 	if upload_args.input_zip_file: shutil.rmtree(zip_input_dir)

@@ -8,11 +8,10 @@ import numpy as np
 from dateutil import parser
 from Bio import SeqIO
 
-from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
 from kocher_tools.assignment import readInputFile
 
-def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ignore_previously_entered):
+def insertCollectionFileUsingConfig (config_data, schema, filepath, uploader, ignore_previously_entered):
 
 	def check_date (data, date = False):
 		try:
@@ -22,8 +21,7 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 		except:
 			return ''
 
-	# Open the config and start the SQL session
-	config_data = ConfigDB.readConfig(config_file)
+	# Start the SQL session
 	sql_connection = startSessionFromConfig(config_data)
 
 	try:
@@ -95,7 +93,7 @@ def insertCollectionFileUsingConfig (config_file, schema, filepath, uploader, ig
 	else:
 		sql_connection.commit()
 
-def insertBarcodeFilesUsingConfig (config_file, schema, filepaths):
+def insertBarcodeFilesUsingConfig (config_data, schema, filepaths):
 
 	def append_seq (query_id, seq_index):
 		return seq_index[query_id].format('fasta')
@@ -104,8 +102,7 @@ def insertBarcodeFilesUsingConfig (config_file, schema, filepaths):
 		try: return ', '.join([value_str for value_str in value_list if value_str != 'BOLD:N/A'])
 		except: return ''
 
-	# Open the config and start the SQL session
-	config_data = ConfigDB.readConfig(config_file)
+	# Start the SQL session
 	sql_connection = startSessionFromConfig(config_data)
 
 	try:
@@ -213,10 +210,9 @@ def insertBarcodeFilesUsingConfig (config_file, schema, filepaths):
 	else:
 		sql_connection.commit()
 
-def insertStorageFileUsingConfig (config_file, filepath, schema = 'storage', plates_schema = 'plates', boxes_schema = 'boxes'):
+def insertStorageFileUsingConfig (config_data, filepath, schema = 'storage', plates_schema = 'plates', boxes_schema = 'boxes'):
 
-	# Open the config and start the SQL session
-	config_data = ConfigDB.readConfig(config_file)
+	# Start the SQL session
 	sql_connection = startSessionFromConfig(config_data)
 
 	try:
