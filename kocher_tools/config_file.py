@@ -135,7 +135,7 @@ class ConfigDB (list):
 				if 'schema' in config_yaml['sql']: self.schema = config_yaml['sql']['schema']
 				if config_yaml['sql']['passwd']: self.passwd = config_yaml['sql']['passwd']
 
-			if config_yaml['backup']:
+			if 'backup' in config_yaml:
 				self.backup_dir = config_yaml['backup']['dir']
 				if 'log' in config_yaml['backup']: self.log_file = config_yaml['backup']['log']
 				if 'max_days_old' in config_yaml['backup']: self.max_days_old = int(config_yaml['backup']['max_days_old'])

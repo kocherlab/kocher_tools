@@ -8,6 +8,7 @@ import tempfile
 import io
 import string
 import random
+import logging
 
 from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
@@ -47,7 +48,7 @@ class test_kocher_database (unittest.TestCase):
 
 			# Create the tables
 			cls.db_config_data = ConfigDB.readConfig(cls.config_filename)
-			sql_engine = createEngineFromConfig(db_config_data)
+			sql_engine = createEngineFromConfig(cls.db_config_data)
 			createAllFromConfig(cls.db_config_data, sql_engine)
 			cls.database_filename = cls.db_config_data.filename			
 
@@ -82,9 +83,16 @@ class test_kocher_database (unittest.TestCase):
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'nest_code', 'N-1'))
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'sex', 'Multiple'))
 
+		# Disable the logger
+		logger = logging.getLogger()
+		logger.disabled = True
+
 		# Assign the collection filename and insert
 		collection_ignore_filename = os.path.join(self.expected_path, 'test_collection_01_ignore.tsv')
 		insertCollectionFileUsingConfig(self.db_config_data, 'collection', collection_ignore_filename, None, True)
+
+		# Enable the logger
+		logger.disabled = False
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'unique_id', 'DBtest-0004'))
