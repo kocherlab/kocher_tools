@@ -12,6 +12,8 @@ class ConfigDB (list):
 	def __init__ (self, yaml = ''):
 		self.yaml = yaml
 		self.yaml_dir = os.path.dirname(yaml)
+
+		# Assign the DB properties
 		self.type = None
 		self.filename = None
 		self.host = None
@@ -23,6 +25,12 @@ class ConfigDB (list):
 		self._sql_tables = {}
 		self._table_label_to_col = defaultdict(lambda: defaultdict(str))
 		self._table_col_to_label = defaultdict(lambda: defaultdict(str))
+
+		# Assign the Backup properties
+		self.backup_dir = None
+		self.log_file = None
+		self.max_days_old = None
+		self.max_files = None
 
 		# Assign using the Yaml file
 		self.assignFromYaml()
@@ -113,15 +121,21 @@ class ConfigDB (list):
 			config_yaml = yaml.load(yml_config_file, Loader=yaml.FullLoader)
 
 			# Assign the database information
-			self.type = os.path.join(config_yaml['sql']['type'])
+			self.type = config_yaml['sql']['type']
 			if self.type == 'sqlite':
-				self.filename = os.path.join(config_yaml['sql']['filename'])
+				self.filename = config_yaml['sql']['filename']
 			else:
-				self.host = os.path.join(config_yaml['sql']['host'])
-				self.user = os.path.join(config_yaml['sql']['user'])
-				if 'database' in config_yaml['sql']: self.database = os.path.join(config_yaml['sql']['database'])
-				if 'schema' in config_yaml['sql']: self.schema = os.path.join(config_yaml['sql']['schema'])
-				if config_yaml['sql']['passwd']: self.passwd = os.path.join(config_yaml['sql']['passwd'])
+				self.host = config_yaml['sql']['host']
+				self.user = config_yaml['sql']['user']
+				if 'database' in config_yaml['sql']: self.database = config_yaml['sql']['database']
+				if 'schema' in config_yaml['sql']: self.schema = config_yaml['sql']['schema']
+				if config_yaml['sql']['passwd']: self.passwd = config_yaml['sql']['passwd']
+
+			if config_yaml['backup']:
+				self.backup_dir = config_yaml['backup']['dir']
+				if 'log' in config_yaml['backup']: self.log_file = config_yaml['backup']['log']
+				if 'max_days_old' in config_yaml['backup']: self.max_days_old = int(config_yaml['backup']['max_days_old'])
+				if 'max_files' in config_yaml['backup']: self.max_files = int(config_yaml['backup']['max_files'])
 
 			# Create a metadata object
 			if self.schema: meta = MetaData(schema = self.schema)

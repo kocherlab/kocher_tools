@@ -6,216 +6,180 @@ import logging
 import random
 import string
 
-from kocher_tools.database import backupDatabase
+#from kocher_tools.database import backupDatabase
 
 class Backups (list):
-	def __init__ (self, *arg, out_dir = None, limit = None, update_freq = None, **kw):
+	def __init__ (self, *arg, backup_dir = None, backup_subdir = '', log_file = '', file_limit = 10, day_cutoff = 120, **kw):
 		super(Backups, self).__init__(*arg, **kw)
-		self.out_dir = out_dir
-		self.limit = limit
-		self.update_freq = update_freq
-		self.timezone = pytz.timezone('US/Eastern')
+		self.backup_dir = os.path.join(backup_dir, backup_subdir)
+		self.log_file = log_file
+		self.file_limit = int(file_limit)
 		self.str_format = '%Y-%m-%d'
-		self.date = datetime.datetime.now(self.timezone)
+		self.date = datetime.datetime.now()
+		self.date_cutoff = self.date - datetime.timedelta(days = day_cutoff)
 		self.oldest_backup = None
 		self.most_recent_backup = None
 
 		# Check if data was not assigned
-		if not self:
+		if not self: self.assignBackups()
 
-			# Assign the backups
-			self.assignBackups()
+	def __str__ (self):
+		return f'{[str(_b) for _b in self]}'
 
 	@property
 	def date_str (self):
 
-		# Return the date as a string of Year-Month-Day
+		# Return the date as a string of Year-Month-Day-Seconds
 		return self.date.strftime(self.str_format)
 
 	def assignBackups (self):
 
-		# Assign an empty object to store the oldest backup
+		# Assign an empty object to store the oldest and newest backups
 		oldest_backup = None
-
-		# Assign an empty object to store the newest backup
 		most_recent_backup = None
         
 		# Loop the files within the backup dir
-		for backup_file in os.listdir(self.out_dir):
+		for backup_file in os.listdir(self.backup_dir):
 
 			# Assign the backup file path
-			backup_file_path = os.path.join(self.out_dir, backup_file)
+			backup_file_path = os.path.join(self.backup_dir, backup_file)
 
-			# Assign the past backup date str
-			past_backup_date_str = backup_file.rsplit('.', 2)[-2]
+			# Assign the file modification date
+			#try: past_backup_date = datetime.datetime.fromtimestamp(os.path.getmtime(backup_file_path))
+			#except: raise Exception(f'Unable to assign modification date for: {backup_file_path}')
 
-			# Assign the backup date
-			past_backup_date = datetime.datetime.strptime(past_backup_date_str, self.str_format)
+			# Assign the backup
+			past_backup = Backup(backup_file_path)
+			self.append(past_backup)
 
-			# Update the past backup date with the timezone
-			past_backup_date = past_backup_date.replace(tzinfo = self.timezone)
-
-			# Assign a backup
-			past_backup = Backup(backup_file_path, past_backup_date)
-
-			# Check if the oldest backup has been defined
-			if not oldest_backup:
-
-				# Assign the current backup
+			# Check if the current backup is older than the stored oldest backup
+			if not oldest_backup or past_backup < oldest_backup: 
 				oldest_backup = past_backup
 
-			else:
-
-				# Check if the current backup is older than the stored oldest backup
-				if past_backup < oldest_backup:
-
-					# Assign the current backup
-					oldest_backup = past_backup
-
-			# Check if the newest backup has been defined
-			if not most_recent_backup:
-
-				# Assign the current backup
+			# Check if the current backup is older than the stored oldest backup
+			if not most_recent_backup or past_backup > most_recent_backup: 
 				most_recent_backup = past_backup
-
-			else:
-
-				# Check if the current backup is older than the stored oldest backup
-				if past_backup > most_recent_backup:
-
-					# Assign the current backup
-					most_recent_backup = past_backup
-
-			# Save the table
-			self.append(past_backup)
 
 		# Assing the oldest backup and the most recent date
 		self.oldest_backup = oldest_backup
 		self.most_recent_backup = most_recent_backup
 
+		# Delete any old backups
+		self.deleteOldBackups()
+
 	def updateBackups (self):
 
-		# Check if the number of backups exceeds the backup limit
-		if len(self) > self.limit:
+		# Assign an empty object to store the oldest and newest backups
+		oldest_backup = None
+		most_recent_backup = None
+       
+		# Loop the backups, backup by backup
+		for current_backup in self:
 
-			# Delete the oldest backup
-			self.deleteBackup(self.oldest_backup)
+			# Assign/update the oldest backup
+			if not oldest_backup or current_backup < oldest_backup:
+				oldest_backup = current_backup
 
-			# Assign an empty object to store the oldest backup
-			oldest_backup = None
+			# Assign/update the newest backup
+			if not most_recent_backup or current_backup > most_recent_backup:
+				most_recent_backup = current_backup
 
-			# Assign an empty object to store the newest backup
-			most_recent_backup = None
-	        
-			# Loop the backups, backup by backup
-			for current_backup in self:
+		# Assign the oldest backup and the most recent date
+		self.oldest_backup = oldest_backup
+		self.most_recent_backup = most_recent_backup
 
-				# Check if the oldest backup has been defined
-				if not oldest_backup:
+	def backupfromConfig (self, config_data):
 
-					# Assign the current backup
-					oldest_backup = current_backup
-
-				else:
-
-					# Check if the current backup is older than the stored oldest backup
-					if current_backup < oldest_backup:
-
-						# Assign the current backup
-						oldest_backup = current_backup
-
-				# Check if the newest backup has been defined
-				if not most_recent_backup:
-
-					# Assign the current backup
-					most_recent_backup = current_backup
-
-				else:
-
-					# Check if the current backup is older than the stored oldest backup
-					if current_backup > most_recent_backup:
-
-						# Assign the current backup
-						most_recent_backup = current_backup
-
-			# Assing the oldest backup and the most recent date
-			self.oldest_backup = oldest_backup
-			self.most_recent_backup = most_recent_backup
-
-	def backupNeeded (self):
-
-		# Check if there are no backups
-		if not self.most_recent_backup:
-
-			# Return True if their is no backup
-			return True
-
-		# Get the difference in time from the most recent backup
-		date_diff = self.date - self.most_recent_backup.backup_date
-
-		# Check if the difference in greater than the update frequency
-		if self.update_freq >= date_diff.days:
-
-			# Return False if the limit to larger than the number of days
-			return False
-
-		# Return True if the limit is smaller
-		return True
-
-	def newBackup (self, database):
-
-		# Assign the database basename and file extension
-		database_basename = os.path.basename(database)
-			
-		# Create random string for database filename
-		random_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(6))
-
-		# Assign the backup filename
-		backup_file = os.path.join(self.out_dir, '%s.%s.%s.backup' % (database_basename, random_str, self.date_str))
-
-		# Create the database
-		backupDatabase(database, backup_file)
+		# Assign the arg list
+		if config_data.type == 'postgresql':
+			backup_filename = os.path.join(self.backup_dir, f'{config_data.schema}.{self.randStr()}.{self.date_str}.dmp')
+			backup_call_args = ['pg_dump', '-U', config_data.user, '-d', config_data.database, '-n', config_data.schema, '-h', config_data.host, '-Fc']
+			#executeBackup('pg_dump', backup_call_args, backup_filename)
+		if config_data.type == 'sqlite': raise Exception('In Development')
 
 		# Assign the new backup
-		new_backup = Backup(backup_file, self.date)
+		#new_backup = Backup(backup_filename)
+		#self.append(new_backup)
+		#self.most_recent_backup = new_backup
 
-		# Append the new backup
-		self.append(new_backup)
+	def deleteOldBackups (self):
 
-		# Update the most recent backup
-		self.most_recent_backup = new_backup
-
+		# Remove old backups
+		old_backups = [_bf for _bf in self if self.date_cutoff > _bf]
+		for old_backup in old_backups:
+			#os.remove(old_backup)
+			self.remove(old_backup)
+		
 		# Update the backups
 		self.updateBackups()
 
-	def deleteBackup (self, backup_to_delete):
+		# Remove backups until they dont exceed the file limit
+		while len(self) > self.file_limit:
 
-		# Assign the file path of the backup file
-		backup_file_path = str(backup_to_delete)
+			# Remove the oldest backup
+			#os.remove(self.oldest_backup)
+			self.remove(self.oldest_backup)
 
-		# Confirm the file exists, otherwise raise an error
-		if not os.path.isfile(backup_file_path):
-			raise Exception('Backup file (%s) not found' % backup_file_path)
+			# Update the backups
+			self.updateBackups()
 
-		# Remove the file
-		os.remove(backup_file_path)
+	@classmethod
+	def fromConfig (cls, config_data, backup_subdir = ''):
+		return cls(backup_dir = config_data.backup_dir, backup_subdir = backup_subdir, log_file = config_data.log_file, file_limit = config_data.max_files, day_cutoff = config_data.max_days_old)
 
-		# Loop the backups by index
-		for backup_pos in range(len(self)):
+	@staticmethod
+	def randStr (str_len = 6):
+		return ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(str_len))
 
-			# Check if the current backup is the one to remove
-			if self[backup_pos] == backup_to_delete:
+	@staticmethod
+	def executeBackup (backup_executable_str, backup_call_args, backup_output):
 
-				# Remove the backup object
-				del self[backup_pos]
-				break
+		# Find the blast executable
+		backup_executable = confirmExecutable(backup_executable_str)
+
+		# Check if executable is installed
+		if not backup_executable:
+			raise IOError(f'{backup_executable_str} not found. Please confirm the executable is installed')
+
+		# Open the output file
+		backup_output_file = open(backup_output, 'w')
+
+		# Check if a header was specified
+		if header:
+			
+			# Write the head to the output file
+			backup_output_file.write(header + '\n')
+
+			# Flush the file
+			backup_output_file.flush()
+
+		# blast subprocess call
+		backup_call = subprocess.Popen([backup_executable] + backup_call_args, stderr = subprocess.PIPE, stdout = backup_output_file)
+
+		# Get stdout and stderr from subprocess
+		backup_stdout, backup_stderr = backup_call.communicate()
+
+		# Check if code is running in python 3
+		if sys.version_info[0] == 3:
+			
+			# Convert bytes to string
+			backup_stderr = backup_stderr.decode()
+
+		# Report any errors
+		if backup_stderr: raise Exception(backup_stderr)
+
+		# Close the file
+		backup_output_file.close()
 
 class Backup ():
-	def __init__ (self, file_path, backup_date):
+	def __init__ (self, file_path):
 
 		# Confirm the file exists
-		if not os.path.isfile(file_path):
-			raise Exception('Backup file (%s) not found' % file_path)
+		if not os.path.isfile(file_path): raise Exception(f'Backup file ({file_path}) not found')
+
+		# Assign the file modification date
+		try: backup_date = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+		except: raise Exception(f'Unable to assign modification date for: {file_path}')
 
 		self.file_path = file_path
 		self.backup_date = backup_date
@@ -225,14 +189,17 @@ class Backup ():
 		# str() returns the file path
 		return self.file_path
 
-	def __gt__ (self, other_backup):
+	def __gt__ (self, other_date_object):
 
-		# Check if the stored date is more recent
-		return self.backup_date > other_backup.backup_date
+		# Check if the backup date is more recent
+		if isinstance(other_date_object, Backup): return self.backup_date > other_date_object.backup_date
+		elif isinstance(other_date_object, datetime.datetime): return self.backup_date > other_date_object
 
-	def __lt__ (self, other_backup):
+	def __lt__ (self, other_date_object):
 
-		# Check if the stored date is older
-		return self.backup_date < other_backup.backup_date
+		# Check if the backup date is older
+		if isinstance(other_date_object, Backup): return self.backup_date < other_date_object.backup_date
+		elif isinstance(other_date_object, datetime.datetime): return self.backup_date < other_date_object
+
 
 
