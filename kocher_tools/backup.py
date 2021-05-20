@@ -5,8 +5,10 @@ import pytz
 import logging
 import random
 import string
+import subprocess
 
-#from kocher_tools.database import backupDatabase
+from kocher_tools.misc import confirmExecutable
+from kocher_tools.logger import startLogger
 
 class Backups (list):
 	def __init__ (self, *arg, backup_dir = None, backup_subdir = '', log_file = '', file_limit = 10, day_cutoff = 120, **kw):
@@ -19,6 +21,9 @@ class Backups (list):
 		self.date_cutoff = self.date - datetime.timedelta(days = day_cutoff)
 		self.oldest_backup = None
 		self.most_recent_backup = None
+
+		# Start the logger
+		startLogger(self.log_file, filemode = 'a')
 
 		# Check if data was not assigned
 		if not self: self.assignBackups()
@@ -43,10 +48,6 @@ class Backups (list):
 
 			# Assign the backup file path
 			backup_file_path = os.path.join(self.backup_dir, backup_file)
-
-			# Assign the file modification date
-			#try: past_backup_date = datetime.datetime.fromtimestamp(os.path.getmtime(backup_file_path))
-			#except: raise Exception(f'Unable to assign modification date for: {backup_file_path}')
 
 			# Assign the backup
 			past_backup = Backup(backup_file_path)
@@ -90,38 +91,63 @@ class Backups (list):
 
 	def backupfromConfig (self, config_data):
 
-		# Assign the arg list
-		if config_data.type == 'postgresql':
-			backup_filename = os.path.join(self.backup_dir, f'{config_data.schema}.{self.randStr()}.{self.date_str}.dmp')
-			backup_call_args = ['pg_dump', '-U', config_data.user, '-d', config_data.database, '-n', config_data.schema, '-h', config_data.host, '-Fc']
-			#executeBackup('pg_dump', backup_call_args, backup_filename)
-		if config_data.type == 'sqlite': raise Exception('In Development')
+		try:
 
-		# Assign the new backup
-		#new_backup = Backup(backup_filename)
-		#self.append(new_backup)
-		#self.most_recent_backup = new_backup
+			# Assign the arg list
+			if config_data.type == 'postgresql':
+				backup_filename = os.path.join(self.backup_dir, f'{config_data.schema}.{self.randStr()}.{self.date_str}.dmp')
+				os.environ['PGPASSWORD'] = "pass01"
+				backup_call_args = ['-U', config_data.user, '-d', config_data.database, '-n', config_data.schema, '-h', config_data.host, '-Fc']
+				self.executeBackup('pg_dump', backup_call_args, backup_filename)
+			if config_data.type == 'sqlite': raise Exception('In Development')
+
+			# Assign the new backup
+			new_backup = Backup(backup_filename)
+			self.append(new_backup)
+			self.most_recent_backup = new_backup
+
+			logging.info(f'Backup Created Successfully: {backup_filename}')
+
+			# Delete any old backups
+			self.deleteOldBackups()
+
+		except: 
+			logging.info('Backup Failed')
+			raise
 
 	def deleteOldBackups (self):
 
 		# Remove old backups
 		old_backups = [_bf for _bf in self if self.date_cutoff > _bf]
 		for old_backup in old_backups:
-			#os.remove(old_backup)
-			self.remove(old_backup)
+			try:
+				self.remove(old_backup)
+				old_backup.deleteFile()
+				logging.info(f'Successfully deleted backup (date threshold): {old_backup}')
+			except: 
+				logging.info(f'Failed to delete backup (date threshold): {old_backup}')
+				raise
 		
 		# Update the backups
 		self.updateBackups()
 
+	
 		# Remove backups until they dont exceed the file limit
 		while len(self) > self.file_limit:
 
 			# Remove the oldest backup
-			#os.remove(self.oldest_backup)
-			self.remove(self.oldest_backup)
-
+			try:
+				self.remove(self.oldest_backup)
+				self.oldest_backup.deleteFile()
+				logging.info(f'Successfully deleted backup (max file threshold): {self.oldest_backup}')
+			except: 
+				logging.info(f'Failed to delete backup(s) (max file threshold): {self.oldest_backup}')
+				raise
+			
 			# Update the backups
 			self.updateBackups()
+
+		
 
 	@classmethod
 	def fromConfig (cls, config_data, backup_subdir = ''):
@@ -134,36 +160,18 @@ class Backups (list):
 	@staticmethod
 	def executeBackup (backup_executable_str, backup_call_args, backup_output):
 
-		# Find the blast executable
+		# Check if the executable is installed
 		backup_executable = confirmExecutable(backup_executable_str)
-
-		# Check if executable is installed
 		if not backup_executable:
 			raise IOError(f'{backup_executable_str} not found. Please confirm the executable is installed')
 
-		# Open the output file
+		# Open the output file and make the subprocess call
 		backup_output_file = open(backup_output, 'w')
-
-		# Check if a header was specified
-		if header:
-			
-			# Write the head to the output file
-			backup_output_file.write(header + '\n')
-
-			# Flush the file
-			backup_output_file.flush()
-
-		# blast subprocess call
 		backup_call = subprocess.Popen([backup_executable] + backup_call_args, stderr = subprocess.PIPE, stdout = backup_output_file)
 
 		# Get stdout and stderr from subprocess
 		backup_stdout, backup_stderr = backup_call.communicate()
-
-		# Check if code is running in python 3
-		if sys.version_info[0] == 3:
-			
-			# Convert bytes to string
-			backup_stderr = backup_stderr.decode()
+		if sys.version_info[0] == 3: backup_stderr = backup_stderr.decode()
 
 		# Report any errors
 		if backup_stderr: raise Exception(backup_stderr)
@@ -200,6 +208,9 @@ class Backup ():
 		# Check if the backup date is older
 		if isinstance(other_date_object, Backup): return self.backup_date < other_date_object.backup_date
 		elif isinstance(other_date_object, datetime.datetime): return self.backup_date < other_date_object
+
+	def deleteFile (self):
+		os.remove(self.file_path )
 
 
 

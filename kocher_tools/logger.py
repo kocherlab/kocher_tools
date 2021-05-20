@@ -1,12 +1,12 @@
 import logging
 import sys
 
-def startLogger (log_filename = None):
+def startLogger (log_filename = None, filemode = 'w'):
 
 	if log_filename:
 
 		# Config the log file
-		logging.basicConfig(filename = log_filename, filemode = 'w', level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
+		logging.basicConfig(filename = log_filename, filemode = filemode, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
 
 	else:
 
