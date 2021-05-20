@@ -46,10 +46,10 @@ class test_kocher_database (unittest.TestCase):
 			updateConfigFilename(cls.config_filename, os.path.join(cls.test_dir, 'testDB_large.sqlite'))
 
 			# Create the tables
-			db_config_data = ConfigDB.readConfig(cls.config_filename)
+			cls.db_config_data = ConfigDB.readConfig(cls.config_filename)
 			sql_engine = createEngineFromConfig(db_config_data)
-			createAllFromConfig(db_config_data, sql_engine)
-			cls.database_filename = db_config_data.filename			
+			createAllFromConfig(cls.db_config_data, sql_engine)
+			cls.database_filename = cls.db_config_data.filename			
 
 		# Set the data to None if that fails
 		except:
@@ -74,7 +74,7 @@ class test_kocher_database (unittest.TestCase):
 
 		# Assign the collection filename and insert
 		collection_filename = os.path.join(self.expected_path, 'test_collection_01_input.tsv')
-		insertCollectionFileUsingConfig(self.config_filename, 'collection', collection_filename, None, False)
+		insertCollectionFileUsingConfig(self.db_config_data, 'collection', collection_filename, None, False)
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'unique_id', 'DBtest-0001'))
@@ -84,7 +84,7 @@ class test_kocher_database (unittest.TestCase):
 
 		# Assign the collection filename and insert
 		collection_ignore_filename = os.path.join(self.expected_path, 'test_collection_01_ignore.tsv')
-		insertCollectionFileUsingConfig(self.config_filename, 'collection', collection_ignore_filename, None, True)
+		insertCollectionFileUsingConfig(self.db_config_data, 'collection', collection_ignore_filename, None, True)
 
 		# Check that the values were correctly inserted 
 		self.assertTrue(checkValue(self.database_filename, 'collection', 'unique_id', 'DBtest-0004'))
@@ -100,7 +100,7 @@ class test_kocher_database (unittest.TestCase):
 
 		# Assign the storage filename and insert
 		storage_filename = os.path.join(self.expected_path, 'test_storage_01_input.tsv')
-		insertStorageFileUsingConfig(self.config_filename, storage_filename)
+		insertStorageFileUsingConfig(self.db_config_data, storage_filename)
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'storage', 'unique_id', 'DBtest-0001'))
@@ -124,7 +124,7 @@ class test_kocher_database (unittest.TestCase):
 		blast_filename = os.path.join(self.expected_path, 'test_barcode_01_input.out')
 		fasta_filename = os.path.join(self.expected_path, 'test_barcode_01_input.fasta')
 		json_filename = os.path.join(self.expected_path, 'test_barcode_01_input.json')
-		insertBarcodeFilesUsingConfig(self.config_filename, 'sequencing', [blast_filename, fasta_filename, json_filename])
+		insertBarcodeFilesUsingConfig(self.db_config_data, 'sequencing', [blast_filename, fasta_filename, json_filename])
 
 		# Check that the values were correctly inserted
 		self.assertTrue(checkValue(self.database_filename, 'sequencing', 'sample_id', 'DBtest-A1'))

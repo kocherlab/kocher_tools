@@ -4,7 +4,9 @@ import sys
 def startLogger (log_filename = None, filemode = 'w'):
 
 	# Close any old loggers
-	for handler in logging.root.handlers[:]: logging.root.removeHandler(handler)
+	for handler in logging.root.handlers[:]:
+		handler.close()
+		logging.root.removeHandler(handler)
 
 	# Star the logger
 	if log_filename: logging.basicConfig(filename = log_filename, filemode = filemode, level = 'INFO', format = '%(asctime)s - %(funcName)s - %(levelname)s: %(message)s')
