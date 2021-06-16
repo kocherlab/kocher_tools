@@ -1,5 +1,7 @@
 import os
 import sys
+import random
+import string
 import logging
 import subprocess
 
@@ -21,6 +23,7 @@ class Plink2 (list):
 		self.out_prefix = os.path.join(out_dir, out_prefix)
 		self.out_dir = out_dir
 		self.sample_model_dict = sample_model_dict
+		self._files_to_remove = []
 
 		# Check if the Binary-Ped files exists
 		if self.bed_prefix and (os.path.isfile(f'{self.bed_prefix}.bed') and os.path.isfile(f'{self.bed_prefix}.bim') and os.path.isfile(f'{self.bed_prefix}.fam')): self.bed_exists = True
@@ -81,7 +84,11 @@ class Plink2 (list):
 		ind_dict = {_ind:_m for _m, _inds in models[model].ind_dict.items() for _ind in _inds}
 		return cls(sample_model_dict = ind_dict, **kwargs)
 
-	def filter (self, include_bed = None, exclude_bed = None, bed1 = False, include_chr = [], exclude_chr = [], from_bp = None, to_bp = None, **kwargs):
+	@classmethod
+	def standard (cls, **kwargs):
+		return cls(**kwargs)
+
+	def filter (self, include_bed = None, exclude_bed = None, bed1 = False, include_chr = [], exclude_chr = [], from_bp = None, to_bp = None, include_samples = None, exclude_samples = None, **kwargs):
 
 		# Check for incompatible filters
 		if (include_bed or exclude_bed) and (include_chr or exclude_chr or from_bp or to_bp):
@@ -98,11 +105,37 @@ class Plink2 (list):
 			if include_chr: self._plink2_call_args.extend(['--chr'] + include_chr)
 			if exclude_chr: self._plink2_call_args.extend(['--not-chr'] + exclude_chr)
 
-		# Assign the bp range
+		# Assign bp range - if possible
 		if from_bp or to_bp:
 			if not include_chr or len(include_chr) > 1: raise Exception('--from-bp/--to-bp must be used with --include-chr, and with only one chromosome.')
 			if from_bp: self._plink2_call_args.extend(['--from-bp', from_bp])
 			if to_bp: self._plink2_call_args.extend(['--to-bp', to_bp])
+
+		# Assign samples from args - if possible
+		if include_samples or exclude_samples:
+			if self.sample_model_dict: raise Exception('--include-samples/--exclude-samples cannot be used with a model')
+			if include_samples: self._plink2_call_args.extend(['--keep', self._sampleFile(include_samples)])
+			if exclude_samples: self._plink2_call_args.extend(['--remove', self._sampleFile(exclude_samples)])
+
+		# Assign samples from model file
+		if self.sample_model_dict:
+			if include_samples or exclude_samples: raise Exception('--include-samples/--exclude-samples cannot be used with a model')
+			self._plink2_call_args.extend(['--keep', self._sampleFile(list(self.sample_model_dict))])
+
+	def calcPCA (self, pca_type = 'sample-wts', pc_count = 10, pca_modifier = None):
+
+		# Set the PCA arguments
+		self._plink2_call_args.append('--pca')
+		if pca_type != 'sample-wts': self._plink2_call_args.append(pca_type)
+		self._plink2_call_args.append('10')
+		if pca_modifier: self._plink2_call_args.append(pca_modifier)
+
+		# Call plink2
+		self._call()
+
+		# Cleanup and rename the log
+		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.pca.log')
+		self._cleanup()
 		
 	def calcFst (self, method = 'hudson', category = 'Pops', report_variants = True):
 
@@ -113,6 +146,9 @@ class Plink2 (list):
 		try: id_df = pd.read_csv(f'{self.bed_prefix}.fam', sep = ' ', header = None, usecols = [0, 1], names = ['#FID', 'IID'])
 		except: id_df = pd.read_csv(f'{self.bed_prefix}.fam', sep = '\t', header = None, usecols = [0, 1], names = ['#FID', 'IID'])
 
+		# Confirm a model has been specified
+		if not self.sample_model_dict: raise Exception('Fst requires a model')
+
 		# Assign and confirm pops
 		id_df[category] = id_df['IID'].map(self.sample_model_dict)
 		id_df = id_df[id_df[category].notna()]
@@ -121,6 +157,7 @@ class Plink2 (list):
 		# Create the pheno file
 		pheno_filename = f'{self.bed_prefix}.pheno'
 		id_df.to_csv(pheno_filename, sep = '\t', index = False)
+		self._files_to_remove.append(pheno_filename)
 
 		# Assign the Fst arguments
 		self._plink2_call_args.extend(['--fst', category])
@@ -132,8 +169,18 @@ class Plink2 (list):
 		self._call()
 
 		# Cleanup and rename the log
-		os.remove(pheno_filename)
 		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.fst.log')
+		self._cleanup()
+
+	def _cleanup (self):
+		for file_to_remove in self._files_to_remove: os.remove(file_to_remove)
+
+	def _sampleFile (self, samples, prefix = 'Samples', str_len = 12):
+		rand_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(str_len))
+		sample_filename = f'{prefix}_{rand_str}'
+		pd.DataFrame({'#FID':samples, 'IID':samples}).to_csv(sample_filename, sep = '\t', index = False)
+		self._files_to_remove.append(sample_filename)
+		return sample_filename
 
 	def _call (self):
 		'''
