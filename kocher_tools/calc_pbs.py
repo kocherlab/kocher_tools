@@ -66,6 +66,8 @@ class PBS (list):
 		merged_dataframe = merged_dataframe.dropna()
 		merged_dataframe[merged_dataframe.columns[2:]] = merged_dataframe[merged_dataframe.columns[2:]].clip(lower=0)
 
+		if merged_dataframe.empty: raise Exception(f'All variants removed due to NAs. Unable to calculate PBS')
+
 		return cls(fst_dataframe = merged_dataframe, pop_list = pops_unique, **kwargs)
 
 	def _convertFstToBl (self):
