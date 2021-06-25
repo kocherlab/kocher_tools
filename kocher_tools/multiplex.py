@@ -50,7 +50,7 @@ class Multiplex (list):
 
 		logging.info('Output directory assigned: %s' % out_path)
 
-	def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file):
+	def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file = None):
 		self.i5_file = i5_barcode_file
 		self.i7_file = i7_barcode_file
 		self.R1_file = r1_file
@@ -89,7 +89,7 @@ class Multiplex (list):
 				plate_object.locus = i5_locus
 
 				# Assign the filenames
-				plate_object.assignFilenames()
+				plate_object.assignFilenames(self.R2_file != None)
 
 				# Append the plate
 				self.append(plate_object)
@@ -144,7 +144,7 @@ class Multiplex (list):
 		# Remove the unmatched i7, R1, and R2 output
 		os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'i7')) 
 		os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'R1')) 
-		os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'R2'))
+		if self.R2_file: os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'R2'))
 
 class Plate (list):
 	def __init__ (self, *arg, **kw):
@@ -154,7 +154,7 @@ class Plate (list):
 		self.plate_i5_file = ''
 		self.plate_i7_file = ''
 		self.plate_R1_file = ''
-		self.plate_R2_file = ''
+		self.plate_R2_file = None
 		self.out_path = ''
 		self.discard_empty_output = None
 
@@ -188,7 +188,7 @@ class Plate (list):
 		# Assign the well path, using the out_path, name, and locus
 		return os.path.join(self.out_path, self.name, self.locus)
 	
-	def assignFilenames (self):
+	def assignFilenames (self, assign_r2 = True):
 
 		# Define an empty output path as default
 		plate_out_path = ''
@@ -208,9 +208,9 @@ class Plate (list):
 		# Assign the other filenames, by inserting the output path, plate name, and locus
 		self.plate_i7_file = '%s%s_%s_i7.fastq.gz' % (plate_out_path, self.name, self.locus)
 		self.plate_R1_file = '%s%s_%s_R1.fastq.gz' % (plate_out_path, self.name, self.locus)
-		self.plate_R2_file = '%s%s_%s_R2.fastq.gz' % (plate_out_path, self.name, self.locus)
+		if assign_r2: self.plate_R2_file = '%s%s_%s_R2.fastq.gz' % (plate_out_path, self.name, self.locus)
 
-	def moveFiles (self):
+	def moveFiles (self, assign_r2 = True):
 
 		# Create the output path
 		plate_out_path = os.path.join(self.out_path, self.name, self.locus)
@@ -228,7 +228,7 @@ class Plate (list):
 		# Move/Rename the files
 		self.plate_i7_file = moveFile(self.plate_i7_file, plate_out_path)
 		self.plate_R1_file = moveFile(self.plate_R1_file, plate_out_path)
-		self.plate_R2_file = moveFile(self.plate_R2_file, plate_out_path)
+		if self.plate_R2_file: self.plate_R2_file = moveFile(self.plate_R2_file, plate_out_path)
 
 	def assignWells (self):
 
@@ -305,7 +305,8 @@ class Plate (list):
 
 		# Remove the unmatched R1 and R2 output
 		os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'R1')) 
-		os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'R2'))
+		try: os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'R2'))
+		except: pass
 
 class Well ():
 	def __init__ (self):
@@ -395,7 +396,8 @@ class Well ():
 
 		# Move/Rename the R1 and R2 files
 		self.well_R1_file = moveFile(self.well_R1_file, well_out_path)
-		self.well_R2_file = moveFile(self.well_R2_file, well_out_path)
+		try: self.well_R2_file = moveFile(self.well_R2_file, well_out_path)
+		except: pass 
 
 	def mergeWell (self):
 

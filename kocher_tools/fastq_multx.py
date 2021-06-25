@@ -6,7 +6,7 @@ import signal
 
 from kocher_tools.misc import confirmExecutable
 
-def assignOutput (out_path, discard_empty_output, barcode_type):
+def assignOutput (out_path, discard_empty_output, barcode_type, r2_given):
 
 	# Create list to hold commands
 	output_list = []
@@ -49,7 +49,7 @@ def assignOutput (out_path, discard_empty_output, barcode_type):
 
 	# Assign the R1 and R2 output
 	output_list.extend(['-o', output_filename % 'R1'])
-	output_list.extend(['-o', output_filename % 'R2'])
+	if r2_given: output_list.extend(['-o', output_filename % 'R2'])
 
 	return output_list
 
@@ -82,10 +82,11 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 	i5ReformatMap(i5_map_filename, reformatted_i5_map_filename)
 
 	# Create the basic input arg list
-	multiplex_call_args = ['-B', reformatted_i5_map_filename, i5_input, i7_input, r1_input, r2_input]
+	multiplex_call_args = ['-B', reformatted_i5_map_filename, i5_input, i7_input, r1_input]
+	if r2_input: multiplex_call_args.append(r2_input)
 
 	# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
-	multiplex_call_args.extend(assignOutput(out_path, discard_i5, 'i5'))
+	multiplex_call_args.extend(assignOutput(out_path, discard_i5, 'i5', r2_input != None))
 
 	# Call fastq-multz with the argus
 	callFastqMultx(multiplex_call_args)
@@ -96,10 +97,11 @@ def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_p
 def i7BarcodeJob (i7_map_filename, i7_input, r1_input, r2_input, out_path, discard_i7):
 
 	# Create the basic input arg list
-	multiplex_call_args = ['-B', i7_map_filename, i7_input, r1_input, r2_input]
+	multiplex_call_args = ['-B', i7_map_filename, i7_input, r1_input]
+	if r2_input: multiplex_call_args.append(r2_input)
 
 	# Add the output args, using the path, if empty files should be kept, and set the barcode type as i5
-	multiplex_call_args.extend(assignOutput(out_path, discard_i7, 'i7'))
+	multiplex_call_args.extend(assignOutput(out_path, discard_i7, 'i7', r2_input != None))
 
 	# Call fastq-multz with the argus
 	callFastqMultx(multiplex_call_args)

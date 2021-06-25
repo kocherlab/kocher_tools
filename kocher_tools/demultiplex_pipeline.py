@@ -45,7 +45,7 @@ def deMultiplexParser ():
 	demultiplex_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file(), required = True)
 	demultiplex_parser.add_argument('--i7-read-file', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file(), required = True)
 	demultiplex_parser.add_argument('--R1-read-file', help = 'Defines the filename of the R1 reads (i.e. Read 1)', type = str, action = parser_confirm_file(), required = True)
-	demultiplex_parser.add_argument('--R2-read-file', help = 'Defines the filename of the R2 reads (i.e. Read 4)', type = str, action = parser_confirm_file(), required = True)
+	demultiplex_parser.add_argument('--R2-read-file', help = 'Defines the filename of the R2 reads (i.e. Read 4)', type = str, action = parser_confirm_file())
 
 	# Output arguments
 	demultiplex_parser.add_argument('--out-dir', help = 'Defines the output directory', type = str, default = 'Pipeline_Output')
