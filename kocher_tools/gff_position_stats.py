@@ -86,8 +86,8 @@ try:
 	position_range = True if 2 in chrom_positions.columns else False
 
 	# Assign the headers
-	if not position_range: headers = ['Chromosome', 'Position', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
-	else: headers = ['Chromosome', 'Position Start', 'Position End', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
+	if not position_range: headers = ['Chromosome', 'Position', 'Feature w/ Highest Priority', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
+	else: headers = ['Chromosome', 'Position Start', 'Position End', 'Feature w/ Highest Priority', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
 
 	# Create the tsv writer
 	output_writer = csv.DictWriter(output_file, fieldnames = headers, delimiter = '\t')
@@ -118,6 +118,13 @@ try:
 			out_dict['All Features Genes'] = ', '.join([_fd[1] for _fd in feature_dict_no_priority[position]])
 			out_dict['Features w/ Priority'] = ', '.join([_fd[0] for _fd in feature_dict_w_priority[position]])
 			out_dict['Features w/ Priority Genes'] = ', '.join([_fd[1] for _fd in feature_dict_w_priority[position]])
+
+			# Assign the feature w/ the highest priority
+			feature_w_highest_priority = ''
+			for _fp in gff_args.priority_order:
+				if _fp in [_fd[0] for _fd in feature_dict_w_priority[position]]:
+					out_dict['Feature w/ Highest Priority'] = _fp
+					break
 
 			# Write the row
 			output_writer.writerow(out_dict)
