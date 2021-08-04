@@ -12,14 +12,15 @@ from kocher_tools.vsearch import *
 from kocher_tools.compress import gzipCompress, gzipIsEmpty
 
 class Multiplex (list):
-	def __init__ (self, *arg, **kw):
+	def __init__ (self, i5_file = '', i7_file = None, R1_file = None, R2_file = None, out_path = '', *arg, **kw):
 		super(Multiplex, self).__init__(*arg, **kw)
-		self.i5_file = ''
-		self.i7_file = ''
-		self.R1_file = ''
-		self.R2_file = ''
-		self.out_path = ''
+		self.i5_file = i5_file
+		self.i7_file = i7_file
+		self.R1_file = R1_file
+		self.R2_file = R2_file
+		self.out_path = out_path
 		self.discard_empty_output = True
+		self.discard_plate_output = True
 
 	def __contains__ (self, plate_str):
 		if plate_str in [str(plate) for plate in self]:
@@ -32,12 +33,22 @@ class Multiplex (list):
 			if str(plate) == plate_str:
 				return plate
 
-		raise Exception('%s not found in Multiplex' % plate_str) 
+		raise Exception(f'{plate_str} not found in Multiplex')
 
 	@property
 	def files (self):
 		# Return files
 		return [file for file in [self.i5_file, self.i7_file, self.R1_file, self.R2_file]]
+
+	#def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file = None):
+	#	self.i5_file = i5_barcode_file
+	#	self.i7_file = i7_barcode_file
+	#	self.R1_file = r1_file
+	#	self.R2_file = r2_file
+
+	@classmethod
+	def fromFiles (cls, i5_read_file = None, i7_read_file = None, r1_file = None, r2_file = None):
+		return cls(i5_file = i5_read_file, i7_file = i7_read_file, R1_file = r1_file, R2_file = r2_file)
 
 	def assignOutputPath (self, out_path):
 
@@ -48,21 +59,12 @@ class Multiplex (list):
 		if not os.path.exists(self.out_path):
 			os.makedirs(self.out_path)
 
-		logging.info('Output directory assigned: %s' % out_path)
-
-	def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file = None):
-		self.i5_file = i5_barcode_file
-		self.i7_file = i7_barcode_file
-		self.R1_file = r1_file
-		self.R2_file = r2_file
+		logging.info(f'Output directory assigned: {out_path}')
 
 	def assignPlates (self, i5_map_filename):
 
 		# Check if files have been assigned 
-		if not self.files:
-			
-			# Raise an excpetion
-			raise Exception('File assignment required for plate assignment')
+		if not self.files: raise Exception('File assignment required for plate assignment')
 
 		# Open the i5 map file
 		with open(i5_map_filename) as i5_map_file:
@@ -70,28 +72,21 @@ class Multiplex (list):
 			# Loop the i5 map file, line by line
 			for i5_map_line in i5_map_file:
 
-				# Split the line into: plate, barcode, locus
-				i5_plate, i5_barcode, i5_locus = i5_map_line.split()
+				# Split the line into: plate, barcode, and locus (if given)
+				try: i5_plate, i5_barcode, i5_locus = i5_map_line.split()
+				except:
+					i5_plate, i5_barcode = i5_map_line.split()
+					i5_locus = ''
 
-				# Assign the plate
+				# Assign the plate attributes
 				plate_object = Plate()
-
-				# Assign the discard status
 				plate_object.discard_empty_output = self.discard_empty_output
-
-				# Assign the plate output path
 				plate_object.out_path = self.out_path
-
-				# Assign the plate name
 				plate_object.name = i5_plate
-
-				# Assign the locus
 				plate_object.locus = i5_locus
-
-				# Assign the filenames
 				plate_object.assignFilenames(self.R2_file != None)
 
-				# Append the plate
+				# Append the plate to the demultiplex job
 				self.append(plate_object)
 
 	def movePlates (self):
@@ -129,31 +124,25 @@ class Multiplex (list):
 		# Define an empty output path as default
 		out_path = ''
 
-		# Check if an output path has been defined
-		if self.out_path:
+		# Add a trailing directory symbol
+		if self.out_path: out_path = os.path.join(self.out_path, '')
 
-			# Add a trailing directory symbol
-			out_path = os.path.join(self.out_path, '')
-
-		# Check if the empty output files were created
-		if not self.discard_empty_output:
-
-			# Remove the unmatched i5 output
-			os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'i5')) 
+		# Remove the unmatched i5 output
+		if not self.discard_empty_output: os.remove(f'{out_path}unmatched_i5.fastq.gz')
 
 		# Remove the unmatched i7, R1, and R2 output
-		os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'i7')) 
-		os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'R1')) 
-		if self.R2_file: os.remove('%sunmatched_%s.fastq.gz' % (out_path, 'R2'))
+		os.remove(f'{out_path}unmatched_i7.fastq.gz')
+		os.remove(f'{out_path}unmatched_R1.fastq.gz')
+		if self.R2_file: os.remove(f'{out_path}unmatched_R2.fastq.gz')
 
 class Plate (list):
 	def __init__ (self, *arg, **kw):
 		super(Plate, self).__init__(*arg, **kw)
 		self.name = ''
 		self.locus = ''
-		self.plate_i5_file = ''
-		self.plate_i7_file = ''
-		self.plate_R1_file = ''
+		self.plate_i5_file = None
+		self.plate_i7_file = None
+		self.plate_R1_file = None
 		self.plate_R2_file = None
 		self.out_path = ''
 		self.discard_empty_output = None
@@ -174,61 +163,49 @@ class Plate (list):
 			if str(well) == well_str:
 				return well
 
-		raise Exception('%s not found' % well_str) 
+		raise Exception(f'{well_str} not found')
 
 	@property
 	def files (self):
 
 		# Return the files, if assigned
 		return [file for file in [self.plate_i5_file, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file] if file]
-
-	@property
-	def well_path(self):
-
-		# Assign the well path, using the out_path, name, and locus
-		return os.path.join(self.out_path, self.name, self.locus)
 	
 	def assignFilenames (self, assign_r2 = True):
 
 		# Define an empty output path as default
 		plate_out_path = ''
 
-		# Check if an output path has been defined
-		if self.out_path:
+		# Define the locus string
+		locus_str = f'{self.locus}_' if self.locus else ''
 
-			# Add a trailing directory symbol
-			plate_out_path = os.path.join(self.out_path, '')
+		# Check if an output path has been defined
+		if self.out_path: plate_out_path = os.path.join(self.out_path, '')
 
 		# Check if the empty output should be assigned
-		if self.discard_empty_output == False:
-
-			# Assign the i5 filename, by inserting the output path, plate name, and locus
-			self.plate_i5_file = '%s%s_%s_i5.fastq.gz' % (plate_out_path, self.name, self.locus)
+		if self.discard_empty_output == False: self.plate_i5_file = f'{plate_out_path}{self.name}_{locus_str}i5.fastq.gz'
 
 		# Assign the other filenames, by inserting the output path, plate name, and locus
-		self.plate_i7_file = '%s%s_%s_i7.fastq.gz' % (plate_out_path, self.name, self.locus)
-		self.plate_R1_file = '%s%s_%s_R1.fastq.gz' % (plate_out_path, self.name, self.locus)
-		if assign_r2: self.plate_R2_file = '%s%s_%s_R2.fastq.gz' % (plate_out_path, self.name, self.locus)
+		self.plate_i7_file = f'{plate_out_path}{self.name}_{locus_str}i7.fastq.gz'
+		self.plate_R1_file = f'{plate_out_path}{self.name}_{locus_str}R1.fastq.gz'
+		if assign_r2: self.plate_R2_file = f'{plate_out_path}{self.name}_{locus_str}R2.fastq.gz'
 
 	def moveFiles (self, assign_r2 = True):
 
 		# Create the output path
-		plate_out_path = os.path.join(self.out_path, self.name, self.locus)
+		if not self.locus: self.out_path = os.path.join(self.out_path, self.name)
+		else: self.out_path = os.path.join(self.out_path, self.name, self.locus)
 
 		# Create the output directories
-		if not os.path.exists(plate_out_path):
-			os.makedirs(plate_out_path)
+		if not os.path.exists(self.out_path): os.makedirs(self.out_path)
 
 		# Check if the empty output should be moved
-		if self.discard_empty_output == False:
-
-			# Move the i5 file
-			self.plate_i5_file = moveFile(self.plate_i5_file, plate_out_path)
+		if self.discard_empty_output == False: self.plate_i5_file = moveFile(self.plate_i5_file, self.out_path)
 
 		# Move/Rename the files
-		self.plate_i7_file = moveFile(self.plate_i7_file, plate_out_path)
-		self.plate_R1_file = moveFile(self.plate_R1_file, plate_out_path)
-		if self.plate_R2_file: self.plate_R2_file = moveFile(self.plate_R2_file, plate_out_path)
+		self.plate_i7_file = moveFile(self.plate_i7_file, self.out_path)
+		self.plate_R1_file = moveFile(self.plate_R1_file, self.out_path)
+		if self.plate_R2_file: self.plate_R2_file = moveFile(self.plate_R2_file, self.out_path)
 
 	def assignWells (self):
 
@@ -254,7 +231,7 @@ class Plate (list):
 				well_object.discard_empty_output = self.discard_empty_output
 
 				# Assign the output path
-				well_object.out_path = self.well_path
+				well_object.out_path = self.out_path
 
 				# Save the ID
 				well_object.ID = well_ID
@@ -276,10 +253,37 @@ class Plate (list):
 			# Move the files
 			well.moveFiles()
 
-	def deMultiplexPlate (self, i7_map_filename):
+	def deMultiplexPlate (self, i7_map_filename, plate_prefix = False):
 
 		# Use the i7 map to demultiplex
-		i7BarcodeJob(i7_map_filename, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file, self.well_path, self.discard_empty_output)
+		i7BarcodeJob(i7_map_filename, self.plate_i7_file, self.plate_R1_file, self.plate_R2_file, self.out_path, self.discard_empty_output)
+
+		# Check if the wells should not have a plate prefix
+		if plate_prefix: self.prefixWells()
+		
+	def prefixWells(self):
+
+		# Add the plate prefix
+		for well in self:
+
+			# Define the prefix string
+			prefix_str = f'{self.name}_{self.locus}_{well.ID}' if self.locus else f'{self.name}_{well.ID}'
+			
+			# Rename the well R1 file
+			well_r1_file = well.well_R1_file.replace(well.ID, prefix_str)
+			os.rename(well.well_R1_file, well_r1_file)
+			well.well_R1_file = well_r1_file
+
+			# Rename the well i7 index, if given
+			if well.well_i7_file: 
+				well_i7_file = well.well_i7_file.replace(well.ID, prefix_str)
+				os.rename(well.well_i7_file, well_i7_file)
+				well.well_i7_file = well_i7_file
+
+			if well.well_R2_file: 
+				well_r2_file = well.well_R2_file.replace(well.ID, prefix_str)
+				os.rename(well.well_R2_file, well_r2_file)
+				well.well_R2_file = well_r2_file
 
 	def yieldMostAbundant (self):
 
@@ -295,17 +299,28 @@ class Plate (list):
 	def removeUnmatchedPlate (self):
 
 		# Create the output path
-		plate_out_path = os.path.join(self.out_path, self.name, self.locus, '')
+		plate_out_path = os.path.join(self.out_path, '')
 
-		# Check if the empty output files were created
-		if not self.discard_empty_output:
-
-			# Remove the unmatched i5 output
-			os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'i7')) 
+		# Remove the unmatched i5 output
+		if not self.discard_empty_output: os.remove(f'{plate_out_path}unmatched_i7.fastq.gz') 
 
 		# Remove the unmatched R1 and R2 output
-		os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'R1')) 
-		try: os.remove('%sunmatched_%s.fastq.gz' % (plate_out_path, 'R2'))
+		os.remove(f'{plate_out_path}unmatched_R1.fastq.gz') 
+		try: os.remove(f'{plate_out_path}unmatched_R2.fastq.gz')
+		except: pass
+
+	def removePlate (self):
+
+		# Create the output path
+		plate_out_path = os.path.join(self.out_path, '')
+
+		# Remove the i5 plate file
+		if not self.discard_empty_output: os.remove(self.plate_i5_file) 
+
+		# Remove the other plate files
+		os.remove(self.plate_i7_file) 
+		os.remove(self.plate_R1_file) 
+		try: os.remove(self.plate_R2_file)
 		except: pass
 
 class Well ():
@@ -363,21 +378,15 @@ class Well ():
 		# Define an empty output path as default
 		well_out_path = ''
 
-		# Check if an output path has been defined
-		if self.out_path:
-
-			# Add a trailing directory symbol
-			well_out_path = os.path.join(self.out_path, '')
+		# Add a trailing directory symbol
+		if self.out_path: well_out_path = os.path.join(self.out_path, '')
 
 		# Check if the empty output should be created
-		if self.discard_empty_output == False:
-
-			# Assign the i7 file
-			self.well_i7_file = '%s%s_i7.fastq.gz' % (well_out_path, self.ID)
+		if self.discard_empty_output == False: self.well_i7_file = f'{well_out_path}{self.ID}_i7.fastq.gz'
 
 		# Assign the R1 and R2 filenames
-		self.well_R1_file = '%s%s_R1.fastq.gz' % (well_out_path, self.ID)
-		self.well_R2_file = '%s%s_R2.fastq.gz' % (well_out_path, self.ID)
+		self.well_R1_file = f'{well_out_path}{self.ID}_R1.fastq.gz'
+		self.well_R2_file = f'{well_out_path}{self.ID}_R2.fastq.gz'
 
 	def moveFiles (self):
 
@@ -418,9 +427,9 @@ class Well ():
 				os.makedirs(merged_path)
 
 			# Define the merged and unmerged files 
-			self.merged_file = '%s%s_merged.fastq' % (merged_path, self.ID)
-			self.unmerged_R1_file = '%s%s_notmerged_R1.fastq' % (merged_path, self.ID)
-			self.unmerged_R2_file = '%s%s_notmerged_R2.fastq' % (merged_path, self.ID)
+			self.merged_file = f'{merged_path}{self.ID}_merged.fastq'
+			self.unmerged_R1_file = f'{merged_path}{self.ID}_notmerged_R1.fastq'
+			self.unmerged_R2_file = f'{merged_path}{self.ID}_notmerged_R2.fastq'
 
 			# Merge the well R1 and R2 files
 			mergePairs(self.ID, self.well_R1_file, self.well_R2_file, self.merged_file, self.unmerged_R1_file, self.unmerged_R2_file)
@@ -447,7 +456,7 @@ class Well ():
 				os.makedirs(truncated_path)
 
 			# Define the truncated file
-			self.truncated_file = os.path.join(truncated_path, '%s_stripped.fastq' % self.ID)
+			self.truncated_file = os.path.join(truncated_path, f'{self.ID}_stripped.fastq')
 
 			# Truncate the merged file
 			truncateFastq(self.merged_file, self.truncated_file)
@@ -472,7 +481,7 @@ class Well ():
 				os.makedirs(filtered_path)
 
 			# Define the filtered file
-			self.filtered_file = os.path.join(filtered_path, '%s_filtered.fasta' % self.ID)
+			self.filtered_file = os.path.join(filtered_path, f'{self.ID}_filtered.fasta')
 
 			# Filter the truncated file
 			filterFastq(self.truncated_file, self.filtered_file)
@@ -497,7 +506,7 @@ class Well ():
 				os.makedirs(dereplicated_path)
 
 			# Define the dereplicated file
-			self.dereplicated_file = os.path.join(dereplicated_path, '%s_dereplicated.fasta' % self.ID)
+			self.dereplicated_file = os.path.join(dereplicated_path, f'{self.ID}_dereplicated.fasta')
 
 			# Dereplicate the file
 			dereplicateFasta(self.on_plate, self.ID, self.filtered_file, self.dereplicated_file)
@@ -522,7 +531,7 @@ class Well ():
 				os.makedirs(clustered_path)
 
 			# Define the clustered file
-			self.clustered_file = os.path.join(clustered_path, '%s_clustered.fasta' % self.ID) 
+			self.clustered_file = os.path.join(clustered_path, f'{self.ID}_clustered.fasta')
 
 			# Cluster the file
 			clusterFasta(self.on_plate, self.ID, self.dereplicated_file, self.clustered_file)
@@ -536,7 +545,7 @@ class Well ():
 		sorted_path = os.path.join(self.out_path, self.clustered_dir)
 
 		# Define the clustered file
-		sort_file = os.path.join(sorted_path, '%s_sorted_clustered.fasta' % self.ID) 
+		sort_file = os.path.join(sorted_path, f'{self.ID}_sorted_clustered.fasta')
 
 		# Cluster the file
 		sortFasta(self.on_plate, self.ID, self.clustered_file, sort_file)
@@ -544,7 +553,7 @@ class Well ():
 		# Gzip the file, return the updated filename
 		sort_file = gzipCompress(sort_file, return_filename = True)
 
-		logging.info('%s-%s: Sorted clustered file' % (self.on_plate, self.ID))
+		logging.info(f'{self.on_plate}-{self.ID}: Sorted clustered file')
 
 		# Rename the clustered file
 		self.clustered_file = sort_file
@@ -566,7 +575,7 @@ class Well ():
 				os.makedirs(common_path)
 
 			# Define the common file
-			self.common_file = os.path.join(common_path, '%s_common.fasta.gz' % self.ID) 
+			self.common_file = os.path.join(common_path, f'{self.ID}_common.fasta.gz')
 
 			# Open file to store most common reads 
 			common_file = gzip.open(self.common_file, 'wt')

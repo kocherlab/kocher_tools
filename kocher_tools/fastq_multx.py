@@ -17,17 +17,9 @@ def assignOutput (out_path, discard_empty_output, barcode_type, r2_given):
 	# Check if the barcode type is i5
 	if barcode_type == 'i5':
 
-		# Check if the empty output should not be assigned
-		if discard_empty_output:
-
-			# Indicate that no i5 output should be produced
-			output_list.extend(['-o', 'n/a']) 
-
-		# Check if the empty output should be assigned
-		else:
-
-			# Assign the i5 output
-			output_list.extend(['-o', output_filename % 'i5'])
+		# Discard empty output, if specified
+		if discard_empty_output: output_list.extend(['-o', 'n/a']) 
+		else: output_list.extend(['-o', output_filename % 'i5'])
 
 		# Assign the i7 file
 		output_list.extend(['-o', output_filename % 'i7'])
@@ -35,17 +27,9 @@ def assignOutput (out_path, discard_empty_output, barcode_type, r2_given):
 	# Check if the barcode type is i7
 	elif barcode_type == 'i7':
 	
-		# Check if the empty output should not be assigned
-		if discard_empty_output:
-
-			# Indicate that no i5 output should be produced
-			output_list.extend(['-o', 'n/a']) 
-
-		# Check if the empty output should be assigned
-		else:
-
-			# Assign the i5 output
-			output_list.extend(['-o', output_filename % 'i7'])
+		# Discard empty output, if specified
+		if discard_empty_output: output_list.extend(['-o', 'n/a']) 
+		else: output_list.extend(['-o', output_filename % 'i7'])
 
 	# Assign the R1 and R2 output
 	output_list.extend(['-o', output_filename % 'R1'])
@@ -64,11 +48,17 @@ def i5ReformatMap (i5_map_filename, reformatted_filename):
 		# Loop the i5 map file, line by line
 		for i5_map_line in i5_map_file:
 
-			# Split the line into: plate, barcode, locus
-			i5_plate, i5_barcode, i5_locus = i5_map_line.split()
+			# Split the line into: plate, barcode, and locus (if given)
+			try: i5_plate, i5_barcode, i5_locus = i5_map_line.split()
+			except:
+				i5_plate, i5_barcode = i5_map_line.split()
+				i5_locus = ''
+
+			# Define the locus string
+			locus_str = f'_{i5_locus}' if i5_locus else ''
 
 			# Write to the reformatted file
-			reformatted_i5_map.write('%s_%s\t%s\n' % (i5_plate, i5_locus, i5_barcode))
+			reformatted_i5_map.write(f'{i5_plate}{locus_str}\t{i5_barcode}\n')
 
 	# Close the file
 	reformatted_i5_map.close()	

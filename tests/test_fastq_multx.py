@@ -153,10 +153,10 @@ class test_fastq_multx (unittest.TestCase):
 		expected_R2 = os.path.join(self.expected_path, '%_R2.fastq.gz')
 
 		# Assign the i5 test lists using the command
-		test_i5_1 = assignOutput(self.expected_path, True, 'i5')
-		test_i5_2 = assignOutput(self.expected_path, False, 'i5')
-		test_i7_1 = assignOutput(self.expected_path, True, 'i7')
-		test_i7_2 = assignOutput(self.expected_path, False, 'i7')
+		test_i5_1 = assignOutput(self.expected_path, True, 'i5', True)
+		test_i5_2 = assignOutput(self.expected_path, False, 'i5', True)
+		test_i7_1 = assignOutput(self.expected_path, True, 'i7', True)
+		test_i7_2 = assignOutput(self.expected_path, False, 'i7', True)
 
 		# Check the test lists are as expected
 		self.assertEqual(test_i5_1, ['-o', 'n/a', '-o', expected_i7, '-o', expected_R1, '-o', expected_R2])

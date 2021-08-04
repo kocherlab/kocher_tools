@@ -105,13 +105,13 @@ def main():
 			raise Exception('%s already exists. Please alter --out-dir or use --overwrite' % barcode_args.out_dir)
 
 	# Create the multiplex job
-	demultiplex_job = Multiplex()
+	demultiplex_job = Multiplex.fromFiles(i5_read_file = barcode_args.i5_read_file, 
+										  i7_read_file = barcode_args.i7_read_file, 
+										  r1_file = barcode_args.R1_read_file, 
+										  r2_file = barcode_args.R2_read_file)
 
 	# Assign the output path for all multiplex files
 	demultiplex_job.assignOutputPath(barcode_args.out_dir)
-
-	# Assign the read file for the multiplex job
-	demultiplex_job.assignFiles(barcode_args.i5_read_file, barcode_args.i7_read_file, barcode_args.R1_read_file, barcode_args.R2_read_file)
 
 	# Assign the plate using the i5 map
 	demultiplex_job.assignPlates(barcode_args.i5_map)

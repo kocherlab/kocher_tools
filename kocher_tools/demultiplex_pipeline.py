@@ -75,10 +75,50 @@ def main():
 		if demultiplex_args.overwrite: shutil.rmtree(demultiplex_args.out_dir) 
 		else: raise Exception(f'{demultiplex_args.out_dir} already exists. Please alter --out-dir or use --overwrite')
 
+	# Start a demultiplex job with the files
+	demultiplex_job = Multiplex.fromFiles(i5_read_file = demultiplex_args.i5_read_file, 
+										  i7_read_file = demultiplex_args.i7_read_file, 
+										  r1_file = demultiplex_args.R1_read_file, 
+										  r2_file = demultiplex_args.R2_read_file)
+
+	# Assign the output path for all demultiplexed files
+	demultiplex_job.assignOutputPath(demultiplex_args.out_dir)
+
+	# Assign the plate using the i5 map
+	demultiplex_job.assignPlates(demultiplex_args.i5_map)
+
+	# Run the i5 barcode job using the i5 map
+	demultiplex_job.deMultiplex(demultiplex_args.i5_map)
+
+	logging.info('Finished i5 deMultiplex')
+
+	# Remove unmatched files
+	demultiplex_job.removeUnmatched()
+
+	# Loop the plates in the multiplex job
+	for plate in demultiplex_job:
+
+		# Assign the well of the current plate
+		plate.assignWells()
+
+		logging.info(f'Starting {plate.name} i7 deMultiplex')
+
+		# Run the i7 barcode job using the i7 map
+		plate.deMultiplexPlate(demultiplex_args.i7_map, plate_prefix = True)
+
+		logging.info(f'Finished {plate.name} i7 deMultiplex')
+
+		# Remove unnecessary files
+		plate.removeUnmatchedPlate()
+		plate.removePlate()
+
+
+
+	'''
 	# Create the multiplex job
 	demultiplex_job = Multiplex()
 
-	# Assign the output path for all multiplex files
+	# Assign the output path for all demultiplexed files
 	demultiplex_job.assignOutputPath(demultiplex_args.out_dir)
 
 	# Assign the read file for the multiplex job
@@ -118,6 +158,7 @@ def main():
 
 		# Remove any unmatched files for the current plate
 		plate.removeUnmatchedPlate()
+	'''
 
 if __name__== "__main__":
 	main()

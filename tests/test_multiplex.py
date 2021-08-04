@@ -68,6 +68,7 @@ class test_multiplex (unittest.TestCase):
 		# Remove the test directory after the tests
 		shutil.rmtree(cls.test_dir)
 
+	'''
 	# Check that a Multiplex object may be created
 	def test_01_createMultiplex (self):
 
@@ -76,6 +77,27 @@ class test_multiplex (unittest.TestCase):
 
 		# Update the config data for the other tests
 		type(self).demultiplex_job = demultiplex_job
+	'''
+
+	# Check Multiplex assignFiles function
+	def test_01_fromFiles (self):
+
+		# Assign the paths of the test files
+		test_i5_read_file = os.path.join(self.expected_path, 'test_pipeline_read_3.fastq.gz')
+		test_i7_read_file = os.path.join(self.expected_path, 'test_pipeline_read_2.fastq.gz')
+		test_R1_read_file = os.path.join(self.expected_path, 'test_pipeline_read_1.fastq.gz')
+		test_R2_read_file = os.path.join(self.expected_path, 'test_pipeline_read_4.fastq.gz')
+
+		type(self).demultiplex_job = Multiplex.fromFiles(i5_read_file = test_i5_read_file, 
+														 i7_read_file = test_i7_read_file, 
+														 r1_file = test_R1_read_file, 
+														 r2_file = test_R2_read_file)
+
+		# Check that files were correctly assigned
+		self.assertEqual(self.demultiplex_job.i5_file, test_i5_read_file)
+		self.assertEqual(self.demultiplex_job.i7_file, test_i7_read_file)
+		self.assertEqual(self.demultiplex_job.R1_file, test_R1_read_file)
+		self.assertEqual(self.demultiplex_job.R2_file, test_R2_read_file)
 
 	# Check Multiplex assignOutputPath function
 	def test_02_assignOutputPath (self):
@@ -93,32 +115,9 @@ class test_multiplex (unittest.TestCase):
 		self.assertEqual(self.demultiplex_job.out_path, self.test_pipeline_path)
 		self.assertTrue(os.path.exists(self.demultiplex_job.out_path))
 
-	# Check Multiplex assignFiles function
-	def test_03_assignFiles (self):
-
-		# Check if that Multiplex variable was assigned correctly
-		if self.demultiplex_job == None:
-
-			# Skip the test if so
-			self.skipTest('Requires test_01 to pass')
-
-		# Assign the paths of the test files
-		test_i5_read_file = os.path.join(self.expected_path, 'test_pipeline_read_3.fastq.gz')
-		test_i7_read_file = os.path.join(self.expected_path, 'test_pipeline_read_2.fastq.gz')
-		test_R1_read_file = os.path.join(self.expected_path, 'test_pipeline_read_1.fastq.gz')
-		test_R2_read_file = os.path.join(self.expected_path, 'test_pipeline_read_4.fastq.gz')
-
-		# Assign the read file for the multiplex job
-		type(self).demultiplex_job.assignFiles(test_i5_read_file, test_i7_read_file, test_R1_read_file, test_R2_read_file)
-
-		# Check that files were correctly assigned
-		self.assertEqual(self.demultiplex_job.i5_file, test_i5_read_file)
-		self.assertEqual(self.demultiplex_job.i7_file, test_i7_read_file)
-		self.assertEqual(self.demultiplex_job.R1_file, test_R1_read_file)
-		self.assertEqual(self.demultiplex_job.R2_file, test_R2_read_file)
-
+	
 	# Check Multiplex assignPlates function
-	def test_04_assignPlates (self):
+	def test_03_assignPlates (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -177,7 +176,7 @@ class test_multiplex (unittest.TestCase):
 				self.assertEqual(test_plate.plate_i5_file, expected_plate_i5_filepath)
 
 	# Check Multiplex deMultiplex function
-	def test_05_deMultiplex (self):
+	def test_04_deMultiplex (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -236,7 +235,7 @@ class test_multiplex (unittest.TestCase):
 				self.assertTrue(gzFileComp(test_plate_i5_file, expected_plate_i5_file, self.test_dir))
 
 	# Check Multiplex movePlates function
-	def test_06_movePlates (self):
+	def test_05_movePlates (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -272,22 +271,13 @@ class test_multiplex (unittest.TestCase):
 		# Loop the test plates
 		for test_plate in type(self).demultiplex_job:
 
-			# Save the complete test plate sub path
-			test_plate_sub_path = os.path.join(test_plate.out_path, test_plate.name)
-
 			# Check that the plate dir was created
-			self.assertTrue(os.path.isdir(test_plate_sub_path))
-
-			# Save the complete test plate path
-			test_plate_path = os.path.join(test_plate_sub_path, test_plate.locus)
-
-			# Check that the locus dir was created
-			self.assertTrue(os.path.isdir(test_plate_path))
+			self.assertTrue(os.path.isdir(test_plate.out_path))
 
 			# Assign the test file paths
-			test_plate_i7_file = os.path.join(test_plate_path, '%s_%s_i7.fastq.gz' % (test_plate.name, test_plate.locus))
-			test_plate_R1_file = os.path.join(test_plate_path, '%s_%s_R1.fastq.gz' % (test_plate.name, test_plate.locus))
-			test_plate_R2_file = os.path.join(test_plate_path, '%s_%s_R2.fastq.gz' % (test_plate.name, test_plate.locus))
+			test_plate_i7_file = os.path.join(test_plate.out_path, f'{test_plate.name}_{test_plate.locus}_i7.fastq.gz')
+			test_plate_R1_file = os.path.join(test_plate.out_path, f'{test_plate.name}_{test_plate.locus}_R1.fastq.gz')
+			test_plate_R2_file = os.path.join(test_plate.out_path, f'{test_plate.name}_{test_plate.locus}_R2.fastq.gz')
 
 			# Confirm the files were created
 			self.assertTrue(os.path.isfile(test_plate_i7_file))
@@ -298,13 +288,13 @@ class test_multiplex (unittest.TestCase):
 			if test_plate.discard_empty_output == False:
 
 				# Assign the test file path
-				test_plate_i5_file = os.path.join(test_plate_path, '%s_%s_i5.fastq.gz' % (test_plate.name, test_plate.locus))
+				test_plate_i5_file = os.path.join(test_plate.out_path, f'{test_plate.name}_{test_plate.locus}_i5.fastq.gz')
 
 				# Confirm the file was created
 				self.assertTrue(os.path.isfile(test_plate_i5_file))
 
 	# Check Multiplex removeUnmatched function
-	def test_07_removeUnmatched (self):
+	def test_06_removeUnmatched (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -338,7 +328,7 @@ class test_multiplex (unittest.TestCase):
 			self.assertFalse(os.path.isfile(test_unmatched_i5_file))
 
 	# Check Multiplex assignWells function
-	def test_08_assignWells (self):
+	def test_07_assignWells (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -365,7 +355,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(expected_well_ID in test_plate)
 
 	# Check Multiplex deMultiplexPlate function
-	def test_09_deMultiplexPlate (self):
+	def test_08_deMultiplexPlate (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -420,7 +410,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_well_i7_file, expected_well_i7_file, self.test_dir))
 
 	# Check Multiplex moveWells function
-	def test_10_moveWells (self):
+	def test_09_moveWells (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -434,12 +424,9 @@ class test_multiplex (unittest.TestCase):
 			# Move the wells into the Wells directory
 			test_plate.moveWells()
 
-			# Create the test updated plate path
-			test_plate_path = os.path.join(test_plate.out_path, test_plate.name, test_plate.locus)
-
 			# Assign the filename for the test unmatched files
-			test_unmatched_R1_file = os.path.join(test_plate_path, 'unmatched_R1.fastq.gz')
-			test_unmatched_R2_file = os.path.join(test_plate_path, 'unmatched_R2.fastq.gz')
+			test_unmatched_R1_file = os.path.join(test_plate.out_path, 'unmatched_R1.fastq.gz')
+			test_unmatched_R2_file = os.path.join(test_plate.out_path, 'unmatched_R2.fastq.gz')
 
 			# Confirm the files were created
 			self.assertTrue(os.path.isfile(test_unmatched_R1_file))
@@ -449,7 +436,7 @@ class test_multiplex (unittest.TestCase):
 			if self.demultiplex_job.discard_empty_output == False:
 
 				# Assign the test funmatched ile path
-				test_unmatched_i7_file = os.path.join(test_plate_path, 'unmatched_i7.fastq.gz')
+				test_unmatched_i7_file = os.path.join(test_plate.out_path, 'unmatched_i7.fastq.gz')
 
 				# Confirm the file was created
 				self.assertTrue(os.path.isfile(test_unmatched_i7_file))
@@ -461,8 +448,8 @@ class test_multiplex (unittest.TestCase):
 				test_well_updated_out_path = os.path.join(test_well.out_path, test_well.well_dir)
 
 				# Assign the test file paths
-				test_well_R1_file = os.path.join(test_well_updated_out_path, '%s_R1.fastq.gz' % test_well.ID)
-				test_well_R2_file = os.path.join(test_well_updated_out_path, '%s_R2.fastq.gz' % test_well.ID)
+				test_well_R1_file = os.path.join(test_well_updated_out_path, f'{test_well.ID}_R1.fastq.gz')
+				test_well_R2_file = os.path.join(test_well_updated_out_path, f'{test_well.ID}_R2.fastq.gz')
 
 				# Confirm the files were created
 				self.assertTrue(os.path.isfile(test_well_R1_file))
@@ -472,13 +459,13 @@ class test_multiplex (unittest.TestCase):
 				if test_well.discard_empty_output == False:
 
 					# Assign the test file path
-					test_well_i7_file = os.path.join(test_well_updated_out_path, '%s_i7.fastq.gz' % test_well.ID)
+					test_well_i7_file = os.path.join(test_well_updated_out_path, f'{test_well.ID}_i7.fastq.gz')
 
 					# Confirm the file was created
 					self.assertTrue(os.path.isfile(test_well_i7_file))
 
 	# Check Multiplex removeUnmatchedPlate function
-	def test_11_removeUnmatchedPlate (self):
+	def test_10_removeUnmatchedPlate (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -513,7 +500,7 @@ class test_multiplex (unittest.TestCase):
 				self.assertFalse(os.path.isfile(test_unmatched_i7_file))
 
 	# Check Multiplex mergeWell function
-	def test_12_mergeWell (self):
+	def test_11_mergeWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -556,7 +543,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_merged_file, expected_merged_file, self.test_dir))
 
 	# Check Multiplex truncateWell function
-	def test_13_truncateWell (self):
+	def test_12_truncateWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -595,7 +582,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_truncated_file, expected_truncated_file, self.test_dir))
 
 	# Check Multiplex filterWell function
-	def test_14_filterWell (self):
+	def test_13_filterWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -634,7 +621,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_filtered_file, expected_filtered_file, self.test_dir))
 
 	# Check Multiplex dereplicateWell function
-	def test_15_dereplicateWell (self):
+	def test_14_dereplicateWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -673,7 +660,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_dereplicated_file, expected_dereplicated_file, self.test_dir))
 
 	# Check Multiplex clusterWell function
-	def test_16_clusterWell (self):
+	def test_15_clusterWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -712,7 +699,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_clustered_file, expected_clustered_file, self.test_dir))
 
 	# Check Multiplex mostAbundantWell function
-	def test_17_mostAbundantWell (self):
+	def test_16_mostAbundantWell (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -751,7 +738,7 @@ class test_multiplex (unittest.TestCase):
 					self.assertTrue(gzFileComp(test_common_file, expected_common_file, self.test_dir))
 
 	# Check Multiplex yieldMostAbundant function
-	def test_18_yieldMostAbundant (self):
+	def test_17_yieldMostAbundant (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
@@ -777,7 +764,7 @@ class test_multiplex (unittest.TestCase):
 			self.assertEqual(expected_data[read_pos], abundant_read.id)
 
 	# Check Multiplex compileMostAbundant function
-	def test_19_compileMostAbundant (self):
+	def test_18_compileMostAbundant (self):
 
 		# Check if that Multiplex variable was assigned correctly
 		if self.demultiplex_job == None:
