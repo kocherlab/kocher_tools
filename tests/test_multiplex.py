@@ -22,7 +22,8 @@ class test_multiplex (unittest.TestCase):
 	def setUpClass (cls):
 
 		# Create a temporary directory
-		cls.test_dir = tempfile.mkdtemp()
+		#cls.test_dir = tempfile.mkdtemp()
+		cls.test_dir = 'test'
 
 		# Assign the test path of the pipeline
 		cls.test_pipeline_path = os.path.join(cls.test_dir, 'Pipeline_Output')
@@ -43,13 +44,13 @@ class test_multiplex (unittest.TestCase):
 			pipeline_tar_filename = os.path.join(cls.expected_path, 'TestPipeline.tar.gz')
 
 			# Open the pipeline tar
-			pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
+			#pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
 
 			# Extract the tar into the test directory
-			pipeline_tar.extractall(path = cls.test_dir)
+			#pipeline_tar.extractall(path = cls.test_dir)
 
 			# Close the pipeline tar
-			pipeline_tar.close()
+			#pipeline_tar.close()
 
 			# Assign the expected path of the pipeline
 			cls.expected_pipeline_path = os.path.join(cls.test_dir, 'TestPipeline')
@@ -66,7 +67,8 @@ class test_multiplex (unittest.TestCase):
 	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
-		shutil.rmtree(cls.test_dir)
+		#shutil.rmtree(cls.test_dir)
+		pass
 
 	'''
 	# Check that a Multiplex object may be created
