@@ -44,13 +44,13 @@ class test_multiplex (unittest.TestCase):
 			pipeline_tar_filename = os.path.join(cls.expected_path, 'TestPipeline.tar.gz')
 
 			# Open the pipeline tar
-			#pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
+			pipeline_tar = tarfile.open(pipeline_tar_filename, "r:gz")
 
 			# Extract the tar into the test directory
-			#pipeline_tar.extractall(path = cls.test_dir)
+			pipeline_tar.extractall(path = cls.test_dir)
 
 			# Close the pipeline tar
-			#pipeline_tar.close()
+			pipeline_tar.close()
 
 			# Assign the expected path of the pipeline
 			cls.expected_pipeline_path = os.path.join(cls.test_dir, 'TestPipeline')
@@ -67,19 +67,7 @@ class test_multiplex (unittest.TestCase):
 	def tearDownClass (cls):
 
 		# Remove the test directory after the tests
-		#shutil.rmtree(cls.test_dir)
-		pass
-
-	'''
-	# Check that a Multiplex object may be created
-	def test_01_createMultiplex (self):
-
-		# Create the multiplex job
-		demultiplex_job = Multiplex()
-
-		# Update the config data for the other tests
-		type(self).demultiplex_job = demultiplex_job
-	'''
+		shutil.rmtree(cls.test_dir)
 
 	# Check Multiplex assignFiles function
 	def test_01_fromFiles (self):
@@ -117,7 +105,6 @@ class test_multiplex (unittest.TestCase):
 		self.assertEqual(self.demultiplex_job.out_path, self.test_pipeline_path)
 		self.assertTrue(os.path.exists(self.demultiplex_job.out_path))
 
-	
 	# Check Multiplex assignPlates function
 	def test_03_assignPlates (self):
 
