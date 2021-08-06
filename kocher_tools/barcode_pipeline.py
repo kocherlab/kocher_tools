@@ -43,6 +43,11 @@ def barcodePipelineParser ():
 	pipeline_parser.add_argument('--i5-map', help = 'Defines the filename of the i5 map', type = str, action = parser_confirm_file(), required = True)
 	pipeline_parser.add_argument('--i7-map', help = 'Defines the filename of the i7 map (if not the default map)', type = str, action = parser_confirm_file())
 
+	# Map options
+	i5_revcomp_parser = pipeline_parser.add_mutually_exclusive_group()
+	i5_revcomp_parser.add_argument('--novaseq', dest = 'i5_revcomp', help = 'Reads were sequenced using NovaSeq', action='store_true')
+	i5_revcomp_parser.add_argument('--reverse-complement-i5map', dest = 'i5_revcomp', help = 'Reverse complement the i5 map (equivalent to --novaseq)', action='store_true')
+
 	# Read Files
 	pipeline_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file(), required = True)
 	pipeline_parser.add_argument('--i7-read-file', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file(), required = True)
@@ -119,7 +124,7 @@ def main():
 	logging.info('Starting i5 deMultiplex')
 
 	# Run the i5 barcode job using the i5 map
-	demultiplex_job.deMultiplex(barcode_args.i5_map)
+	demultiplex_job.deMultiplex(barcode_args.i5_map, reverse_complement_barcodes = barcode_args.i5_revcomp)
 
 	logging.info('Finished i5 deMultiplex')
 

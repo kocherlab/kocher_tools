@@ -177,7 +177,7 @@ class test_fastq_multx (unittest.TestCase):
 		expected_reformatted_file = os.path.join(self.expected_path, 'test_fastq_multx_map.txt')
 
 		# Run the command
-		i5ReformatMap(test_i5_map_file, test_reformatted_file)
+		i5ReformatMap(test_i5_map_file, test_reformatted_file, False)
 
 		# Check the file was created
 		self.assertTrue(os.path.isfile(test_reformatted_file))
@@ -203,7 +203,7 @@ class test_fastq_multx (unittest.TestCase):
 			os.makedirs(test_dir)
 
 		# Run the command
-		i5BarcodeJob(test_i5_map_file, test_i5_read_file, test_i7_read_file, test_R1_read_file, test_R2_read_file, test_dir, True)
+		i5BarcodeJob(test_i5_map_file, test_i5_read_file, test_i7_read_file, test_R1_read_file, test_R2_read_file, test_dir, True, False)
 
 		# Assign the expected plates and locus
 		expected_plates = ['SD_04', 'SD_07']

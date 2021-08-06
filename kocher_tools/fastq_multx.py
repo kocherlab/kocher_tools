@@ -37,7 +37,10 @@ def assignOutput (out_path, discard_empty_output, barcode_type, r2_given):
 
 	return output_list
 
-def i5ReformatMap (i5_map_filename, reformatted_filename):
+def i5ReformatMap (i5_map_filename, reformatted_filename, reverse_complement_barcodes):
+
+	# Assign the base complements, if required
+	if reverse_complement_barcodes: complements = str.maketrans('ATCG','TAGC')
 
 	# Open the reformatted file
 	reformatted_i5_map = open(reformatted_filename, 'w')
@@ -54,6 +57,9 @@ def i5ReformatMap (i5_map_filename, reformatted_filename):
 				i5_plate, i5_barcode = i5_map_line.split()
 				i5_locus = ''
 
+			# Reverse complemente the barcode, if required
+			if reverse_complement_barcodes: i5_barcode = i5_barcode[::-1].translate(complements)
+				
 			# Define the locus string
 			locus_str = f'_{i5_locus}' if i5_locus else ''
 
@@ -61,15 +67,15 @@ def i5ReformatMap (i5_map_filename, reformatted_filename):
 			reformatted_i5_map.write(f'{i5_plate}{locus_str}\t{i5_barcode}\n')
 
 	# Close the file
-	reformatted_i5_map.close()	
+	reformatted_i5_map.close()
 
-def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_path, discard_i5):
+def i5BarcodeJob (i5_map_filename, i5_input, i7_input, r1_input, r2_input, out_path, discard_i5, reverse_complement_barcodes):
 
 	# Define the reformatted i5 map filename
 	reformatted_i5_map_filename = i5_map_filename + '.reformatted'
 
 	# Reformat the i5 map
-	i5ReformatMap(i5_map_filename, reformatted_i5_map_filename)
+	i5ReformatMap(i5_map_filename, reformatted_i5_map_filename, reverse_complement_barcodes)
 
 	# Create the basic input arg list
 	multiplex_call_args = ['-B', reformatted_i5_map_filename, i5_input, i7_input, r1_input]

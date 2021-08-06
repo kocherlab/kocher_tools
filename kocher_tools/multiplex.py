@@ -40,12 +40,6 @@ class Multiplex (list):
 		# Return files
 		return [file for file in [self.i5_file, self.i7_file, self.R1_file, self.R2_file]]
 
-	#def assignFiles (self, i5_barcode_file, i7_barcode_file, r1_file, r2_file = None):
-	#	self.i5_file = i5_barcode_file
-	#	self.i7_file = i7_barcode_file
-	#	self.R1_file = r1_file
-	#	self.R2_file = r2_file
-
 	@classmethod
 	def fromFiles (cls, i5_read_file = None, i7_read_file = None, r1_file = None, r2_file = None):
 		return cls(i5_file = i5_read_file, i7_file = i7_read_file, R1_file = r1_file, R2_file = r2_file)
@@ -97,10 +91,10 @@ class Multiplex (list):
 			# Move the files
 			plate.moveFiles()
 
-	def deMultiplex (self, i5_map_filename):
+	def deMultiplex (self, i5_map_filename, reverse_complement_barcodes = False):
 
 		# Use the i5 map to demultiplex
-		i5BarcodeJob(i5_map_filename, self.i5_file, self.i7_file, self.R1_file, self.R2_file, self.out_path, self.discard_empty_output)
+		i5BarcodeJob(i5_map_filename, self.i5_file, self.i7_file, self.R1_file, self.R2_file, self.out_path, self.discard_empty_output, reverse_complement_barcodes)
 
 	def compileMostAbundant (self, out_filename, out_format = 'fasta'):
 		

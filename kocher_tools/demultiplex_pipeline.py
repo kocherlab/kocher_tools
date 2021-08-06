@@ -4,7 +4,8 @@ import sys
 import argparse
 import shutil
 import logging
-import pkg_resources
+
+from pkg_resources import resource_filename, Requirement
 
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.logger import startLogger, logArgs
@@ -41,6 +42,11 @@ def deMultiplexParser ():
 	demultiplex_parser.add_argument('--i5-map', help = 'Defines the filename of the i5 map', type = str, action = parser_confirm_file(), required = True)
 	demultiplex_parser.add_argument('--i7-map', help = 'Defines the filename of the i7 map (if not the default map)', type = str, action = parser_confirm_file())
 
+	# Map options
+	i5_revcomp_parser = demultiplex_parser.add_mutually_exclusive_group()
+	i5_revcomp_parser.add_argument('--novaseq', dest = 'i5_revcomp', help = 'Reads were sequenced using NovaSeq', action='store_true')
+	i5_revcomp_parser.add_argument('--reverse-complement-i5map', dest = 'i5_revcomp', help = 'Reverse complement the i5 map (equivalent to --novaseq)', action='store_true')
+
 	# Read Files
 	demultiplex_parser.add_argument('--i5-read-file', help = 'Defines the filename of the i5 reads (i.e. Read 3 Index)', type = str, action = parser_confirm_file(), required = True)
 	demultiplex_parser.add_argument('--i7-read-file', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file(), required = True)
@@ -62,7 +68,7 @@ def main():
 	
 	# Assign the i7 map path from the package
 	if not demultiplex_args.i7_map:
-		i7_map_path = pkg_resources.resource_filename('kocher_tools', 'data/i7_map.txt')
+		i7_map_path = resource_filename(Requirement.parse('kocher_tools'), 'kocher_tools/data/i7_map.txt')
 		if not os.path.exists(i7_map_path): raise IOError('Cannot assign i7 map from package')
 		demultiplex_args.i7_map = i7_map_path
 
@@ -88,7 +94,7 @@ def main():
 	demultiplex_job.assignPlates(demultiplex_args.i5_map)
 
 	# Run the i5 barcode job using the i5 map
-	demultiplex_job.deMultiplex(demultiplex_args.i5_map)
+	demultiplex_job.deMultiplex(demultiplex_args.i5_map, reverse_complement_barcodes = demultiplex_args.i5_revcomp)
 
 	logging.info('Finished i5 deMultiplex')
 
