@@ -73,19 +73,10 @@ def main():
 	# Assign the barcode args
 	barcode_args = barcodePipelineParser()
 	
-	# Check if no i7 map was assigned
+	# Assign the i7 map path from the package
 	if not barcode_args.i7_map:
-		
-		# Assign the i7 map path from the package
 		i7_map_path = pkg_resources.resource_filename('kocher_tools', 'data/i7_map.txt')
-		
-		# Check if i7 map does not exists
-		if not os.path.exists(i7_map_path):
-			
-			# Return an error
-			raise IOError('Cannot assign i7 map from package')
-		
-		# Assign the i7 map
+		if not os.path.exists(i7_map_path): raise IOError('Cannot assign i7 map from package')
 		barcode_args.i7_map = i7_map_path
 
 	# Create the log file

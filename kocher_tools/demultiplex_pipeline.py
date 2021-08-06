@@ -4,8 +4,7 @@ import sys
 import argparse
 import shutil
 import logging
-
-from pkg_resources import resource_filename, Requirement
+import pkg_resources
 
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.logger import startLogger, logArgs
@@ -68,7 +67,7 @@ def main():
 	
 	# Assign the i7 map path from the package
 	if not demultiplex_args.i7_map:
-		i7_map_path = resource_filename(Requirement.parse('kocher_tools'), 'kocher_tools/data/i7_map.txt')
+		i7_map_path = pkg_resources.resource_filename('kocher_tools', 'data/i7_map.txt')
 		if not os.path.exists(i7_map_path): raise IOError('Cannot assign i7 map from package')
 		demultiplex_args.i7_map = i7_map_path
 
