@@ -73,7 +73,7 @@ class deML (list):
 			# Process the optional file
 			for optional_file in glob.glob(os.path.join(out_dir, type_regex)):
 				if not optional_out_path: os.remove(optional_file)
-				else: shutil.copy(optional_file, optional_out_path)
+				else: shutil.move(optional_file, optional_out_path)
 
 		logging.info('Started FASTQ paired-index demultiplex')
 
