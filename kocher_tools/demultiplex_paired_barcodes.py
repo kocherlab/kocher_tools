@@ -8,7 +8,7 @@ import pkg_resources
 
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.logger import startLogger, logArgs
-from deML import *
+from kocher_tools.deML import *
 
 def deMultiplexParser ():
 	'''
