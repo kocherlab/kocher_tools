@@ -85,7 +85,7 @@ def main():
 
 
 	# Check for previous output
-	if not demultiplex_args.overwrite
+	if not demultiplex_args.overwrite:
 
 		# Check for a previous log file
 		if os.path.isfile(demultiplex_args.out_log): 
