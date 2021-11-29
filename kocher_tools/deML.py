@@ -41,7 +41,6 @@ class deML (list):
 		self._keep_unknown = keep_unknown
 		self._keep_failed = keep_failed
 		self._keep_indices = keep_indices
-		self._summary_file = summary_file
 
 		# Process the index
 		self._processIndex()
