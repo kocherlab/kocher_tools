@@ -231,6 +231,15 @@ class deML (list):
 		# Check that the log file was created correctly
 		self._check_for_errors(deML_err)
 
+		# Assign the stderr lines
+		start_message = ('#' * 12) + ' Start deML stderr  ' + ('#' * 12)
+		end_massage = ('#' * 13) + ' End deML stderr  ' + ('#' * 13)
+		spacer_line = '#' * 44
+
+		# Append the log file
+		deML_log = open(self._deML_summary_filename, 'r').read()
+		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_err}{end_massage}\n{spacer_line}\n')
+
 	@staticmethod
 	def _check_for_errors (deML_stderr):
 		'''
@@ -249,7 +258,3 @@ class deML (list):
 
 		# Print errors, if found
 		if 'ERROR' in deML_stderr: raise Exception(deML_stderr)
-
-	@staticmethod
-	def randStr (str_len = 6):
-		return ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(str_len))
