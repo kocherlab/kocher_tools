@@ -14,7 +14,8 @@ from kocher_tools.misc import confirmExecutable
 
 class deML (list):
 	def __init__ (self, index = '', index_format = None, i7_reverse_complement = False, i5_reverse_complement = False, pipeline_log_filename = None, 
-						index_barcode_len = 8, excel_sheet = None, index_header = None, keep_unknown = False, keep_failed = False, keep_indices = False, **kwargs):
+						deML_summary_filename = None, index_barcode_len = 8, excel_sheet = None, index_header = None, keep_unknown = False, 
+						keep_failed = False, keep_indices = False, **kwargs):
 
 		# Check if the deML executable was found
 		self._deML_path = confirmExecutable('deML')
@@ -34,12 +35,13 @@ class deML (list):
 		# Assign general arguments
 		self.i7_reverse_complement = i7_reverse_complement
 		self.i5_reverse_complement = i5_reverse_complement
-		self._deML_log_filename = f'tmp.deML.{self.randStr()}.log'
+		self._deML_summary_filename = deML_summary_filename
 		self._pipeline_log_filename = pipeline_log_filename
 
 		self._keep_unknown = keep_unknown
 		self._keep_failed = keep_failed
 		self._keep_indices = keep_indices
+		self._summary_file = summary_file
 
 		# Process the index
 		self._processIndex()
@@ -118,9 +120,6 @@ class deML (list):
 		# Append the log file
 		deML_log = open(self._deML_log_filename, 'r').read()
 		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_log}{end_massage}\n{spacer_line}\n')
-
-		# Remove the old deML log
-		os.remove(self._deML_log_filename)
 
 	def _processIndex (self):
 

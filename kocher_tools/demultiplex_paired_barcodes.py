@@ -48,7 +48,9 @@ def deMultiplexParser ():
 	demultiplex_parser.add_argument('--excel-sheet', help = 'Defines the excel sheet to use. Default is the first sheet - i.e. 0', type = int, default = 0)
 
 	# Map options
-	demultiplex_parser.add_argument('--miseq', help = 'Reads were sequenced using MiSeq', action='store_true')
+	i5_revcomp_parser = demultiplex_parser.add_mutually_exclusive_group()
+	i5_revcomp_parser.add_argument('--novaseq', dest = 'i5_revcomp', help = 'Reads were sequenced using NovaSeq', action='store_true')
+	i5_revcomp_parser.add_argument('--reverse-complement-i5', dest = 'i5_revcomp', help = 'Reverse complement the i5 map (equivalent to --novaseq)', action='store_true')
 
 	# Read Files
 	demultiplex_parser.add_argument('--i7', help = 'Defines the filename of the i7 reads (i.e. Read 2 Index)', type = str, action = parser_confirm_file(), required = True)
@@ -64,7 +66,8 @@ def deMultiplexParser ():
 
 	# Output arguments
 	demultiplex_parser.add_argument('--out-dir', help = 'Defines the output directory', type = str, default = 'Pipeline_Output')
-	demultiplex_parser.add_argument('--out-log', help = 'Defines the filename of the log file', type = str, default = 'barcode_pipeline.log')
+	demultiplex_parser.add_argument('--out-log', help = 'Defines the filename of the log file', type = str, default = 'demultiplex_pipeline.log')
+	demultiplex_parser.add_argument('--summary-log', help = 'Defines the filename of the log file', type = str, default = 'deML_summary.tsv')
 	demultiplex_parser.add_argument('--overwrite', help = 'Defines if previous output should be overwritten', action = 'store_true')
 	
 	# Return the arguments
@@ -80,6 +83,26 @@ def main():
 	startLogger(demultiplex_args.out_log)
 	logArgs(demultiplex_args)
 
+
+	# Check for previous output
+	if not demultiplex_args.overwrite
+
+		# Check for a previous log file
+		if os.path.isfile(demultiplex_args.out_log): 
+			raise Exception(f'Found log found: {demultiplex_args.out_log}. Please rename using --out-log or use --overwrite')
+
+		# Check for a previous summary file
+		if os.path.isfile(demultiplex_args.summary_log): 
+			raise Exception(f'Found summary found: {demultiplex_args.summary_log}. Please rename using --summary-log or use --overwrite')
+
+		# Check for a previous pipeline output
+		if os.path.isdir(demultiplex_args.out_dir):
+			raise Exception(f'Found pipeline output found: {demultiplex_args.out_dir}. Please rename using --out-dir or use --overwrite')
+
+	# Remove previous output, if specified
+	elif os.path.isdir(demultiplex_args.out_dir): shutil.rmtree(demultiplex_args.out_dir)
+
+
 	# Check if all output should be kept, and if so, assign the arguments
 	if demultiplex_args.keep_all:
 		if demultiplex_args.keep_unknown or demultiplex_args.keep_failed or demultiplex_args.keep_indices:
@@ -92,12 +115,12 @@ def main():
 	demultiplex_job = deML.withIndex(demultiplex_args.paired_map, 
 									 demultiplex_args.index_format,
 									 pipeline_log_filename = demultiplex_args.out_log,
+									 deML_summary_filename = demultiplex_args.summary_log,
 									 excel_sheet = demultiplex_args.excel_sheet,
 									 keep_unknown = demultiplex_args.keep_unknown,
 									 keep_failed = demultiplex_args.keep_failed,
-									 keep_indices = demultiplex_args.keep_indices)
-
-	
+									 keep_indices = demultiplex_args.keep_indices,
+									 i5_reverse_complement = demultiplex_args.i5_revcomp)
 	
 	# Demultiplex the following files
 	demultiplex_job.demultiplexFASTQs(out_dir = demultiplex_args.out_dir,
