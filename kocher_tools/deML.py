@@ -55,7 +55,7 @@ class deML (list):
 
 	@property
 	def deML_arg_list (self):
-		return [self._deML_path, '--index', self.index, '--summary', self._deML_log_filename ] + list(map(str, self._deML_call_args))
+		return [self._deML_path, '--index', self.index, '--summary', self._deML_summary_filename] + list(map(str, self._deML_call_args))
 
 	@classmethod
 	def withIndex (cls, index, index_format, i7_reverse_complement = False, i5_reverse_complement = False, **kwargs):
@@ -74,7 +74,10 @@ class deML (list):
 			# Process the optional file
 			for optional_file in glob.glob(os.path.join(out_dir, type_regex)):
 				if not optional_out_path: os.remove(optional_file)
-				else: shutil.move(optional_file, optional_out_path)
+				else:
+					optional_filename = os.path.basename(optional_file)
+					optional_out_file = os.path.join(optional_out_path, optional_filename.replace('tmp_', ''))
+					shutil.move(optional_file, optional_out_file)
 
 		logging.info('Started FASTQ paired-index demultiplex')
 
@@ -117,7 +120,7 @@ class deML (list):
 		spacer_line = '#' * 44
 
 		# Append the log file
-		deML_log = open(self._deML_log_filename, 'r').read()
+		deML_log = open(self._deML_summary_filename, 'r').read()
 		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_log}{end_massage}\n{spacer_line}\n')
 
 	def _processIndex (self):
