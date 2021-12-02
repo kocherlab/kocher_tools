@@ -132,7 +132,7 @@ class deML (list):
 			i5_col = None
 
 			for index_col in excel_dataframe.columns:
-				if 'well' in str(index_col).lower():
+				if 'sample' in str(index_col).lower() or 'well' in str(index_col).lower():
 					if well_col: raise Exception(f'Well column assignment error: {self.index_format}')
 					well_col = index_col
 				elif 'i7' in str(index_col).lower():
@@ -237,7 +237,6 @@ class deML (list):
 		spacer_line = '#' * 44
 
 		# Append the log file
-		deML_log = open(self._deML_summary_filename, 'r').read()
 		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_err}{end_massage}\n{spacer_line}\n')
 
 	@staticmethod
@@ -256,5 +255,25 @@ class deML (list):
 				If plink stderr returns an error
 		'''
 
+		def _skipTextBeforeStr (stderr_str):
+			
+			return_text = []
+			print_line = False
+			for deML_stderr_line in deML_stderr.splitlines():
+				if stderr_str in deML_stderr_line: print_line = True
+				if not print_line: continue
+				return_text.append(deML_stderr_line)
+			return return_text
+
+
 		# Print errors, if found
 		if 'ERROR' in deML_stderr: raise Exception(deML_stderr)
+
+		# Report file limit warning
+		elif 'WARNING:' in deML_stderr and 'ulimit' in deML_stderr:
+			raise Exception('\n'.join(_skipTextBeforeStr('WARNING:')))
+		
+		# Report any pair conflicts
+		else:
+			pair_conflicts = _skipTextBeforeStr('Conflicts for pairs:')
+			if len(pair_conflicts) > 1: raise Exception(pair_conflicts)
