@@ -45,7 +45,7 @@ def deMultiplexParser ():
 	format_types = ['tsv', 'excel']
 	format_default = 'excel'
 	demultiplex_parser.add_argument('--index-format', help = 'Defines the format of the paired index', type = str, choices = format_types, default = format_default)
-	demultiplex_parser.add_argument('--excel-sheet', help = 'Defines the excel sheet to use. Default is the first sheet - i.e. 0', type = int, default = 0)
+	demultiplex_parser.add_argument('--excel-sheet', help = 'Defines the excel sheet to use. Default is the first sheet - i.e. 1', type = int, default = 1)
 
 	# Map options
 	i5_revcomp_parser = demultiplex_parser.add_mutually_exclusive_group()
@@ -79,11 +79,6 @@ def main():
 	# Assign the demultiplex arguments
 	demultiplex_args = deMultiplexParser()
 
-	# Start the log
-	startLogger(demultiplex_args.out_log)
-	logArgs(demultiplex_args)
-
-
 	# Check for previous output
 	if not demultiplex_args.overwrite:
 
@@ -102,6 +97,13 @@ def main():
 	# Remove previous output, if specified
 	elif os.path.isdir(demultiplex_args.out_dir): shutil.rmtree(demultiplex_args.out_dir)
 
+	# Start the log
+	startLogger(demultiplex_args.out_log)
+	logArgs(demultiplex_args)
+
+	# Update the excel sheet from 1-based to 0-based
+	if demultiplex_args.excel_sheet < 1: raise Exception(f'Unable to assign excel sheet: {demultiplex_args.excel_sheet}. Please note that --excel-sheet begin at 1 (i.e. 1-based indexing)')
+	excel_sheet_zero_based = demultiplex_args.excel_sheet - 1
 
 	# Check if all output should be kept, and if so, assign the arguments
 	if demultiplex_args.keep_all:
@@ -116,7 +118,7 @@ def main():
 									 demultiplex_args.index_format,
 									 pipeline_log_filename = demultiplex_args.out_log,
 									 deML_summary_filename = demultiplex_args.summary_log,
-									 excel_sheet = demultiplex_args.excel_sheet,
+									 excel_sheet = excel_sheet_zero_based,
 									 keep_unknown = demultiplex_args.keep_unknown,
 									 keep_failed = demultiplex_args.keep_failed,
 									 keep_indices = demultiplex_args.keep_indices,

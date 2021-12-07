@@ -121,7 +121,7 @@ class deML (list):
 
 		# Append the log file
 		deML_log = open(self._deML_summary_filename, 'r').read()
-		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_log}{end_massage}\n{spacer_line}\n')
+		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_log}{end_massage}\n{spacer_line}')
 
 	def _processIndex (self):
 
@@ -146,10 +146,22 @@ class deML (list):
 
 			return excel_dataframe.rename({i7_col: '#Index1', i5_col: 'Index2', well_col: 'Name'}, axis = 'columns')
 
-		def _hasWhitespace ():
-			if index_dataframe[self._index_i7_col].str.contains('\s+').any(): return True
-			elif index_dataframe[self._index_i5_col].str.contains('\s+').any(): return True
-			else: return False
+		def _hasWhitespace (cols):
+
+			if not isinstance(cols, list): cols = [cols]
+			for col in cols:
+				if index_dataframe[col].str.contains('\s+').any(): return True
+			return False
+
+			#if index_dataframe[self._index_i7_col].str.contains('\s+').any(): return True
+			#elif index_dataframe[self._index_i5_col].str.contains('\s+').any(): return True
+			#else: return False
+
+		def _removeWhitespace (cols):
+
+			if not isinstance(cols, list): cols = [cols]
+			for col in cols:
+				index_dataframe[col] = index_dataframe[col].str.replace(' ', '')
 
 		def _revCompBarcodes (barcode):
 
@@ -176,10 +188,15 @@ class deML (list):
 		if number_of_columns < len(self._index_cols): raise Exception(f'Expected {len(self._index_cols)} columns, found {number_of_columns} columns')
 		elif number_of_columns > len(self._index_cols): index_dataframe = index_dataframe[self._index_cols]
 
-		# Remove any whitespace in barcodes, if needed
-		barcode_whitespace = _hasWhitespace()
-		if barcode_whitespace: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].str.replace(' ', '')
-		if barcode_whitespace: index_dataframe[self._index_i7_col] = index_dataframe[self._index_i7_col].str.replace(' ', '')
+		# Remove any whitespace is the wells/samples, if needed
+		sample_whitespace = _hasWhitespace(self._index_well_col)
+		if sample_whitespace: _removeWhitespace(self._index_well_col)
+
+		# Remove any whitespace in the barcodes, if needed
+		barcode_whitespace = _hasWhitespace(self._barcode_cols)
+		if barcode_whitespace: _removeWhitespace(self._barcode_cols)
+		#if barcode_whitespace: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].str.replace(' ', '')
+		#if barcode_whitespace: index_dataframe[self._index_i7_col] = index_dataframe[self._index_i7_col].str.replace(' ', '')
 
 		# Check the length of the barcodes - whitespace must be removed prior
 		if not (index_dataframe[self._index_i7_col].str.len() == self._index_barcode_len).all():
@@ -192,7 +209,7 @@ class deML (list):
 		if self.i5_reverse_complement: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].apply(_revCompBarcodes)
 
 		# Check if the file needs to be formatted
-		if not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not barcode_whitespace and number_of_columns == len(self._index_cols): return
+		if not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not sample_whitespace and not barcode_whitespace and number_of_columns == len(self._index_cols): return
 		
 		# Reorder and rename the columns
 		index_dataframe = index_dataframe[self._index_cols]
@@ -201,7 +218,7 @@ class deML (list):
 		self.index = f'{self.index}.deML.formatted'
 		index_dataframe.to_csv(self.index , sep = '\t', index = False)
 
-		logging.info(f'Index file ({self.index}) processed and assigned.')
+		logging.info(f'Index file ({self.index}) processed and assigned')
 
 	def _call (self):
 		'''
@@ -237,7 +254,7 @@ class deML (list):
 		spacer_line = '#' * 44
 
 		# Append the log file
-		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_err}{end_massage}\n{spacer_line}\n')
+		logging.info(f'\n{spacer_line}\n{start_message}\n{deML_err}{end_massage}\n{spacer_line}')
 
 	@staticmethod
 	def _check_for_errors (deML_stderr):
