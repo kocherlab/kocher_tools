@@ -98,8 +98,8 @@ class deML (list):
 		2) Store the files within a sub-directory
 		''' 
 		_processOptionalOutput('*_unknown_*.fq.gz', 'Unknown' if self._keep_unknown else None)
-		_processOptionalOutput('*.fail.fq.gz', 'Failed' if self._keep_unknown else None)
-		_processOptionalOutput('*_i[1-2].fq.gz', 'Indices' if self._keep_unknown else None)
+		_processOptionalOutput('*.fail.fq.gz', 'Failed' if self._keep_failed else None)
+		_processOptionalOutput('*_i[1-2].fq.gz', 'Indices' if self._keep_indices else None)
 
 		# Rename the R1/2 demultiplexed reads
 		for deML_filename in os.listdir(out_dir):
@@ -107,12 +107,25 @@ class deML (list):
 			if not os.path.isfile(deML_file): continue
 			os.rename(deML_file, re.sub(r'tmp_(.*)r([1-2].fq.gz)', r'\1R\2', deML_file))
 
-		# Append and remove the deML log
-		self._appendLog()
+		# Log the contents of the summary file
+		self._cleanSummary()
+		self._logSummary()
 
 		logging.info('Finished FASTQ paired-index demultiplex')
 
-	def _appendLog (self):
+	def _cleanSummary (self):
+
+		# Read in the orginal contents of the summary file
+		with open(self._deML_summary_filename, 'r') as summary_file:
+			summary_lines = summary_file.readlines()
+
+		# Keep the orginal contents and remove the dash lines
+		with open(self._deML_summary_filename, 'w') as summary_file:
+			for summary_line in summary_lines:
+				if summary_line.strip() == '-' * 32: continue
+				summary_file.write(summary_line)
+
+	def _logSummary (self):
 
 		# Assign the log lines
 		start_message = ('#' * 12) + ' Start deML Summary ' + ('#' * 12)
