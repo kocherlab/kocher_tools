@@ -99,8 +99,8 @@ class deML (list):
 		2) Store the files within a sub-directory
 		''' 
 		_processOptionalOutput('*_unknown_*.fq.gz', 'Unknown' if self._keep_unknown else None)
-		_processOptionalOutput('*.fail.fq.gz', 'Failed' if self.keep_failed else None)
-		_processOptionalOutput('*_i[1-2].fq.gz', 'Indices' if self.keep_indices else None)
+		_processOptionalOutput('*.fail.fq.gz', 'Failed' if self._keep_failed else None)
+		_processOptionalOutput('*_i[1-2].fq.gz', 'Indices' if self._keep_indices else None)
 
 		# Rename the R1/2 demultiplexed reads
 		for deML_filename in os.listdir(out_dir):
