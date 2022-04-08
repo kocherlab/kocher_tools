@@ -38,6 +38,7 @@ class deML (list):
 		self._deML_summary_filename = deML_summary_filename
 		self._pipeline_log_filename = pipeline_log_filename
 
+		# Assign the output options
 		self._keep_unknown = keep_unknown
 		self._keep_failed = keep_failed
 		self._keep_indices = keep_indices
@@ -140,10 +141,12 @@ class deML (list):
 
 		def _updateExcelHeader (excel_dataframe):
 
+			# Create arguments to store header column names
 			well_col = None
 			i7_col = None
 			i5_col = None
 
+			# Assign the header column names
 			for index_col in excel_dataframe.columns:
 				if 'sample' in str(index_col).lower() or 'well' in str(index_col).lower():
 					if well_col: raise Exception(f'Well column assignment error: {self.index_format}')
@@ -155,9 +158,11 @@ class deML (list):
 					if i5_col: raise Exception(f'i5 column assignment error: {self.index_format}')
 					i5_col = index_col
 
-			if not well_col or not i5_col or not i5_col: raise Exception(f'Unable to update excel header')
+			# Confirm all the headers were found
+			if not well_col or not i7_col or not i5_col: raise Exception(f'Unable to update header')
 
-			return excel_dataframe.rename({i7_col: '#Index1', i5_col: 'Index2', well_col: 'Name'}, axis = 'columns')
+			# Return the updated header names
+			return excel_dataframe.rename({i7_col: self._index_i7_col, i5_col: self._index_i5_col, well_col: self._index_well_col}, axis = 'columns')
 
 		def _hasWhitespace (cols):
 
@@ -165,10 +170,6 @@ class deML (list):
 			for col in cols:
 				if index_dataframe[col].str.contains('\s+').any(): return True
 			return False
-
-			#if index_dataframe[self._index_i7_col].str.contains('\s+').any(): return True
-			#elif index_dataframe[self._index_i5_col].str.contains('\s+').any(): return True
-			#else: return False
 
 		def _removeWhitespace (cols):
 
@@ -208,8 +209,6 @@ class deML (list):
 		# Remove any whitespace in the barcodes, if needed
 		barcode_whitespace = _hasWhitespace(self._barcode_cols)
 		if barcode_whitespace: _removeWhitespace(self._barcode_cols)
-		#if barcode_whitespace: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].str.replace(' ', '')
-		#if barcode_whitespace: index_dataframe[self._index_i7_col] = index_dataframe[self._index_i7_col].str.replace(' ', '')
 
 		# Check the length of the barcodes - whitespace must be removed prior
 		if not (index_dataframe[self._index_i7_col].str.len() == self._index_barcode_len).all():
@@ -222,7 +221,7 @@ class deML (list):
 		if self.i5_reverse_complement: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].apply(_revCompBarcodes)
 
 		# Check if the file needs to be formatted
-		if not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not sample_whitespace and not barcode_whitespace and number_of_columns == len(self._index_cols): return
+		if self.index_format == 'excel' and not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not sample_whitespace and not barcode_whitespace and number_of_columns == len(self._index_cols): return
 		
 		# Reorder and rename the columns
 		index_dataframe = index_dataframe[self._index_cols]
@@ -245,10 +244,10 @@ class deML (list):
 				If deML stderr returns an error
 		'''
 
-		# plink subprocess call
+		# deML subprocess call
 		deML_call = subprocess.Popen(self.deML_arg_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-		# Wait for plink to finish
+		# Wait for deML to finish
 		deML_out, deML_err = deML_call.communicate()
 
 		# If needed, convert bytes to string
