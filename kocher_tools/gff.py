@@ -203,6 +203,38 @@ def subtractItervals (intervals_to_subtract, subtract_intervals):
 
 	return intervals_to_subtract
 
+def intersectItervals (intervals_to_intersect):
+	'''
+	Loops interval list, finds the overlap between the given
+	intervals. All intervals must overlap
+
+	For example:
+
+	A = Interval A
+	B = Interval B
+	C = Intersection between A and B
+
+	A: *------------------------------*
+	B:           *-----------------------------*
+	C:           *--------------------*
+
+	'''
+
+	# Assign initial start and end values for the intersection interval
+	intersect_start, interset_end = intervals_to_intersect[0]
+
+	# Loop the other intervals
+	for interval_start, interval_end in intervals_to_intersect[1:]:
+
+		# Check if the current start position is greater than the stored value
+		if interval_start > intersect_start: intersect_start = interval_start
+
+		# Check if the current end position is less than the stored value
+		if interval_end < interset_end: interset_end = interval_end
+
+	# Return the intersection interval
+	return intersect_start, interset_end
+
 def returnItervalOverlaps (intervals, overlap_interval):
 	'''
 	Returns the intervals within `intervals` that overlap
@@ -224,13 +256,20 @@ def returnItervalOverlaps (intervals, overlap_interval):
 			intervals_that_overlap.append(interval) 
 	return intervals_that_overlap
 
+def countIterval (interval):
+	'''
+	Sum the interval length.
+	'''
+
+	return (interval[1] + 1) - interval[0]
+
 def countItervals (intervals, feature_type, count_dict):
 	'''
 	Sums the interval lengths within `intervals`. Adds
 	the sum to the supplied count_dict for the specified
 	feature type.
 	'''
-	for interval in intervals: count_dict[feature_type] += ((interval[1] + 1) - interval[0])
+	for interval in intervals: count_dict[feature_type] += countIterval(interval)
 	return count_dict
 
 def assignPrime5 (size, gene_data, gene_interval, prime3_limit):
@@ -625,7 +664,7 @@ def chromCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, feature_se
 	if chromosome_pos <= chrom_limit: feature_count_dict['intergenic'] += ((chrom_limit + 1) - chromosome_pos)
 	return feature_count_dict
 
-def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set, prioritize = False, priority_order = None, promoter_bp = None, upstream_bp = None, downstream_bp = None, **kwargs):
+def posCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, chrom_position_list, feature_set, prioritize = False, priority_order = None, promoter_bp = None, upstream_bp = None, downstream_bp = None, **kwargs):
 	'''
 	Iterate the chromosome. As most of the chromosome is
 	intergenic, only genes (and overlaps, if present) need to
@@ -783,6 +822,18 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 										position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, feature.attributes['ID'][0].split(':')[0]])
 									else: raise Exception(f'Unable to assign {feature_type} with attributes {feature.attributes}')
 
+		# Count the features for each relevant interval
+		for relevant_position_start, relevant_position_stop in relevant_positions:
+
+			# Loop the features and confirm they overlap the relevant interval
+			for feature_type, feature_intervals in feature_dict.items():			
+				for feature_interval_start, feature_interval_end in feature_intervals:
+					if relevant_position_start <= feature_interval_end and feature_interval_start <= relevant_position_stop:
+
+						# Create an intersection of the feature and relevant interval
+						intersection_interval = intersectItervals([[relevant_position_start, relevant_position_stop], [feature_interval_start, feature_interval_end]])
+						feature_count_dict = countItervals([intersection_interval], feature_type, feature_count_dict)
+
 	'''
 	Lastly, assign the intergenic feature for all positions 
 	outside the merged intervals and return the feature dict
@@ -790,4 +841,6 @@ def posCounts (gff_db, chrom_name, chrom_limit, chrom_position_list, feature_set
 	for chrom_position in yieldPositions(chrom_position_list):
 		if chrom_position not in position_feature_dict:
 			position_feature_dict[chrom_position].append(['intergenic', ''])
-	return position_feature_dict
+			feature_count_dict = countItervals([chrom_position], 'intergenic', feature_count_dict)
+	
+	return position_feature_dict, feature_count_dict

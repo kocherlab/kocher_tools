@@ -34,6 +34,7 @@ def gffArgs ():
 	gff_parser.add_argument('--chrom-size-file', help = "Defines the chromosome size filename (as tsv)", type = str, action = confirmFile(), required = True)
 	gff_parser.add_argument('--position-file', help = "Defines the position filename (as tsv)", type = str, action = confirmFile(), required = True)
 	gff_parser.add_argument('--out-file', help = "Defines the output filename (as tsv). Defaults to out.tsv", type = str, default = 'out.tsv')
+	gff_parser.add_argument('--out-prefix', help = "Defines the output prefix. Defaults to out", type = str, default = 'out')
 
 	# Assign the bp values for added features
 	gff_parser.add_argument('--promoter-bp', help = "Defines the promoter length", type = int, default = 5000)
@@ -55,6 +56,15 @@ def gffArgs ():
 
 # Assign the arguments using argparse
 gff_args = gffArgs()
+
+###
+### REMOVE --out-file NEXT w/ NEXT MAJOR UPDATE
+###
+if '--out-file' in sys.argv: print('Warning: --out-file will soon be removed, please use --out-prefix instead')
+
+# Assign the output files
+out_position_filename = f'{gff_args.out_prefix}.positions.tsv'
+out_counts_filename = f'{gff_args.out_prefix}.feature_counts.tsv'
 
 # Assign a set with all the possible features
 feature_set = gff_args.feature_set + ['upstream', 'promoter', 'downstream']
@@ -80,8 +90,8 @@ except:
 
 try:	
 	# Create the output file, and write the header
-	output_file = open(gff_args.out_file, 'w')
-	output_file.write('#%s\n' % ' '.join(sys.argv))
+	out_position_file = open(out_position_filename, 'w')
+	out_position_file.write('#%s\n' % ' '.join(sys.argv))
 
 	position_range = True if 2 in chrom_positions.columns else False
 
@@ -90,17 +100,21 @@ try:
 	else: headers = ['Chromosome', 'Position Start', 'Position End', 'Feature w/ Highest Priority', 'All Features', 'All Features Genes', 'Features w/ Priority', 'Features w/ Priority Genes']
 
 	# Create the tsv writer
-	output_writer = csv.DictWriter(output_file, fieldnames = headers, delimiter = '\t')
+	output_writer = csv.DictWriter(out_position_file, fieldnames = headers, delimiter = '\t')
 	output_writer.writeheader()
 
+	# Create defaultdict to store the feature counts
+	feature_counts_w_priority = defaultdict(int)
+	feature_counts_no_priority = defaultdict(int)
+	
 	'''
 	Loop the GFF database by each chromosome and then calculate the stats
 	for each position, first w/priority and then with no priority
 	'''
 	for chrom_name, chrom_size in chrom_sizes.values:
 		if chrom_name not in grouped_chrom_positions: continue
-		feature_dict_w_priority  = posCounts(gff_db, chrom_name, chrom_size, grouped_chrom_positions[chrom_name], prioritize = True, **vars(gff_args))
-		feature_dict_no_priority = posCounts(gff_db, chrom_name, chrom_size, grouped_chrom_positions[chrom_name], **vars(gff_args))
+		feature_dict_w_priority, feature_counts_w_priority  = posCounts(gff_db, chrom_name, chrom_size, feature_counts_w_priority, grouped_chrom_positions[chrom_name], prioritize = True, **vars(gff_args))
+		feature_dict_no_priority, feature_counts_no_priority = posCounts(gff_db, chrom_name, chrom_size, feature_counts_no_priority, grouped_chrom_positions[chrom_name], **vars(gff_args))
 
 		## Add the features to the feature list
 		for position in feature_dict_w_priority.keys():
@@ -128,11 +142,22 @@ try:
 
 			# Write the row
 			output_writer.writerow(out_dict)
+
+	# Save the counts into a dataframe, write the dataframe to a tsv
+	out_counts_file = open(out_counts_filename, 'w')
+	out_counts_file.write('#%s\n' % ' '.join(sys.argv))
+	#if missing_features: out_counts_file.write('#%s\n' % missing_features_str)
+	output_dataframe = pd.DataFrame.from_dict({'Total Feature Counts': feature_counts_no_priority, 'Feature Counts w/ Priority': feature_counts_w_priority}, orient='index')
+	output_dataframe = output_dataframe.fillna(0)
+	output_dataframe = output_dataframe[[_pc for _pc in gff_args.priority_order if _pc in output_dataframe.columns]]
+	output_dataframe = output_dataframe.astype(int)
+	output_dataframe.to_csv(out_counts_file, sep = '\t')
+	out_counts_file.close()
 	
 	# Close the output file
-	output_file.close()
+	out_position_file.close()
 
 except:
-	output_file.close()
-	os.remove(gff_args.out_file)
+	out_position_file.close()
+	os.remove(out_position_filename)
 	raise
