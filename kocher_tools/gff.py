@@ -807,15 +807,28 @@ def posCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, chrom_positi
 			for feature_interval_start, feature_interval_end in feature_intervals:
 				for relevant_position_start, relevant_position_stop in relevant_positions:
 					if relevant_position_start <= feature_interval_end and feature_interval_start <= relevant_position_stop:
+						
+						# Count added features - i.e. not in the GFF
 						if feature_type in list(added_feature_dict):
 							for gene_id, added_feature_intervals, in added_feature_dict[feature_type].items():
 								for added_feature_start, added_feature_end in added_feature_intervals:
 									if relevant_position_start <= added_feature_end and added_feature_start <= relevant_position_stop:
 										position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, gene_id])
+						
+						# Count features within the GFF
 						else:
 							for feature in features:
 								if feature.featuretype != feature_type: continue
 								if relevant_position_start <= feature.end and feature.start <= relevant_position_stop:
+
+									'''
+									Assign features based on their type/attributes.
+									1) For mRNA - return mRNA & gene
+									2) For Exons - return exon & mRNA
+									3) For TSS(up/down) - return TSS & gene
+									4) If unkown - report error
+
+									'''
 									if 'transcript_id' in feature.attributes: position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, returnParents(feature)])
 									elif 'Parent' in feature.attributes: position_feature_dict[(relevant_position_start, relevant_position_stop)].append([feature_type, returnParents(feature)])
 									elif feature_type in ['tss_flanks', 'tss_upstream']:
@@ -830,7 +843,10 @@ def posCounts (gff_db, chrom_name, chrom_limit, feature_count_dict, chrom_positi
 				for feature_interval_start, feature_interval_end in feature_intervals:
 					if relevant_position_start <= feature_interval_end and feature_interval_start <= relevant_position_stop:
 
-						# Create an intersection of the feature and relevant interval
+						'''
+						Create a intersection of the feature and relevant interval.
+						Then add the length of the intersection interval to the dict.
+						'''
 						intersection_interval = intersectItervals([[relevant_position_start, relevant_position_stop], [feature_interval_start, feature_interval_end]])
 						feature_count_dict = countItervals([intersection_interval], feature_type, feature_count_dict)
 
