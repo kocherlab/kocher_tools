@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import shutil
 import argparse
@@ -49,6 +50,9 @@ def pcaParser ():
 	pca_parser.add_argument('--model-file', help = 'Filename of the Model file', type = str, action = confirmFile())
 	pca_parser.add_argument('--model', help = 'Model to use', type = str)
 
+	# Optional arguments
+	pca_parser.add_argument('--allele-freqs', help = 'Filename of the allele frequencies file', type = str, action = confirmFile())
+
 	# Filter arguments
 	sample_filter = pca_parser.add_mutually_exclusive_group()
 	sample_filter.add_argument('--include-samples', help = 'Samples to include', type = str, nargs = '+', action = toList())
@@ -94,4 +98,4 @@ if pca_args.model_file and pca_args.model:
 else:
 	pca_run = Plink2.standard(**vars(pca_args))
 pca_run.filter(**vars(pca_args))
-pca_run.calcPCA(pca_type = pca_args.pca_type, pc_count = pca_args.pc_count, pca_modifier = pca_args.pca_modifier)
+pca_run.calcPCA(pca_type = pca_args.pca_type, pc_count = pca_args.pc_count, pca_modifier = pca_args.pca_modifier, afreq_filename = pca_args.allele_freqs)

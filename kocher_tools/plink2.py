@@ -47,8 +47,19 @@ class Plink2 (list):
 			raise IOError(f'Cannot find VCF ({self.vcf_filename}) or Binary-PED ({self.bed_prefix}.*). PLINK2 requires either a VCF or Binary-PED file to operate')
 
 		# Create the Binary-PED, if needed
-		if self.vcf_exists and not self.bed_exists: self._cvtToPlink()
+		if not self.bed_exists:
+			
+			# Assign the file prefix for the vcf filename
+			if self.vcf_filename.endswith('.vcf.gz'): file_prefix = self.vcf_filename[:-7]
+			elif self.vcf_filename.endswith('.vcf'): file_prefix = self.vcf_filename[:-4]
+			elif self.vcf_filename.endswith('.bcf'): file_prefix = self.vcf_filename[:-4]
+			
+			# Create the Binary-PED
+			if not os.path.isfile(f'{file_prefix}.bed') or not os.path.isfile(f'{file_prefix}.bim') or not os.path.isfile(f'{file_prefix}.fam'): self._cvtToPlink()
 
+			# Update the prefix
+			self.bed_prefix = file_prefix
+			
 		# Assign the input/output arg
 		if self.bed_prefix: self._plink2_call_args.extend(['--bfile', self.bed_prefix])
 		else: raise IOError('No Binary-PED prefix assigned')
@@ -67,7 +78,7 @@ class Plink2 (list):
 		else: raise Exception(f'VCF has non-standard file extension. Please use .vcf or .vcf.gz')
 
 		# Assign the conversion args
-		self._plink2_call_args.extend(['--vcf', self.vcf_filename, '--make-bed', '--out', self.bed_prefix, '--double-id', '--allow-extra-chr'])
+		self._plink2_call_args.extend(['--vcf', self.vcf_filename, '--make-bed', '--out', self.bed_prefix, '--double-id', '--allow-extra-chr', '--set-missing-var-ids', '@:#:$r,$a'])
 
 		# Call plink2
 		self._call()
@@ -122,19 +133,32 @@ class Plink2 (list):
 			if include_samples or exclude_samples: raise Exception('--include-samples/--exclude-samples cannot be used with a model')
 			self._plink2_call_args.extend(['--keep', self._sampleFile(list(self.sample_model_dict))])
 
-	def calcPCA (self, pca_type = 'sample-wts', pc_count = 10, pca_modifier = None):
+	def calcPCA (self, pca_type = 'sample-wts', pc_count = 10, pca_modifier = None, afreq_filename = ''):
 
 		# Set the PCA arguments
 		self._plink2_call_args.append('--pca')
 		if pca_type != 'sample-wts': self._plink2_call_args.append(pca_type)
 		self._plink2_call_args.append('10')
 		if pca_modifier: self._plink2_call_args.append(pca_modifier)
+		if afreq_filename: self._plink2_call_args.extend(['--read-freq', afreq_filename])
 
 		# Call plink2
 		self._call()
 
 		# Cleanup and rename the log
 		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.pca.log')
+		self._cleanup()
+
+	def calcAlleleFreqs (self):
+
+		# Set the Allele Frequency arguments
+		self._plink2_call_args.append('--freq')
+
+		# Call plink2
+		self._call()
+
+		# Cleanup and rename the log
+		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.afreq.log')
 		self._cleanup()
 		
 	def calcFst (self, method = 'hudson', category = 'Pops', report_variants = True):
@@ -165,12 +189,14 @@ class Plink2 (list):
 		self._plink2_call_args.append(f'method={method}')
 		self._plink2_call_args.extend(['--pheno', pheno_filename])
 
+		print(self.out_prefix)
+
 		# Call plink2
-		self._call()
+		#self._call()
 
 		# Cleanup and rename the log
-		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.fst.log')
-		self._cleanup()
+		#os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.fst.log')
+		#self._cleanup()
 
 	def _cleanup (self):
 		for file_to_remove in self._files_to_remove: os.remove(file_to_remove)
