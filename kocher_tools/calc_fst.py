@@ -64,6 +64,8 @@ def fstParser ():
 	# Fst arguments
 	fst_methods = ['hudson', 'wc']
 	fst_parser.add_argument('--fst-method', metavar = metavarList(fst_methods), help = 'Fst method to use', type = str, choices = fst_methods, default = 'wc')
+	fst_parser.add_argument('--bin-fst', help = 'The window size (in bp) to bin Fst value. Step size may also be given', type = int, nargs = '+')
+	fst_parser.add_argument('--remove-site-fst', help = 'Remove the site Fst results. Only usable alongside --bin-fst', action = 'store_true')
 
 	# Output arguments
 	fst_parser.add_argument('--out-prefix', help = 'Output prefix for Fst files', type = str, default = 'out')
@@ -87,3 +89,4 @@ elif fst_args.overwrite and os.path.isdir(fst_args.out_dir):
 fst_run = Plink2.usingModelFile(**vars(fst_args))
 fst_run.filter(**vars(fst_args))
 fst_run.calcFst(method = fst_args.fst_method)
+if fst_args.bin_fst: fst_run.binFst(*fst_args.bin_fst, fst_args.remove_site_fst)

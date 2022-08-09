@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 import random
 import string
 import logging
@@ -189,17 +190,60 @@ class Plink2 (list):
 		self._plink2_call_args.append(f'method={method}')
 		self._plink2_call_args.extend(['--pheno', pheno_filename])
 
-		print(self.out_prefix)
-
 		# Call plink2
-		#self._call()
+		self._call()
 
 		# Cleanup and rename the log
-		#os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.fst.log')
-		#self._cleanup()
+		os.rename(f'{self.out_prefix}.log', f'{self.out_prefix}.fst.log')
+		self._cleanup()
+
+	def binFst (self, window_size, window_step, remove_site_fst = False):
+
+		# Loop site-based Fst files
+		for site_fst_filename in os.listdir(self.out_dir):
+			if not site_fst_filename.endswith('.fst.var'): continue
+			site_fst_path = os.path.join(self.out_dir, site_fst_filename)
+
+			# If specified, remove the site Fst files
+			if remove_site_fst: self._files_to_remove.append(site_fst_path)
+
+			# Create a list to store the binned Fst data
+			binned_fst_data = []
+
+			# Open the site-based Fst file
+			site_fst_dataframe = pd.read_csv(site_fst_path, sep = '\t')
+
+			# Assign the Fst column
+			if site_fst_dataframe.columns[4] in ['WC_FST', 'HUDSON_FST']: fst_column = site_fst_dataframe.columns[4]
+			else: raise Exception (f'Unable to assign Fst column from: {site_fst_dataframe.columns}')
+
+			# Split by chromosome
+			for chrom, chrom_site_fst_dataframe in site_fst_dataframe.groupby(by=['#CHROM']):
+
+				# Assign maximum length 
+				chrom_max = chrom_site_fst_dataframe['POS'].max()
+				max_len = math.ceil(chrom_max/window_size) * window_size
+
+				# Bin Fst data
+				for bin_start in range(1, max_len, window_step):
+					bin_end = bin_start + window_size - 1
+					binned_site_fst_dataframe = chrom_site_fst_dataframe[chrom_site_fst_dataframe['POS'].between(bin_start, bin_end)]
+					binned_site_fst_dataframe = binned_site_fst_dataframe.dropna(subset=[fst_column])
+					binned_fst_data.append({'#CHROM':chrom, 
+											'BIN_START':bin_start, 
+											'BIN_END':bin_end, 
+											'N_VARIANTS':binned_site_fst_dataframe.shape[0], 
+											'MEAN_FST':binned_site_fst_dataframe[fst_column].mean()})
+
+			# Save the binned Fst into a file
+			pd.DataFrame(binned_fst_data).to_csv(site_fst_path[:-7] + 'windowed.fst.var', sep = '\t', index = False, na_rep = 'nan')
+
+		# Cleanup, if needed
+		self._cleanup()
 
 	def _cleanup (self):
 		for file_to_remove in self._files_to_remove: os.remove(file_to_remove)
+		self._files_to_remove = []
 
 	def _sampleFile (self, samples, prefix = 'Samples', str_len = 12):
 		rand_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for i in range(str_len))
