@@ -11,7 +11,9 @@ from collections import defaultdict
 
 from kocher_tools.config_file import ConfigDB
 from kocher_tools.database import *
+from kocher_tools.logger import *
 from kocher_tools.kocher_database import *
+from kocher_tools.backup import Backups
 
 def uploadSampleParser ():
 	'''
@@ -80,11 +82,11 @@ def main():
 	upload_args = uploadSampleParser()
 
 	# Open the config and start the SQL session
-	config_data = ConfigDB.readConfig(config_file)
+	config_data = ConfigDB.readConfig(upload_args.config_file)
 
 	# Backup the data prior to any changes
-	backup_data = Backups.fromConfig(config_data, backup_subdir = 'UpdateBackups')
-	backup_data.backupfromConfig(config_data)
+	#backup_data = Backups.fromConfig(config_data, backup_subdir = 'UpdateBackups')
+	#backup_data.backupfromConfig(config_data)
 
 	# Start a log for this run
 	if upload_args.log_stdout: startLogger()

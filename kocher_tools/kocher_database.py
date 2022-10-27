@@ -32,10 +32,10 @@ def insertCollectionFileUsingConfig (config_data, schema, filepath, uploader, ig
 		colleciton_label_dict = {'Barcode': 'Unique ID',
 								 'Date': 'Date Collected',
 								 'Time': 'Time Entered',
-								 'Has Pollen': 'Has Pollen',
+								 'Has Pollen': 'Has Pollen?',
 								 'Preservation Method': 'Sample Preservation Method',
 								 'Head in PFA?': 'Head Preserved',
-								 'From Nest': 'From Nest',
+								 'From Nest': 'From Nest?',
 								 'Field_ID': 'Species Guess'}
 		input_dataframe = input_dataframe.rename(columns=colleciton_label_dict)
 
@@ -52,7 +52,7 @@ def insertCollectionFileUsingConfig (config_data, schema, filepath, uploader, ig
 		input_dataframe['date_collected'] = pd.to_datetime(input_dataframe['date_collected']).dt.date
 
 		# Clean up the data, with dates
-		input_dataframe = input_dataframe.replace(np.nan, None)
+		input_dataframe = input_dataframe.replace({np.nan: None})
 
 		# Assign the table
 		sql_table_assign = config_data[schema]
@@ -161,7 +161,7 @@ def insertBarcodeFilesUsingConfig (config_data, schema, filepaths):
 		input_dataframe['bold_id'] = input_dataframe['bold_id'].str.replace('_', ' ')
 		input_dataframe['sequence_status'] = 'Species Identified'
 		input_dataframe = input_dataframe.rename(columns = sequence_label_dict)
-		input_dataframe = input_dataframe.replace(np.nan, None)
+		input_dataframe = input_dataframe.replace({np.nan: None})
 
 		# Remove the non standard columns
 		sequence_non_std_cols = list(set(input_dataframe.columns) - set(sequence_std_cols))
@@ -194,7 +194,7 @@ def insertBarcodeFilesUsingConfig (config_data, schema, filepaths):
 			failed_dataframe[['Query ID', 'reads']] = failed_dataframe['Query ID'].str.split(';size=', expand = True)
 			failed_dataframe['sample_id'] = failed_dataframe['Query ID'].str.split('_', expand = True)[0] 
 			failed_dataframe = failed_dataframe.rename(columns = failed_label_dict)
-			failed_dataframe = failed_dataframe.replace(np.nan, None)
+			failed_dataframe = failed_dataframe.replace({np.nan: None})
 			
 			sql_insert = SQLInsert.fromConfig(config_data, sql_connection)
 			sql_insert.addTableToInsert(sql_table_assign)
@@ -222,7 +222,7 @@ def insertStorageFileUsingConfig (config_data, filepath, schema = 'storage', pla
 		# Create the storage dataframe and prepare
 		storage_dataframe = input_dataframe.copy()
 		storage_dataframe = prepDataFrameUsingConfig(config_data, schema, storage_dataframe)
-		storage_dataframe = storage_dataframe.replace(np.nan, None)
+		storage_dataframe = storage_dataframe.replace({np.nan: None})
 
 		# Insert the plates, if not already inserted
 		plate_dataframe = storage_dataframe[['plate']].copy()
@@ -240,7 +240,7 @@ def insertStorageFileUsingConfig (config_data, filepath, schema = 'storage', pla
 			box_dataframe = input_dataframe[['Box']].copy()
 			box_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_dataframe)
 			box_dataframe = box_dataframe.drop_duplicates()
-			box_dataframe = box_dataframe.replace(np.nan, None)
+			box_dataframe = box_dataframe.replace({np.nan: None})
 			box_insert = SQLInsert.fromConfig(config_data, sql_connection)
 			box_insert.addTableToInsert(config_data['boxes'])
 			box_insert.addDataFrameValues(box_dataframe)
@@ -251,7 +251,7 @@ def insertStorageFileUsingConfig (config_data, filepath, schema = 'storage', pla
 			plate_update_dataframe = input_dataframe[['Plate', 'Box']].copy()
 			plate_update_dataframe = plate_update_dataframe.rename(columns = {'Plate':'plate', 'Box':'box'})
 			plate_update_dataframe = plate_update_dataframe.drop_duplicates()
-			plate_update_dataframe = plate_update_dataframe.replace('', None)
+			plate_update_dataframe = plate_update_dataframe.replace({'': None})
 			plate_update_dataframe = plate_update_dataframe.dropna(axis = 'index')
 
 			# Check for possible assignment errors
@@ -277,7 +277,7 @@ def insertStorageFileUsingConfig (config_data, filepath, schema = 'storage', pla
 			box_update_dataframe = input_dataframe.copy()
 			box_update_dataframe = prepDataFrameUsingConfig(config_data, 'boxes', box_update_dataframe)
 			box_update_dataframe = box_dataframe.drop_duplicates()
-			box_update_dataframe = box_update_dataframe.replace('', None)
+			box_update_dataframe = box_update_dataframe.replace({'': None})
 			box_update_dataframe = box_update_dataframe.dropna(axis = 'index')
 
 			# Check for possible assignment errors
