@@ -79,8 +79,8 @@ class PBS (list):
 		self.branch_length_dataframe[pop_columns] = self.branch_length_dataframe[pop_columns].apply(self._fst_to_bl)
 
 		# Clean up
-		self.branch_length_dataframe = self.branch_length_dataframe.replace([np.inf, -np.inf], np.nan)
-		self.branch_length_dataframe = self.branch_length_dataframe.replace(-0, 0)
+		self.branch_length_dataframe = self.branch_length_dataframe.replace({np.inf:np.nan, -np.inf:np.nan})
+		self.branch_length_dataframe = self.branch_length_dataframe.replace({-0: 0})
 		self.branch_length_dataframe = self.branch_length_dataframe.dropna()
 
 	@staticmethod	
