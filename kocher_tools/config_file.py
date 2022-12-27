@@ -279,8 +279,14 @@ class ConfigDB (list):
 							table_attr_list.append(CheckConstraint(sql_column.in_(['Y', 'N', 'NS']), name = '%s_check' % column))
 						elif attribute_yaml['constraint']['check'] == 'YesNo':
 							table_attr_list.append(CheckConstraint(sql_column.in_(['Yes', 'No']), name = '%s_check' % column))
+						elif attribute_yaml['constraint']['check'] == 'YesNo_NA':
+							table_attr_list.append(CheckConstraint(sql_column.in_(['Yes', 'No', 'NA']), name = '%s_check' % column))
 						elif attribute_yaml['constraint']['check'] == 'YesNo_NS':
 							table_attr_list.append(CheckConstraint(sql_column.in_(['Yes', 'No', 'NS']), name = '%s_check' % column))
+						elif attribute_yaml['constraint']['check'] == 'YesNo_DK':
+							table_attr_list.append(CheckConstraint(sql_column.in_(['Yes', 'No', "Don't know"]), name = '%s_check' % column))
+						elif attribute_yaml['constraint']['check'] == 'YesNo_NotSure':
+							table_attr_list.append(CheckConstraint(sql_column.in_(['Yes', 'No', 'Not sure']), name = '%s_check' % column))
 						else: raise Exception('Unknown constraint (%s)' % attribute_yaml['constraint']['check'])
 
 					# Assign a column label, if found
