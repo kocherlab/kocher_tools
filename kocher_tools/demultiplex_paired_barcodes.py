@@ -9,7 +9,7 @@ import pkg_resources
 from kocher_tools.multiplex import Multiplex
 from kocher_tools.logger import startLogger, logArgs
 from kocher_tools.deML import *
-from fastq_multx import fastqMultx
+from kocher_tools.fastq_multx import fastqMultx
 
 def deMultiplexParser ():
 	'''

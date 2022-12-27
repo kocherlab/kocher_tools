@@ -294,7 +294,6 @@ class deML (list):
 				return_text.append(deML_stderr_line)
 			return return_text
 
-
 		# Print errors, if found
 		if 'ERROR' in deML_stderr: raise Exception(deML_stderr)
 
@@ -305,4 +304,4 @@ class deML (list):
 		# Report any pair conflicts
 		else:
 			pair_conflicts = _skipTextBeforeStr('Conflicts for pairs:')
-			if len(pair_conflicts) > 1: raise Exception(pair_conflicts)
+			if len(pair_conflicts) > 1: sys.stderr.write('\n'.join(pair_conflicts))
