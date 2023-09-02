@@ -212,16 +212,16 @@ class deML (list):
 
 		# Check the length of the barcodes - whitespace must be removed prior
 		if not (index_dataframe[self._index_i7_col].str.len() == self._index_barcode_len).all():
-			raise Exception(f'i7 barcodes not {self._index_barcode_len} bases long')
+			logging.warning(f'i7 barcodes not {self._index_barcode_len} bases long')
 		if not (index_dataframe[self._index_i5_col].str.len() == self._index_barcode_len).all():
-			raise Exception(f'i5 barcodes not {self._index_barcode_len} bases long')
+			logging.warning(f'i5 barcodes not {self._index_barcode_len} bases long')
 
 		# Reverse complement the bacodes, if needed
 		if self.i7_reverse_complement: index_dataframe[self._index_i7_col] = index_dataframe[self._index_i7_col].apply(_revCompBarcodes)
 		if self.i5_reverse_complement: index_dataframe[self._index_i5_col] = index_dataframe[self._index_i5_col].apply(_revCompBarcodes)
 
 		# Check if the file needs to be formatted
-		if self.index_format == 'excel' and not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not sample_whitespace and not barcode_whitespace and number_of_columns == len(self._index_cols): return
+		if self.index_format != 'excel' and not empty_rows and not self.i7_reverse_complement and not self.i5_reverse_complement and not sample_whitespace and not barcode_whitespace and number_of_columns == len(self._index_cols): return
 		
 		# Reorder and rename the columns
 		index_dataframe = index_dataframe[self._index_cols]

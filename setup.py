@@ -27,7 +27,9 @@ tool_scripts = ['kocher_tools/barcode_pipeline.py',
                 'kocher_tools/insert_file.py',
                 'kocher_tools/gff_position_stats.py',
                 'kocher_tools/gff_chrom_stats.py',
-                'kocher_tools/gff_add_features.py']
+                'kocher_tools/gff_add_features.py',
+		        'kocher_tools/softmask.py',
+		        'kocher_tools/featureCounts_report.py']
 
 setup(name=kocher_tools.__title__,
       version=kocher_tools.__version__,

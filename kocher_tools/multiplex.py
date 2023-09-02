@@ -269,12 +269,12 @@ class Plate (list):
 			well.well_R1_file = well_r1_file
 
 			# Rename the well i7 index, if given
-			if well.well_i7_file: 
+			if os.path.isfile(well.well_i7_file): 
 				well_i7_file = well.well_i7_file.replace(well.ID, prefix_str)
 				os.rename(well.well_i7_file, well_i7_file)
 				well.well_i7_file = well_i7_file
 
-			if well.well_R2_file: 
+			if os.path.isfile(well.well_R2_file):
 				well_r2_file = well.well_R2_file.replace(well.ID, prefix_str)
 				os.rename(well.well_R2_file, well_r2_file)
 				well.well_R2_file = well_r2_file
